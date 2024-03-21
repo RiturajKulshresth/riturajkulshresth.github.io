@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/static/css/main.8cd603a3.css",
+    "main.js": "/static/js/main.a2e92843.js",
+    "static/js/453.1407b060.chunk.js": "/static/js/453.1407b060.chunk.js",
+    "static/media/mouse.gif": "/static/media/mouse.6f1668673a7b5add700c.gif",
+    "static/media/RGBFace.gif": "/static/media/RGBFace.6663bf9a54cccc30c84f.gif",
+    "static/media/VANET.gif": "/static/media/VANET.40b189a5a806c85ac790.gif",
+    "static/media/hashtag.gif": "/static/media/hashtag.48668ac1ed789705e899.gif",
+    "static/media/ECG.gif": "/static/media/ECG.f7d501f2df7c8f446819.gif",
+    "static/media/osdev.gif": "/static/media/osdev.d1479ab5a2acd9098c58.gif",
+    "static/media/RiturajKulshresth_Resume.pdf": "/static/media/RiturajKulshresth_Resume.1e3fe50f1d7796b17f6e.pdf",
+    "static/media/coding.svg": "/static/media/coding.e270681513605e789727348465bd0a27.svg",
+    "index.html": "/index.html",
+    "main.8cd603a3.css.map": "/static/css/main.8cd603a3.css.map",
+    "main.a2e92843.js.map": "/static/js/main.a2e92843.js.map",
+    "453.1407b060.chunk.js.map": "/static/js/453.1407b060.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.8cd603a3.css",
+    "static/js/main.a2e92843.js"
+  ]
+}
