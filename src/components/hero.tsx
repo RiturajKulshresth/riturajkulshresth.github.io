@@ -16,7 +16,6 @@ export default function Hero() {
       className="relative overflow-hidden pt-28 pb-20 md:pt-36 md:pb-28"
     >
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-70" />
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[520px] w-[820px] -translate-x-1/2 -translate-y-1/3 glow opacity-90" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
         {/* Left - typography */}
@@ -118,12 +117,6 @@ export default function Hero() {
           className="relative mx-auto w-full max-w-md fade-up lg:mx-0 lg:ml-auto"
           style={{ animationDelay: "120ms" }}
         >
-          {/* Soft accent halo */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-8 rounded-[2rem] bg-gradient-to-br from-[color:var(--color-accent-glow)] via-transparent to-[color:var(--color-accent-secondary-glow)] blur-2xl"
-          />
-
           <div className="relative overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/60 shadow-[var(--shadow-card)] backdrop-blur">
             {/* Window chrome */}
             <div className="flex items-center justify-between border-b border-[color:var(--color-border)] px-4 py-2.5">
@@ -138,7 +131,7 @@ export default function Hero() {
             </div>
 
             {/* Illustration */}
-            <div className="relative aspect-square overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(96_165_250_/_0.12),transparent_55%)] p-6">
+            <div className="relative aspect-square overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(37_150_190_/_0.14),transparent_55%)] p-6">
               <Image
                 src="/images/coding.svg"
                 alt="Developer at work illustration"

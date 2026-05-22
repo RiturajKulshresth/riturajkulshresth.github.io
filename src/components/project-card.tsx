@@ -27,12 +27,7 @@ export default function ProjectCard({ project }: { project: Project }) {
       aria-disabled={!isExternalLink || undefined}
       className="card group flex h-full flex-col overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/30"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(96_165_250_/_0.12),transparent_55%)]">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-dots opacity-50"
-        />
-
+      <div className="relative aspect-[16/10] overflow-hidden">
         {/* Always-playing preview (GIF or static). Mounted eagerly so the
             animation runs as soon as the card is in view. */}
         {project.preview && (

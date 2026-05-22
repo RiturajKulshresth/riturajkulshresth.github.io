@@ -8,7 +8,6 @@ export default function Contact() {
       className="relative overflow-hidden border-t border-[color:var(--color-border)] py-24 md:py-32"
     >
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-[640px] -translate-x-1/2 -translate-y-1/2 glow opacity-70" />
 
       <div className="relative mx-auto max-w-4xl px-6">
         <SectionHeader
