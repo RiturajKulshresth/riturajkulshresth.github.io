@@ -6,7 +6,7 @@ export const profile = {
   location: "Hyderabad, India",
   email: "riturajkulshresth@gmail.com",
   phone: "+91 7004742004",
-  bio: "Computer Science grad from IIT Jodhpur. I like the messy middle of software — where compilers, networks, and operating systems meet the user-facing surfaces we ship every day. Lately I've been building agent infrastructure: runtimes, tool orchestration, observability, and the developer experience that makes them useful.",
+  bio: "Computer Science grad from IIT Jodhpur. I like the messy middle of software - where compilers, networks, and operating systems meet the user-facing surfaces we ship every day. Lately I've been building agent infrastructure: runtimes, tool orchestration, observability, and the developer experience that makes them useful.",
   status: "Open to interesting work",
 } as const;
 
@@ -25,7 +25,7 @@ export const projects: Project[] = [
     title: "x86 Operating System",
     subtitle: "Kernel & drivers from scratch",
     description:
-      "Hand-written 32-bit OS in C and Assembly — bootloader, paged memory, interrupt handling, and basic drivers. The project that taught me to read datasheets.",
+      "Hand-written 32-bit OS in C and Assembly - bootloader, paged memory, interrupt handling, and basic drivers. The project that taught me to read datasheets.",
     year: "2022",
     tags: ["C", "Assembly", "OS Dev"],
     link: "https://github.com/RiturajKulshresth/OS",
@@ -55,7 +55,7 @@ export const projects: Project[] = [
     title: "Hashtag Propagation Analysis",
     subtitle: "Network analysis on social graphs",
     description:
-      "Modelled how hashtags spread across Twitter and Koo — graph structure, cascade depth, and influencer reach. Useful primer in network science.",
+      "Modelled how hashtags spread across Twitter and Koo - graph structure, cascade depth, and influencer reach. Useful primer in network science.",
     year: "2023",
     tags: ["Python", "NetworkX", "Pandas"],
     link: "https://github.com/RiturajKulshresth/Data-and-Networks_Hashtag-analysis",
@@ -75,7 +75,7 @@ export const projects: Project[] = [
     title: "Bluetooth Mouse",
     subtitle: "Android utility app",
     description:
-      "Turns an Android phone into a wireless mouse via Bluetooth — pointer, scroll, and click. My first end-to-end shipped app.",
+      "Turns an Android phone into a wireless mouse via Bluetooth - pointer, scroll, and click. My first end-to-end shipped app.",
     year: "2021",
     tags: ["Java", "Android"],
     link: "https://github.com/RiturajKulshresth/mouse",
@@ -96,8 +96,8 @@ export type Experience = {
 export const experience: Experience[] = [
   {
     company: "Warner Bros. Discovery",
-    role: "Software Engineer — AI Platforms",
-    period: "2024 — Present",
+    role: "Software Engineer - AI Platforms",
+    period: "2024 - Present",
     location: "Hyderabad, India",
     current: true,
     summary:
@@ -111,7 +111,7 @@ export const experience: Experience[] = [
   {
     company: "Deloitte",
     role: "Software Engineer",
-    period: "2023 — 2024",
+    period: "2023 - 2024",
     location: "Hyderabad, India",
     summary:
       "Built productivity tools and internal Outlook add-ins for enterprise clients across geographies.",
@@ -124,7 +124,7 @@ export const experience: Experience[] = [
   {
     company: "IIT Jodhpur",
     role: "B.Tech, Computer Science & Engineering",
-    period: "2019 — 2023",
+    period: "2019 - 2023",
     location: "Jodhpur, India",
     summary:
       "Specialised in operating systems, computer networks, and machine learning. Coursework heavy on systems.",

@@ -15,7 +15,7 @@ export default function Navbar() {
   const needsBackdrop = !isHome;
   // Overlay routes: the page is a full-bleed dark media surface (the photo
   // gallery), so the navbar must use fixed dark-glass styling regardless of
-  // the user's light/dark preference — otherwise a light navbar sits over a
+  // the user's light/dark preference - otherwise a light navbar sits over a
   // dark gallery and looks broken.
   const isOverlay = pathname?.startsWith("/photography") ?? false;
 

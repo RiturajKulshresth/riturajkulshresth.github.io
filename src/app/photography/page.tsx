@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     "A drag-to-pan gallery of photographs by Rituraj Kulshresth. Hosted on Unsplash.",
   openGraph: {
-    title: "Photography · Rituraj Kulshresth",
+    title: "Rituraj Kulshresth · Photography",
     description: "A drag-to-pan gallery of photographs by Rituraj Kulshresth.",
   },
 };

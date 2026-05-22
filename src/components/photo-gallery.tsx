@@ -11,11 +11,11 @@ import PhotoLightbox from "./photo-lightbox";
  *   - The photo list is rendered three times. The middle copy is the "real"
  *     one; the left + right copies provide seamless overflow content.
  *   - Track position is pixel-based: `translate3d(x px, -50%, 0)`. No
- *     percentage or viewport math, so the drag is bounded only by intent —
+ *     percentage or viewport math, so the drag is bounded only by intent -
  *     every image can be brought to the centre regardless of viewport size.
  *   - When `x` drifts more than half a list-length from its initial value,
  *     it's silently shifted by one full list-length. Because the three
- *     copies are identical, the wrap is invisible to the user — the carousel
+ *     copies are identical, the wrap is invisible to the user - the carousel
  *     feels endless.
  *   - Parallax is computed per image from its actual screen position
  *     (0% when the image's centre is at the left edge → 100% at the right
@@ -64,7 +64,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
 
   /**
    * Update which photo is currently nearest the viewport centre.
-   * Iterates over ALL rendered copies — after the silent wrap, the image
+   * Iterates over ALL rendered copies - after the silent wrap, the image
    * physically at centre may belong to the left or right copy, so a middle-only
    * search would snap to the wrong index. We then mod by N to recover the
    * real photo index.
@@ -230,7 +230,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
   /**
    * Manually tween x to a target using requestAnimationFrame.
    * We can't use a CSS transition + applyX because applyX silently wraps
-   * targetX into the middle copy's range — when targetX is on the far side
+   * targetX into the middle copy's range - when targetX is on the far side
    * of the wrap boundary, that produces a long-path animation in the wrong
    * direction. Driving the transform ourselves lets the visible motion
    * always take the short path; the wrap is applied invisibly afterwards
@@ -334,6 +334,27 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
     };
   }, []);
 
+  // Lock document scroll + suppress iOS rubber-band bounce while the gallery
+  // is mounted. On iOS Safari `100vh` doesn't subtract the address bar, so a
+  // page using `h-screen` ends up slightly taller than the visible viewport
+  // and the document scrolls. Combined with `h-[100dvh]` on the root below,
+  // this keeps the gallery exactly viewport-sized on every device.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, []);
+
   const openAt = (loopedIndex: number) => {
     if (dragMovedRef.current) return;
     const realIndex = ((loopedIndex % N) + N) % N;
@@ -348,7 +369,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
 
   return (
     <>
-      <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
+      <div className="relative h-[100dvh] w-screen overflow-hidden bg-black text-white">
         {/* Blurred backdrop tracks the focused photo */}
         <div
           className="absolute inset-0 z-0 bg-cover bg-center transition-[background-image] duration-700"
@@ -378,7 +399,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
           className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-40 bg-gradient-to-t from-black/85 via-black/45 to-transparent"
         />
 
-        {/* Counter pill — fixed in the upper right, doesn't drag with the track */}
+        {/* Counter pill - fixed in the upper right, doesn't drag with the track */}
         <div className="pointer-events-none absolute right-4 top-20 z-20 md:right-8 md:top-24">
           <div className="flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 backdrop-blur-md">
             <span className="h-1.5 w-1.5 rounded-full bg-white/80 shadow-[0_0_10px_rgba(255,255,255,0.6)]" />
@@ -390,7 +411,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
           </div>
         </div>
 
-        {/* Drag-hint chevrons — pulse softly to telegraph the affordance */}
+        {/* Drag-hint chevrons - pulse softly to telegraph the affordance */}
         <div
           aria-hidden
           className="pointer-events-none absolute left-4 top-1/2 z-20 -translate-y-1/2 text-white/40 md:left-6"
@@ -424,7 +445,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
           </svg>
         </div>
 
-        {/* Infinite track. No padding needed — left + right copies fill the slack. */}
+        {/* Infinite track. No padding needed - left + right copies fill the slack. */}
         <div
           ref={trackRef}
           className="absolute left-0 top-1/2 z-10 flex select-none gap-[4vmin]"
@@ -460,7 +481,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
                   className="block h-[56vmin] w-[40vmin] object-cover"
                   style={{ objectPosition: "50% center" }}
                   // Eager on every copy. We render 3×N elements but they share
-                  // only N unique URLs, so the browser dedupes to N fetches —
+                  // only N unique URLs, so the browser dedupes to N fetches -
                   // worth it to make rapid keyboard navigation feel instant.
                   loading="eager"
                   decoding="async"
@@ -485,11 +506,11 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
           </p>
         </div>
 
-        {/* Bottom rail — credit on the left, interaction hint on the right */}
+        {/* Bottom rail - credit on the left, interaction hint on the right */}
         <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex flex-col items-center justify-between gap-2 px-5 text-[10px] uppercase tracking-[0.22em] text-white/45 sm:flex-row sm:px-8">
           <p className="font-mono">
             <span className="text-white/30">©</span> Rituraj Kulshresth
-            <span className="mx-1.5 text-white/20">—</span>
+            <span className="mx-1.5 text-white/20">-</span>
             all photographs are my own work
           </p>
           <p className="hidden font-mono sm:block">

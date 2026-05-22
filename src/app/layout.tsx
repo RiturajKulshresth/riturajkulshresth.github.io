@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Instrument_Serif } from "next/font/google";
+import CursorGlow from "@/components/cursor-glow";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -13,7 +14,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 const SITE_URL = "https://riturajkulshresth.github.io";
-const TITLE = "Rituraj Kulshresth — Software Engineer";
+const TITLE = "Rituraj Kulshresth · Software Engineer";
 const DESCRIPTION =
   "Software engineer working on systems, AI agent platforms, and full-stack product. IIT Jodhpur graduate. Currently building agent infrastructure at WBD.";
 
@@ -37,7 +38,7 @@ const THEME_INIT_SCRIPT = `
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: TITLE, template: "%s · Rituraj Kulshresth" },
+  title: { default: TITLE, template: "Rituraj Kulshresth · %s" },
   description: DESCRIPTION,
   applicationName: "Rituraj Kulshresth",
   authors: [{ name: "Rituraj Kulshresth", url: SITE_URL }],
@@ -114,6 +115,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
+        <CursorGlow />
         {children}
       </body>
     </html>

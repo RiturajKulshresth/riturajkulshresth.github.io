@@ -19,7 +19,7 @@ export default function Hero() {
       <div className="pointer-events-none absolute left-1/2 top-0 h-[520px] w-[820px] -translate-x-1/2 -translate-y-1/3 glow opacity-90" />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
-        {/* Left — typography */}
+        {/* Left - typography */}
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/40 px-3 py-1 text-xs text-[color:var(--color-fg-muted)] backdrop-blur fade-up">
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--color-success)] pulse-dot" />
@@ -114,7 +114,7 @@ export default function Hero() {
           </dl>
         </div>
 
-        {/* Right — illustration "stage" */}
+        {/* Right - illustration "stage" */}
         <div
           className="relative mx-auto w-full max-w-md fade-up lg:mx-0 lg:ml-auto"
           style={{ animationDelay: "120ms" }}

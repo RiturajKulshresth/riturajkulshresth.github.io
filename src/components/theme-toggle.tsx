@@ -17,8 +17,8 @@ export default function ThemeToggle({
 }: {
   className?: string;
   /**
-   * `default` — uses CSS-variable theme tokens.
-   * `overlay` — fixed dark-glass styling, for when the toggle sits on top of
+   * `default` - uses CSS-variable theme tokens.
+   * `overlay` - fixed dark-glass styling, for when the toggle sits on top of
    * media (e.g. the photography gallery) regardless of the user's theme.
    */
   variant?: "default" | "overlay";

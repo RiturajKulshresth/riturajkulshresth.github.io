@@ -1,8 +1,8 @@
 // Photos are hosted on Unsplash under @riturajworkemail.
 // Each entry has three URL variants for performance:
-//   - small:   thumbnail-quality (~400w) — used for the blurred backdrop
-//   - regular: gallery-quality (~1080w) — used in the horizontal track
-//   - full:    print-quality — used in the lightbox
+//   - small:   thumbnail-quality (~400w) - used for the blurred backdrop
+//   - regular: gallery-quality (~1080w) - used in the horizontal track
+//   - full:    print-quality - used in the lightbox
 
 export type Photo = {
   id: string;

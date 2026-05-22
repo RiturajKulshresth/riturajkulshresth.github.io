@@ -25,6 +25,7 @@
   --color-accent: #c4b5fd;
   --color-accent-strong: #a78bfa;
   --color-accent-glow: rgb(167 139 250 / 0.18);
+  --color-cursor-glow: rgb(167 139 250 / 0.28);
   --color-success: #34d399;
   --color-selection-bg: rgb(167 139 250 / 0.32);
   --color-selection-fg: #f5f3ff;
@@ -51,6 +52,7 @@
   --color-accent: #7c3aed;
   --color-accent-strong: #6d28d9;
   --color-accent-glow: rgb(124 58 237 / 0.16);
+  --color-cursor-glow: rgb(124 58 237 / 0.20);
   --color-success: #059669;
   --color-selection-bg: rgb(124 58 237 / 0.22);
   --color-selection-fg: #2e1065;

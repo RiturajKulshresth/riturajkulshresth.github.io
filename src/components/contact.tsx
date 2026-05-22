@@ -66,7 +66,7 @@ export default function Contact() {
                   Availability
                 </dt>
                 <dd className="mt-1.5 text-[color:var(--color-fg-muted)]">
-                  {profile.status} — interesting work in systems, AI platforms,
+                  {profile.status} - interesting work in systems, AI platforms,
                   and full-stack product.
                 </dd>
               </div>
