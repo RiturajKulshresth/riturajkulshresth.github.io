@@ -38,7 +38,7 @@ export default function Navbar() {
       }
     : {
         header:
-          "border-[color:var(--color-border)] bg-[color:var(--color-bg-overlay)] backdrop-blur-xl",
+          "border-[color:var(--color-border)] bg-[color:var(--color-nav-bg)] backdrop-blur-xl",
         headerTransparent: "border-transparent bg-transparent",
         brand: "text-[color:var(--color-fg)]",
         navMuted:
@@ -50,7 +50,7 @@ export default function Navbar() {
         buttonPrimary:
           "bg-[color:var(--color-fg)] text-[color:var(--color-bg)] hover:bg-[color:var(--color-fg-muted)]",
         mobileBg:
-          "border-[color:var(--color-border)] bg-[color:var(--color-bg-overlay)] backdrop-blur-xl",
+          "border-[color:var(--color-border)] bg-[color:var(--color-nav-bg)] backdrop-blur-xl",
         mobileItem:
           "text-[color:var(--color-fg-muted)] hover:bg-[color:var(--color-surface-hover)] hover:text-[color:var(--color-fg)]",
         mobileToggle:

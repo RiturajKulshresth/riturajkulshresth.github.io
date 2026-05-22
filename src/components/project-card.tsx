@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { Project } from "@/lib/data";
 
 export default function ProjectCard({ project }: { project: Project }) {
   const [previewLoaded, setPreviewLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // SVGs and cached GIFs can finish loading before React attaches `onLoad`,
+  // which would leave the image stuck at opacity-0. After mount, we check the
+  // ref's `complete` flag to recover that case.
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setPreviewLoaded(true);
+    }
+  }, []);
+
+  const isExternalLink = Boolean(project.link);
 
   return (
     <a
-      href={project.link}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={project.link ?? undefined}
+      target={isExternalLink ? "_blank" : undefined}
+      rel={isExternalLink ? "noopener noreferrer" : undefined}
+      aria-disabled={!isExternalLink || undefined}
       className="card group flex h-full flex-col overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/30"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(167_139_250_/_0.12),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(34_211_238_/_0.08),transparent_55%)]">
+      <div className="relative aspect-[16/10] overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(96_165_250_/_0.12),transparent_55%)]">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-dots opacity-50"
@@ -24,6 +37,7 @@ export default function ProjectCard({ project }: { project: Project }) {
             animation runs as soon as the card is in view. */}
         {project.preview && (
           <Image
+            ref={imgRef}
             src={project.preview}
             alt=""
             fill
@@ -65,7 +79,7 @@ export default function ProjectCard({ project }: { project: Project }) {
           {project.subtitle}
         </p>
 
-        <p className="mt-3 flex-1 text-sm leading-relaxed text-[color:var(--color-fg-muted)] text-pretty">
+        <p className="mt-3 line-clamp-4 flex-1 text-sm leading-relaxed text-[color:var(--color-fg-muted)] text-pretty">
           {project.description}
         </p>
 

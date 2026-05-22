@@ -1,0 +1,227 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[pdftex]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{fontawesome5}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\hypersetup{hidelinks}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.50in}
+\addtolength{\evensidemargin}{-0.40in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.6in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-7pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+%-------------------------
+% Custom commands
+
+
+\newcommand{\resumeItem}[2]{
+  \item\small{
+    \textbf{#1}{: #2 \vspace{-2pt}}
+  }
+  % \par
+  % \hangindent=1.5em
+}
+
+\newcommand{\resumeItems}[2]{
+  \item\small{
+    \textbf{#1}{:} 
+  \begin{itemize}[label=\textbullet, left=2pt, itemsep=1pt]
+      #2
+    \end{itemize}
+    }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  % \vspace{-1pt}
+  \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & {\small #2} \\
+      {\small#3} & {\small #4} \\
+    \end{tabular*}\vspace{-4pt}
+}
+
+\newcommand{\resumeSubItem}[2]{\resumeItem{#1}{#2}\vspace{-3pt}}
+\newcommand{\resumeSubItems}[2]{\resumeItems{#1}{#2}\vspace{-2pt}}
+
+\renewcommand{\labelitemii}{$\circ$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[left=3pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+%-------------------------------------------
+%%%%%%  CV STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING-----------------
+
+\begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+
+    \textbf{{\large Rituraj Kulshresth}} & Email:\href{mailto:kulshresth.1@alumni.iitj.ac.in}{ kulshresth.1@alumni.iitj.ac.in}\\
+    
+     \href{https://github.com/RiturajKulshresth}{GitHub} \textbar{} \href{https://riturajkulshresth.vercel.app}{Portfolio} & Location: Hyderabad, India \\
+    
+     \href{https://www.linkedin.com/in/rituraj-kulshresth/}{LinkedIn}& Mobile: +91 7004742004 \\
+  
+\end{tabular*}
+% \vspace{-4pt}
+%-----------EDUCATION-----------------
+
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Indian Institute of Technology, Jodhpur}{Jodhpur, Rajasthan}
+      {Bachelor of Technology in Computer Science and Engineering;}{July. 2018 -- June. 2022}
+  \resumeSubHeadingListEnd
+  
+%-----------EXPERIENCE-----------------
+\section{Experience}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+          {Warner Bros. Discovery}{Hyderabad, India}
+          {Software Development Engineer 2}{Nov 2024 - Present}
+          \resumeItemListStart
+            \resumeItems{AI Platform(s)}
+            {
+                \item  Developed an internal multi-agent AI platform used by 11+ engineering and business teams, to build domain-specific chatbots with fine-grained control over tools, data sources (SQL, Text), and model configurations using Vercel AI SDK, FastAPI and  LangChain.
+
+                \item Built an evaluation framework using DeepEval and custom metrics to measure prompt quality and LLM correctness, improving evaluation accuracy by 27\%.
+                
+                \item Refactored the AI platform architecture from a tightly coupled monolith into a backend-first, API-driven platform, enabling multiple internal systems to interact through machine-to-machine integrations.
+
+                \item Drove organization-wide AI architecture strategy by authoring an Architecture and Design document that standardizes observability, evaluation, and prompt management tools; conducted code reviews for a team of 7 engineers.
+
+                \item Optimized infra usage and cost by analyzing traffic and workload patterns to right-size compute and storage on the new IaC stack.
+                
+                \item Led and executed the migration of the entire platform to a new in-house IaC environment during an org split. Migrated codebases, provisioned infrastructure using Terraform/Terragrunt, and maintained zero downtime across all environments.
+
+                \item Achieved 66\% reduction in storage size by optimizing how chat sessions were logged with Vercel AI SDK, eliminated redundancy and improved OpenSearch indexing and query performance.
+                
+                \item Added visualization features for generating custom charts from Databricks and Snowflake data, and enabled ingestion of `.ipynb` notebooks for internal documentation.  
+            }
+        \resumeItemListEnd
+        \vspace{3pt}
+
+    \resumeSubheading
+        {Deloitte}{Hyderabad, India}
+        {Software Engineer (Analyst)}{July 2022 -- Nov 2024}
+        \resumeItemListStart
+            \resumeItems{Outlook add-ins and Document Archival Apps}
+            {
+                \item Developed and deployed S2SACC Outlook add-in using Yeoman and MS GraphAPI, facilitating document transfer to ContentCloud via email, with role-based access based on distribution groups, serving 1000+ users
+                
+                \item Developed S2EDS Outlook add-in used to send documents to enterprise servers from mailbox using ReactJs and Yeoman, serving 500+ users.
+
+                \item Migrated services from Mule ESB to AWS Lambda, reducing compute costs and improving performance for the Document Archival system. Maintained 4 critical Java applications, ensuring seamless business operations.
+                
+                \item Developed the UI for the Document Upload interface of the DocuEdge Archiving Solution using AngularJS and Syncfusion, currently serving 2 client organizations.  
+            }
+            % \resumeItems{SystemWare}
+            % {
+            %     % \item Provided technical support and troubleshooting for SystemWare, addressing various issues reported by users
+            %     \item Implemented automated daily health check procedures in the SystemWare environment, resulting in a time savings of 15 hours per month for the team using powershell amd mainframe.
+            % }
+            % \resumeItems{DocuEdge Capture Page}
+            % {
+            %     \item Programmed and enhanced the UI for the Capture Page of DocuEdge Archiving Solution using AngularJS and Syncfusiuon, currently serving 2 client organizations.
+            % }
+            % \resumeItems{Mainframe Migration}
+            % {
+            %     \item Spearheaded the development of 70+ scripts to ensure secure data migration restoring 4000+ Documents using JCL and Mainframe.
+            %     % \item Proficiently restored 4000+ Documents from Mobius to SystemWare Content Cloud using JCL and Mainframe.
+            % }
+            % \resumeItems{OpenText Upgrade}
+            % {
+            %     \item Successfully led the upgrade of client's OpenText landscape and played a pivotal role in enhancement of 10 servers.
+            % }
+        \resumeItemListEnd
+        
+      %   \resumeSubheading
+      %     {Oyo}{Gurugram, Haryana}
+      %     {Analyst}{Summer 2021}
+      %     \resumeItemListStart
+      %       \resumeItems{Onboarding Platform}
+      %         {
+      %           \item Streamlined onboarding for consumers via Oyo Self Onboarding platform, improving android app user experience
+      %           % \item Applied testing methodologies and creatively resolved issues for a seamless onboarding process
+      %           }
+      %     \resumeItemListEnd
+    \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\section{Projects}
+    \resumeSubHeadingListStart
+        \resumeSubItem{\href{https://github.com/RiturajKulshresth/RustyBun}{RustyBun}}
+            {Published RustyBun, a clipboard management application designed to streamline your workflow by providing convenient access to clipboard history on Debian-based Linux distributions}
+        \resumeSubItem{X86 Architecture OS}
+            {Built a 32-bit operating system with keyboard input, VGG output driver, and a functional shell for basic tasks using Assembly and C}
+        \resumeSubItem{RGB face video data to Core body Temperature}
+            {Implemented CNN models using TensorFlow for core body temperature prediction using diverse image data (NIR, Hyper-spectral, RGB) to achieve 60\% accuracy}
+        % \resumeSubItem{Anomaly detection in Wikipedia articles}
+        %   {Developed a graph-based structure to enhance anomaly detection in Wikipedia articles using viewership count for improved efficiency}
+        % \resumeSubItem{Hashtag Analysis}
+        %   {Analyzed hashtag-driven social networks on Twitter and Koo using Selenium and Pandas to gauge real-world impact and structure, with a focus on popular societal hashtags for successful online engagement}
+        % \resumeSubItem{Edge based knowledge inference for InVANETs}
+        %   {Reduced the data transferred between vehicles and RSUs using NS3 \& SUMO to minimize RSU processing power needs by 71\% and enable calculations regardless of network strength}
+        
+         % \resumeSubItem{Arrhythmia detection in ECG Signals}
+         %   {Created a Matlab application for ECG signal analysis, heart rate detection, and to identify type of arrhythmia}
+       % \resumeSubItem{Remote Mouse}
+       %     {Android application using Java enabling an Android phone to function as a Bluetooth-based mouse}
+        % the online booking system sth built using C++
+        % \resumeSubItem{Kakuro solver}
+        %    {Built an application to solve a game of Kakuro }
+    \resumeSubHeadingListEnd
+%
+%--------PROGRAMMING SKILLS------------
+\section{Skills}
+    \resumeSubHeadingListStart
+        \resumeSubItem
+            {Languages} {Python, C/C++, JavaScript/TypeScript, Rust, Java, Assembly}
+        \resumeSubItem
+            {Tech \& Tools} {LangGraph, LangChain, OpenAI SDK, Vercel AI SDK, DeepEval, FastAPI, Next.js, MERN, Electron, NS3, TensorFlow, SUMO, MATLAB, Yeoman}
+        \resumeSubItem
+            {Cloud \& DevOps}{AWS (EKS, OpenSearch, Lambda, S3, API Gateway), Kubernetes, Docker, Terraform, Terragrunt, Git, Mainframe (z/OS)}
+ \resumeSubHeadingListEnd
+
+%--------Achievements------------
+ \section{Accolades}
+  \resumeSubHeadingListStart
+      \resumeSubItem{KVPY}
+      {Recognized as a Kishore Vaigyanik Protsahan Yojana Scholar in 2017-2018}
+    \resumeSubItem{Deloitte}
+      {Honored with 3 Excellence Awards for development of the S2SACC Add-in and the OpenText Server upgrade}
+  \resumeSubHeadingListEnd
+%-------------------------------------------
+\end{document}

@@ -16,7 +16,7 @@ const instrumentSerif = Instrument_Serif({
 const SITE_URL = "https://riturajkulshresth.github.io";
 const TITLE = "Rituraj Kulshresth · Software Engineer";
 const DESCRIPTION =
-  "Software engineer working on systems, AI agent platforms, and full-stack product. IIT Jodhpur graduate. Currently building agent infrastructure at WBD.";
+  "Software engineer specialising in enterprise AI platforms. Designed and shipped three production agent and RAG platforms at Warner Bros. Discovery used by 11+ internal teams. IIT Jodhpur, B.Tech CSE.";
 
 // Runs synchronously before paint to prevent flash-of-wrong-theme.
 // Reads localStorage, falls back to system preference, sets data-theme + color-scheme.
@@ -46,8 +46,13 @@ export const metadata: Metadata = {
   keywords: [
     "Rituraj Kulshresth",
     "Software Engineer",
+    "AI Platforms",
     "AI Agents",
-    "Systems",
+    "RAG",
+    "LangGraph",
+    "LangChain",
+    "AWS Bedrock",
+    "Warner Bros. Discovery",
     "IIT Jodhpur",
     "Next.js",
     "TypeScript",
@@ -85,7 +90,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f8f8" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
   width: "device-width",

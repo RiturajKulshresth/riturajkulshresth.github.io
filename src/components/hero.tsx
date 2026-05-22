@@ -3,7 +3,7 @@ import Link from "next/link";
 import { profile, RESUME_PATH } from "@/lib/data";
 
 const floatingTags = [
-  { label: "TypeScript", className: "top-6 -left-3 md:-left-6", delay: "200ms" },
+  { label: "LangGraph", className: "top-6 -left-3 md:-left-6", delay: "200ms" },
   { label: "Python", className: "top-1/3 -right-3 md:-right-6", delay: "320ms" },
   { label: "Next.js", className: "bottom-12 -left-5 md:-left-10", delay: "440ms" },
   { label: "FastAPI", className: "-bottom-3 right-6 md:right-12", delay: "560ms" },
@@ -41,8 +41,7 @@ export default function Hero() {
             className="mt-7 max-w-xl text-[17px] leading-relaxed text-[color:var(--color-fg-muted)] text-pretty fade-up"
             style={{ animationDelay: "180ms" }}
           >
-            Software engineer based in {profile.location.split(",")[0]}.{" "}
-            {profile.bio}
+            Based in {profile.location.split(",")[0]}. {profile.bio}
           </p>
 
           <div
@@ -98,8 +97,8 @@ export default function Hero() {
             style={{ animationDelay: "360ms" }}
           >
             {[
-              { label: "Focus", value: "Systems & AI" },
-              { label: "Currently", value: "WBD" },
+              { label: "Focus", value: "AI Platforms" },
+              { label: "Currently", value: "WBD · SDE 2" },
               { label: "Education", value: "IIT Jodhpur" },
             ].map((item) => (
               <div key={item.label}>
@@ -122,7 +121,7 @@ export default function Hero() {
           {/* Soft accent halo */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-8 rounded-[2rem] bg-gradient-to-br from-[color:var(--color-accent-glow)] via-transparent to-cyan-500/10 blur-2xl"
+            className="pointer-events-none absolute -inset-8 rounded-[2rem] bg-gradient-to-br from-[color:var(--color-accent-glow)] via-transparent to-[color:var(--color-accent-secondary-glow)] blur-2xl"
           />
 
           <div className="relative overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/60 shadow-[var(--shadow-card)] backdrop-blur">
@@ -139,7 +138,7 @@ export default function Hero() {
             </div>
 
             {/* Illustration */}
-            <div className="relative aspect-square overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(167_139_250_/_0.12),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(34_211_238_/_0.08),transparent_55%)] p-6">
+            <div className="relative aspect-square overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(96_165_250_/_0.12),transparent_55%)] p-6">
               <Image
                 src="/images/coding.svg"
                 alt="Developer at work illustration"
