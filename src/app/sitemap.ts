@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 const BASE_URL = "https://riturajkulshresth.github.io";
 
-// Required by Next.js 15 when `output: "export"` is set - tells the build to
+// Required by Next.js 16 when `output: "export"` is set - tells the build to
 // statically generate /sitemap.xml at compile time instead of treating the
 // route handler as potentially dynamic.
 export const dynamic = "force-static";

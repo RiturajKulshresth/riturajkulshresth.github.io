@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import type { Project } from "@/lib/data";
+import { ArrowUpRight } from "./icons";
 
 export default function ProjectCard({ project }: { project: Project }) {
   const [previewLoaded, setPreviewLoaded] = useState(false);
@@ -31,15 +31,13 @@ export default function ProjectCard({ project }: { project: Project }) {
         {/* Always-playing preview (GIF or static). Mounted eagerly so the
             animation runs as soon as the card is in view. */}
         {project.preview && (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             ref={imgRef}
             src={project.preview}
             alt=""
-            fill
-            unoptimized
-            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             onLoad={() => setPreviewLoaded(true)}
-            className={`object-cover transition-opacity duration-500 ${
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
               previewLoaded ? "opacity-100" : "opacity-0"
             }`}
           />
@@ -89,19 +87,7 @@ export default function ProjectCard({ project }: { project: Project }) {
               </span>
             ))}
           </div>
-          <svg
-            className="h-3.5 w-3.5 shrink-0 text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]"
-            viewBox="0 0 12 12"
-            fill="none"
-          >
-            <path
-              d="M3 9L9 3M9 3H4M9 3V8"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]" />
         </div>
       </div>
     </a>

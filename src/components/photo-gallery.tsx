@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import clsx from "clsx";
 import type { Photo } from "@/lib/photography";
+import { useLockBodyScroll } from "@/lib/hooks";
 import PhotoLightbox from "./photo-lightbox";
+import { ChevronLeft, ChevronRight } from "./icons";
 
 /**
  * Infinite-cycle drag-to-pan gallery.
@@ -54,41 +56,50 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
     [photos]
   );
 
-  /** Re-paint each image's object-position from its actual screen location. */
-  const updateParallax = useCallback(() => {
-    const vw = window.innerWidth;
-    const x = stateRef.current.x;
-    for (const img of imageRefs.current) {
-      if (!img) continue;
-      const screenCenter = img.offsetLeft + img.offsetWidth / 2 + x;
-      const pct = Math.max(0, Math.min(100, (screenCenter / vw) * 100));
-      img.style.objectPosition = `${pct}% center`;
-    }
-  }, []);
-
   /**
-   * Update which photo is currently nearest the viewport centre.
-   * Iterates over ALL rendered copies - after the silent wrap, the image
-   * physically at centre may belong to the left or right copy, so a middle-only
-   * search would snap to the wrong index. We then mod by N to recover the
-   * real photo index.
+   * Single pass over every rendered image that does three jobs at once:
+   *   (1) writes `object-position` so each image's parallax tracks its
+   *       on-screen location,
+   *   (2) finds the image nearest the viewport centre (iterating ALL copies
+   *       because the silent wrap means the centred image can belong to the
+   *       left or right copy; `i % N` recovers the real photo index), and
+   *   (3) returns the x offset that would perfectly centre that image.
+   *
+   * Combining the three uses of `img.offsetLeft + img.offsetWidth / 2 + x`
+   * into one walk halves DOM reads per frame and keeps the snap-x derivation
+   * trivially consistent with the currentIndex it just set.
+   *
+   * `setCurrentIndex` with an unchanged value bails out at React's
+   * `Object.is` check, so this is safe to call from every input pipeline.
    */
-  const updateCenteredIndex = useCallback(() => {
+  const recompute = useCallback(() => {
     const vw = window.innerWidth;
     const x = stateRef.current.x;
-    let closest = 0;
+    let closestI = 0;
+    let closestImg: HTMLImageElement | null = null;
     let minDistance = Infinity;
+
     for (let i = 0; i < imageRefs.current.length; i++) {
       const img = imageRefs.current[i];
       if (!img) continue;
       const screenCenter = img.offsetLeft + img.offsetWidth / 2 + x;
+      const pct = Math.max(0, Math.min(100, (screenCenter / vw) * 100));
+      img.style.objectPosition = `${pct}% center`;
       const d = Math.abs(screenCenter - vw / 2);
       if (d < minDistance) {
         minDistance = d;
-        closest = ((i % N) + N) % N;
+        closestI = ((i % N) + N) % N;
+        closestImg = img;
       }
     }
-    setCurrentIndex(closest);
+    setCurrentIndex(closestI);
+
+    // x that would perfectly centre the closest image:
+    //   img.screenCenter = img.offsetLeft + img.offsetWidth/2 + x = vw/2
+    //   ⇒ snapX = vw/2 − img.offsetWidth/2 − img.offsetLeft
+    return closestImg
+      ? vw / 2 - closestImg.offsetWidth / 2 - closestImg.offsetLeft
+      : x;
   }, [N]);
 
   /** Write `x` to the track, wrapping it back to the middle copy if it's drifted too far. */
@@ -115,10 +126,9 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
 
       stateRef.current.x = x;
       track.style.transform = `translate3d(${x}px, -50%, 0)`;
-      updateParallax();
-      updateCenteredIndex();
+      recompute();
     },
-    [updateParallax, updateCenteredIndex]
+    [recompute]
   );
 
   /** Measure the track + images, set the initial centered position. */
@@ -257,15 +267,11 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
 
         stateRef.current.x = x;
         track.style.transform = `translate3d(${x}px, -50%, 0)`;
-
-        const vw = window.innerWidth;
-        for (const img of imageRefs.current) {
-          if (!img) continue;
-          const screenCenter = img.offsetLeft + img.offsetWidth / 2 + x;
-          const pct = Math.max(0, Math.min(100, (screenCenter / vw) * 100));
-          img.style.objectPosition = `${pct}% center`;
-        }
-        updateCenteredIndex();
+        // Same single-pass parallax + centred-index update as a drag frame.
+        // We can't reuse applyX here because it silently wraps x mid-tween,
+        // which would jump the visible motion onto the wrong side of the
+        // wrap boundary; the wrap is applied invisibly after the tween ends.
+        recompute();
 
         if (t < 1) {
           animRafRef.current = requestAnimationFrame(step);
@@ -278,34 +284,8 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
       };
       animRafRef.current = requestAnimationFrame(step);
     },
-    [applyX, updateCenteredIndex]
+    [applyX, recompute]
   );
-
-  /**
-   * Returns the x that would perfectly centre whichever image is currently
-   * closest to the viewport centre. Used by the keyboard nav to recover from
-   * an off-centre drag position with a single snap before stepping.
-   */
-  const snapXForCurrentCenter = useCallback(() => {
-    const vw = window.innerWidth;
-    const x = stateRef.current.x;
-    let closest: HTMLImageElement | null = null;
-    let minDistance = Infinity;
-    for (const img of imageRefs.current) {
-      if (!img) continue;
-      const screenCenter = img.offsetLeft + img.offsetWidth / 2 + x;
-      const d = Math.abs(screenCenter - vw / 2);
-      if (d < minDistance) {
-        minDistance = d;
-        closest = img;
-      }
-    }
-    if (!closest) return x;
-    // img.screenCenter = img.offsetLeft + img.offsetWidth/2 + x = vw/2
-    // ⇒ x = vw/2 − img.offsetWidth/2 − img.offsetLeft
-    return vw / 2 - closest.offsetWidth / 2 - closest.offsetLeft;
-  }, []);
-
 
   useEffect(() => {
     const onWheel = (e: WheelEvent) => {
@@ -349,7 +329,10 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
       // If the user just dragged and left the focused image off-centre, the
       // first arrow press should snap it into the centre (not step past it).
       // Once centred, subsequent presses advance/retreat by one image.
-      const snapX = snapXForCurrentCenter();
+      // `recompute()` returns the snap-x for the closest image as a side
+      // effect of its single-pass walk - we already pay for that walk on
+      // every drag frame, so reusing it here is essentially free.
+      const snapX = recompute();
       if (Math.abs(stateRef.current.x - snapX) > 2) {
         animateTo(snapX);
         return;
@@ -362,7 +345,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightboxOpen, animateTo, snapXForCurrentCenter]);
+  }, [lightboxOpen, animateTo, recompute]);
 
   // Cancel any in-flight RAF tween on unmount.
   useEffect(() => {
@@ -371,26 +354,10 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
     };
   }, []);
 
-  // Lock document scroll + suppress iOS rubber-band bounce while the gallery
-  // is mounted. On iOS Safari `100vh` doesn't subtract the address bar, so a
-  // page using `h-screen` ends up slightly taller than the visible viewport
-  // and the document scrolls. Combined with `h-[100dvh]` on the root below,
-  // this keeps the gallery exactly viewport-sized on every device.
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-    const prevBodyOverscroll = body.style.overscrollBehavior;
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    body.style.overscrollBehavior = "none";
-    return () => {
-      html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
-      body.style.overscrollBehavior = prevBodyOverscroll;
-    };
-  }, []);
+  // Fullscreen gallery: lock html + body overflow and suppress iOS
+  // rubber-band so the page can't scroll out from under the viewport-sized
+  // surface. Paired with `h-[100dvh]` on the root below.
+  useLockBodyScroll({ lockHtml: true, suppressOverscroll: true });
 
   const openAt = (loopedIndex: number) => {
     if (dragMovedRef.current) return;
@@ -453,33 +420,13 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
           aria-hidden
           className="pointer-events-none absolute left-4 top-1/2 z-20 -translate-y-1/2 text-white/40 md:left-6"
         >
-          <svg
-            className="h-5 w-5 animate-pulse"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <ChevronLeft className="h-5 w-5 animate-pulse" strokeWidth="1.5" />
         </div>
         <div
           aria-hidden
           className="pointer-events-none absolute right-4 top-1/2 z-20 -translate-y-1/2 text-white/40 md:right-6"
         >
-          <svg
-            className="h-5 w-5 animate-pulse"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          <ChevronRight className="h-5 w-5 animate-pulse" strokeWidth="1.5" />
         </div>
 
         {/* Infinite track. No padding needed - left + right copies fill the slack. */}
@@ -538,7 +485,6 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
             {currentTitle}
           </p>
           <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-white/45">
-            No. {indexLabel} <span className="mx-1 text-white/25">·</span>{" "}
             Frame {indexLabel} of {totalLabel}
           </p>
         </div>

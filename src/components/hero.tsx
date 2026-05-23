@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { profile, RESUME_PATH } from "@/lib/data";
 
@@ -132,12 +131,15 @@ export default function Hero() {
 
             {/* Illustration */}
             <div className="relative aspect-square overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(37_150_190_/_0.14),transparent_55%)] p-6">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/images/coding.svg"
                 alt="Developer at work illustration"
                 width={480}
                 height={480}
-                priority
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 className="relative z-10 h-full w-full object-contain"
               />
               {/* Subtle inner grid */}

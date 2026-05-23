@@ -1,5 +1,5 @@
 import { projects } from "@/lib/data";
-import { SectionHeader } from "./experience";
+import SectionHeader from "./section-header";
 import ProjectCard from "./project-card";
 
 export default function Projects() {

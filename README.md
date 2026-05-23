@@ -1,12 +1,12 @@
 # riturajkulshresth.github.io
 
-Personal portfolio of [Rituraj Kulshresth](https://riturajkulshresth.github.io) — built with Next.js 15, React 19, TypeScript, and Tailwind CSS v4. Statically exported and deployed to GitHub Pages.
+Personal portfolio of [Rituraj Kulshresth](https://riturajkulshresth.github.io) — built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4. Statically exported and deployed to GitHub Pages.
 
 ## Stack
 
 | Layer       | Choice                                |
 | ----------- | ------------------------------------- |
-| Framework   | Next.js 15 (App Router, static export) |
+| Framework   | Next.js 16 (App Router, static export) |
 | Language    | TypeScript 5                          |
 | Styling     | Tailwind CSS v4                       |
 | Typography  | Geist Sans, Geist Mono, Instrument Serif |

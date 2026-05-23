@@ -1,5 +1,6 @@
 import { profile, socialLinks } from "@/lib/data";
-import { SectionHeader } from "./experience";
+import SectionHeader from "./section-header";
+import { ArrowUpRight } from "./icons";
 
 export default function Contact() {
   return (
@@ -23,19 +24,7 @@ export default function Contact() {
               className="group flex max-w-full flex-wrap items-baseline gap-2 font-display text-2xl italic text-[color:var(--color-fg)] sm:text-3xl md:text-4xl"
             >
               <span className="link-underline break-all">{profile.email}</span>
-              <svg
-                className="h-5 w-5 self-center text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]"
-                viewBox="0 0 12 12"
-                fill="none"
-              >
-                <path
-                  d="M3 9L9 3M9 3H4M9 3V8"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <ArrowUpRight className="h-5 w-5 self-center text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]" />
             </a>
 
             <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 text-sm">
@@ -92,19 +81,7 @@ export default function Contact() {
                     <span className="text-[color:var(--color-fg)]">
                       {link.label}
                     </span>
-                    <svg
-                      className="h-3.5 w-3.5 text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                    >
-                      <path
-                        d="M3 9L9 3M9 3H4M9 3V8"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]" />
                   </a>
                 </li>
               ))}

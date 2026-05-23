@@ -1,5 +1,5 @@
 import { skillGroups } from "@/lib/data";
-import { SectionHeader } from "./experience";
+import SectionHeader from "./section-header";
 
 export default function Skills() {
   return (

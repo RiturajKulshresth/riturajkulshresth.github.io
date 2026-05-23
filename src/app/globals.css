@@ -37,10 +37,8 @@
      than the previous sky-blue. */
   --color-accent: #4ade80;
   --color-accent-strong: #22c55e;
-  --color-accent-glow: rgb(34 197 94 / 0.20);
   --color-accent-secondary: #2596be;
   --color-accent-secondary-strong: #1c7a9c;
-  --color-accent-secondary-glow: rgb(37 150 190 / 0.20);
   /* Cursor reticle stroke + dot. Higher alpha than a soft blob because
      the cursor is now a crisp ring, not a halo. */
   --color-cursor-glow: rgb(34 197 94 / 0.55);
@@ -81,13 +79,11 @@
      site's CTAs. */
   --color-accent: #16a34a;
   --color-accent-strong: #15803d;
-  --color-accent-glow: rgb(22 163 74 / 0.22);
   /* Secondary teal - the "to" tone of two-color gradients (hero italic,
-     hero halo, aurora wash) and decorative glows. Replaces the previous
-     sky-blue which fought the green. */
+     hero halo, aurora wash). Replaces the previous sky-blue which fought
+     the green. */
   --color-accent-secondary: #2596be;
   --color-accent-secondary-strong: #1c7a9c;
-  --color-accent-secondary-glow: rgb(37 150 190 / 0.22);
   /* Cursor reticle stroke + dot - crisp ring, not a halo, so the alpha is
      tuned for a visible 1.5px stroke rather than a soft bloom. */
   --color-cursor-glow: rgb(22 163 74 / 0.55);
@@ -101,6 +97,52 @@
   --traffic-amber: rgb(245 158 11 / 0.85);
   --traffic-green: rgb(16 185 129 / 0.85);
   color-scheme: light;
+}
+
+/* ─── Navbar surface tokens ──────────────────────────────────────
+   The navbar reads its colors from these vars so its JSX has a single
+   set of class strings regardless of context. Defaults fall back to the
+   active theme tokens above. The /photography route adds
+   `data-nav-overlay="true"` on <header> (set in navbar.tsx) which swaps
+   these out for white-on-black "media chrome" values - the override is
+   scoped to the header subtree so no other CSS-var consumer is affected.
+   The four `--color-nav-*-text` vars exist because in overlay mode each
+   element wants its own subtly different alpha (55/65/70/75); collapsing
+   them to one --color-fg-muted would lose that intent. */
+header {
+  --color-nav-link-muted: var(--color-fg-muted);
+  --color-nav-ghost-text: var(--color-fg-muted);
+  --color-nav-mobile-link: var(--color-fg-muted);
+  --color-nav-mobile-toggle: var(--color-fg-muted);
+  --color-nav-underline: var(--color-accent-strong);
+  --color-nav-mobile-bg: var(--color-nav-bg);
+  --color-nav-primary-bg-hover: var(--color-fg-muted);
+}
+
+header[data-nav-overlay="true"] {
+  --color-fg: #ffffff;
+  --color-bg: #000000;
+  --color-border: rgb(255 255 255 / 0.10);
+  --color-border-strong: rgb(255 255 255 / 0.40);
+  --color-surface-hover: rgb(255 255 255 / 0.10);
+  --color-nav-bg: rgb(0 0 0 / 0.45);
+  --color-nav-mobile-bg: rgb(0 0 0 / 0.80);
+  --color-nav-link-muted: rgb(255 255 255 / 0.55);
+  --color-nav-ghost-text: rgb(255 255 255 / 0.75);
+  --color-nav-mobile-link: rgb(255 255 255 / 0.65);
+  --color-nav-mobile-toggle: rgb(255 255 255 / 0.70);
+  --color-nav-underline: rgb(255 255 255 / 0.85);
+  --color-nav-primary-bg-hover: rgb(255 255 255 / 0.85);
+}
+
+/* Matches the original `supports-[backdrop-filter]:bg-black/35` fallback:
+   browsers that can blur the surface drop the alpha further so the blur
+   reads stronger; browsers without backdrop-filter keep the more opaque
+   0.45 fallback so the navbar stays legible against bright photos. */
+@supports (backdrop-filter: blur(1px)) {
+  header[data-nav-overlay="true"] {
+    --color-nav-bg: rgb(0 0 0 / 0.35);
+  }
 }
 
 /* ─── Base ─────────────────────────────────────────────────────── */
@@ -230,19 +272,6 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-  }
-
-  /* Page-level halo behind the hero headline. Uses the secondary (teal)
-     glow rather than the green accent so the background stays clean and
-     the green is reserved for purposeful UI accents (CTAs, status dot,
-     accent text). */
-  .glow {
-    background: radial-gradient(
-      circle at center,
-      var(--color-accent-secondary-glow),
-      transparent 70%
-    );
-    filter: blur(20px);
   }
 
   .link-underline {

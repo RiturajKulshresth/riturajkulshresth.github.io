@@ -1,4 +1,5 @@
 import { experience } from "@/lib/data";
+import SectionHeader from "./section-header";
 
 export default function Experience() {
   return (
@@ -63,31 +64,5 @@ export default function Experience() {
         </ol>
       </div>
     </section>
-  );
-}
-
-export function SectionHeader({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="max-w-2xl">
-      <p className="font-mono text-xs uppercase tracking-[0.2em] text-[color:var(--color-accent)]">
-        {eyebrow}
-      </p>
-      <h2 className="mt-3 text-3xl tracking-tight text-[color:var(--color-fg)] md:text-4xl">
-        {title}
-      </h2>
-      {description && (
-        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-[color:var(--color-fg-muted)] text-pretty">
-          {description}
-        </p>
-      )}
-    </div>
   );
 }

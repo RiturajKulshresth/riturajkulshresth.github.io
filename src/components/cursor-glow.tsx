@@ -19,18 +19,14 @@ import { usePathname } from "next/navigation";
  *     when the user prefers reduced motion.
  *   - z-index is below the navbar (50) and any modals/lightbox (100), so the
  *     reticle stays ambient under interactive chrome rather than tinting it.
+ *
+ * The animation loop reads from a `trailers` array, so adding a third
+ * trailing element (e.g. a slower outer halo) is just one more entry.
  */
 export default function CursorGlow() {
   const pathname = usePathname();
   const dotRef = useRef<HTMLDivElement | null>(null);
   const ringRef = useRef<HTMLDivElement | null>(null);
-  const target = useRef({ x: 0, y: 0 });
-  // Each element keeps its own current position so they can lerp at
-  // independent speeds toward the same target.
-  const dotPos = useRef({ x: 0, y: 0 });
-  const ringPos = useRef({ x: 0, y: 0 });
-  const visible = useRef(false);
-  const rafId = useRef<number | null>(null);
 
   const isPhotography = pathname?.startsWith("/photography") ?? false;
 
@@ -45,54 +41,56 @@ export default function CursorGlow() {
     const ringEl = ringRef.current;
     if (!dotEl || !ringEl) return;
 
-    const onMove = (e: MouseEvent) => {
-      target.current.x = e.clientX;
-      target.current.y = e.clientY;
-      if (!visible.current) {
-        // Snap both on first move so they don't fly in from (0, 0).
-        dotPos.current.x = e.clientX;
-        dotPos.current.y = e.clientY;
-        ringPos.current.x = e.clientX;
-        ringPos.current.y = e.clientY;
-        visible.current = true;
-        dotEl.style.opacity = "1";
-        ringEl.style.opacity = "1";
-      }
-    };
-
-    const onLeave = () => {
-      visible.current = false;
-      dotEl.style.opacity = "0";
-      ringEl.style.opacity = "0";
-    };
-
     // Differential lerp:
     //   - Dot: high ease so it feels glued to the pointer (near-direct).
     //   - Ring: low ease so it drifts in and "catches up" to the dot, which
     //     visually decouples the two and reads as two separate elements.
-    const dotEase = 0.55;
-    const ringEase = 0.14;
+    const trailers = [
+      { el: dotEl, pos: { x: 0, y: 0 }, ease: 0.55 },
+      { el: ringEl, pos: { x: 0, y: 0 }, ease: 0.14 },
+    ];
+
+    const target = { x: 0, y: 0 };
+    let visible = false;
+    let rafId: number | null = null;
+
+    const onMove = (e: MouseEvent) => {
+      target.x = e.clientX;
+      target.y = e.clientY;
+      if (!visible) {
+        // Snap all trailers to the pointer on first move so they don't fly
+        // in from (0, 0).
+        for (const t of trailers) {
+          t.pos.x = e.clientX;
+          t.pos.y = e.clientY;
+          t.el.style.opacity = "1";
+        }
+        visible = true;
+      }
+    };
+
+    const onLeave = () => {
+      visible = false;
+      for (const t of trailers) t.el.style.opacity = "0";
+    };
 
     const tick = () => {
-      dotPos.current.x += (target.current.x - dotPos.current.x) * dotEase;
-      dotPos.current.y += (target.current.y - dotPos.current.y) * dotEase;
-      ringPos.current.x += (target.current.x - ringPos.current.x) * ringEase;
-      ringPos.current.y += (target.current.y - ringPos.current.y) * ringEase;
-
-      dotEl.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
-      ringEl.style.transform = `translate3d(${ringPos.current.x}px, ${ringPos.current.y}px, 0) translate(-50%, -50%)`;
-
-      rafId.current = requestAnimationFrame(tick);
+      for (const t of trailers) {
+        t.pos.x += (target.x - t.pos.x) * t.ease;
+        t.pos.y += (target.y - t.pos.y) * t.ease;
+        t.el.style.transform = `translate3d(${t.pos.x}px, ${t.pos.y}px, 0) translate(-50%, -50%)`;
+      }
+      rafId = requestAnimationFrame(tick);
     };
 
     window.addEventListener("mousemove", onMove);
     document.documentElement.addEventListener("mouseleave", onLeave);
-    rafId.current = requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
 
     return () => {
       window.removeEventListener("mousemove", onMove);
       document.documentElement.removeEventListener("mouseleave", onLeave);
-      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [isPhotography]);
 

@@ -106,6 +106,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${GeistSans.variable} ${GeistMono.variable} ${instrumentSerif.variable}`}
+      // Opt in to Next 16's smooth-scroll-aware route transitions. Without
+      // this, the `scroll-behavior: smooth` on <html> (set in globals.css)
+      // causes route changes to animate between scroll positions, which
+      // reads as jank; the attribute tells Next to suppress it for the
+      // duration of a navigation while keeping it on for in-page anchors.
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { Photo } from "@/lib/photography";
+import { useLockBodyScroll } from "@/lib/hooks";
+import { ChevronLeft, ChevronRight, XClose } from "./icons";
 
 export default function PhotoLightbox({
   photos,
@@ -21,11 +23,9 @@ export default function PhotoLightbox({
     setLoaded(false);
   }, [index]);
 
-  // Lock body scroll while open + bind keyboard shortcuts.
-  useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+  useLockBodyScroll();
 
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") {
@@ -36,11 +36,7 @@ export default function PhotoLightbox({
       }
     };
     window.addEventListener("keydown", onKey);
-
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [index, onClose, onIndexChange, photos.length]);
 
   if (!photo) return null;
@@ -63,17 +59,7 @@ export default function PhotoLightbox({
         }}
         className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 backdrop-blur transition hover:border-white/30 hover:bg-black/60 md:right-6 md:top-6"
       >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <XClose className="h-4 w-4" />
       </button>
 
       {/* Prev / next */}
@@ -86,17 +72,7 @@ export default function PhotoLightbox({
         }}
         className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 p-2.5 text-white/90 backdrop-blur transition hover:border-white/30 hover:bg-black/60 md:left-6"
       >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
+        <ChevronLeft className="h-4 w-4" />
       </button>
 
       <button
@@ -108,17 +84,7 @@ export default function PhotoLightbox({
         }}
         className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/15 bg-black/40 p-2.5 text-white/90 backdrop-blur transition hover:border-white/30 hover:bg-black/60 md:right-6"
       >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M9 18l6-6-6-6" />
-        </svg>
+        <ChevronRight className="h-4 w-4" />
       </button>
 
       {/* Image */}
