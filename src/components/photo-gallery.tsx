@@ -21,6 +21,10 @@ import PhotoLightbox from "./photo-lightbox";
  *     (0% when the image's centre is at the left edge → 100% at the right
  *     edge), so the depth effect is purely a function of where the image
  *     sits on screen, not of any global drag percentage.
+ *   - Inputs supported: mouse drag, touch drag, two-finger trackpad scroll,
+ *     mouse wheel, and arrow-key step. All of them feed the same `applyX`
+ *     pipeline, so wrapping, parallax, and the centred-index search behave
+ *     identically regardless of how the user drives the carousel.
  */
 const COPIES = 3;
 
@@ -302,6 +306,39 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
     return vw / 2 - closest.offsetWidth / 2 - closest.offsetLeft;
   }, []);
 
+
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (lightboxOpen) return;
+
+
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+      const raw = absX > absY ? e.deltaX : e.deltaY;
+      if (raw === 0) return;
+
+      let scale = 1;
+      if (e.deltaMode === 1) scale = 16;
+      else if (e.deltaMode === 2) scale = window.innerHeight;
+
+      const isMouseWheel = e.deltaMode !== 0 || Math.abs(raw) >= 30;
+      const SENSITIVITY = isMouseWheel ? 0.35 : 2;
+
+      e.preventDefault();
+
+      if (animRafRef.current !== null) {
+        cancelAnimationFrame(animRafRef.current);
+        animRafRef.current = null;
+      }
+
+      applyX(stateRef.current.x - raw * scale * SENSITIVITY);
+      stateRef.current.prevX = stateRef.current.x;
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [lightboxOpen, applyX]);
+
   // Arrow-key nav.
   useEffect(() => {
     if (lightboxOpen) return;
@@ -514,8 +551,8 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
             all photographs are my own work
           </p>
           <p className="hidden font-mono sm:block">
-            Drag <span className="text-white/25">·</span> click to enlarge{" "}
-            <span className="text-white/25">·</span> ← → to step
+            Drag or scroll <span className="text-white/25">·</span> click to
+            enlarge <span className="text-white/25">·</span> ← → to step
           </p>
         </div>
       </div>
