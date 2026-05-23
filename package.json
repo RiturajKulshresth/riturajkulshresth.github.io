@@ -2,7 +2,7 @@
   "name": "riturajkulshresth-portfolio",
   "version": "2.0.0",
   "private": true,
-  "description": "Personal portfolio of Rituraj Kulshresth — built with Next.js 15, React 19, TypeScript, and Tailwind CSS v4.",
+  "description": "Personal portfolio of Rituraj Kulshresth — built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4.",
   "engines": {
     "node": ">=20.10.0"
   },
@@ -16,7 +16,7 @@
   "dependencies": {
     "clsx": "2.1.1",
     "geist": "1.5.1",
-    "next": "15.3.3",
+    "next": "16.2.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "5.5.0"
@@ -27,7 +27,7 @@
     "@types/react": "19.1.4",
     "@types/react-dom": "19.1.5",
     "eslint": "9.22.0",
-    "eslint-config-next": "15.3.3",
+    "eslint-config-next": "16.2.6",
     "tailwindcss": "4.1.8",
     "typescript": "5.8.3"
   },
