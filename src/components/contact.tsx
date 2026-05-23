@@ -16,13 +16,13 @@ export default function Contact() {
           description="The fastest way to reach me is email. I usually reply within a day or two."
         />
 
-        <div className="mt-12 grid gap-8 md:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/40 p-8 backdrop-blur">
+        <div className="mt-12 grid gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+          <div className="min-w-0 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/40 p-6 backdrop-blur sm:p-8">
             <a
               href={`mailto:${profile.email}`}
-              className="group inline-flex items-baseline gap-2 font-display text-3xl italic text-[color:var(--color-fg)] md:text-4xl"
+              className="group flex max-w-full flex-wrap items-baseline gap-2 font-display text-2xl italic text-[color:var(--color-fg)] sm:text-3xl md:text-4xl"
             >
-              <span className="link-underline">{profile.email}</span>
+              <span className="link-underline break-all">{profile.email}</span>
               <svg
                 className="h-5 w-5 self-center text-[color:var(--color-fg-subtle)] transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[color:var(--color-fg)]"
                 viewBox="0 0 12 12"
@@ -72,7 +72,7 @@ export default function Contact() {
             </dl>
           </div>
 
-          <div className="flex flex-col justify-between gap-6 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/40 p-8 backdrop-blur">
+          <div className="flex min-w-0 flex-col justify-between gap-6 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/40 p-6 backdrop-blur sm:p-8">
             <div>
               <h3 className="text-base font-medium text-[color:var(--color-fg)]">Elsewhere</h3>
               <p className="mt-2 text-sm text-[color:var(--color-fg-muted)] text-pretty">
