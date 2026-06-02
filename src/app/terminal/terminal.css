@@ -153,6 +153,12 @@
   backdrop-filter: blur(4px);
 }
 
+/* Opt back into the original see-through card background for sections that
+   should let the ambient log/shader backdrop bleed through. */
+.terminal-root .quantum-card.quantum-card-clear {
+  background: rgba(0, 243, 255, 0.03) !important;
+}
+
 .terminal-root .status-bar {
   height: 5px;
   background: var(--dim-cyan);

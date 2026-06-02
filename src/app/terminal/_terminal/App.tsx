@@ -579,7 +579,7 @@ function AppShell() {
                 column height via flex-1; below lg the column collapses to a
                 single grid track so we pin a sensible visible minimum so
                 the scroller never renders as a thin sliver. */}
-            <div className="quantum-card border border-cyan-500/20 p-4 rounded relative overflow-hidden backdrop-blur-md flex-1 flex flex-col min-h-[420px] lg:min-h-0">
+            <div className="quantum-card quantum-card-clear border border-cyan-500/20 p-4 rounded relative overflow-hidden backdrop-blur-md flex-1 flex flex-col min-h-[420px] lg:min-h-0">
               <div className="flex items-center justify-between border-b border-cyan-500/10 pb-2.5 mb-3 shrink-0">
                 <div className="flex items-center space-x-2">
                   <span className="w-1.5 h-1.5 bg-fuchsia-500 rounded-full animate-ping" />
