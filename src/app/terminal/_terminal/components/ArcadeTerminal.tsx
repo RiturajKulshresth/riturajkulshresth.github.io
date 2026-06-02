@@ -562,7 +562,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       {/* Main interactive container with canvas */}
       <div 
         ref={containerRef}
-        className="relative bg-black border border-cyan-500/20 rounded overflow-hidden flex flex-col items-center justify-center shadow-xl select-none"
+        className="relative bg-black border border-cyan-500/20 rounded overflow-hidden flex flex-col items-center justify-center shadow-xl select-none p-4 sm:p-6 md:p-8"
       >
         <canvas
           ref={canvasRef}
@@ -573,7 +573,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
               handleReset();
             }
           }}
-          className={`w-full max-w-full aspect-[3/2] block bg-black relative z-20 focus:outline-none ${
+          className={`w-full max-w-[600px] aspect-[3/2] block bg-black relative z-20 focus:outline-none rounded-sm border border-cyan-500/15 shadow-[0_0_20px_rgba(0,243,255,0.08)] ${
             gameState === "PLAYING" ? "cursor-crosshair" : "cursor-pointer"
           }`}
           tabIndex={0}
