@@ -53,7 +53,7 @@ export class HighwayGame implements GameEngine {
   private collectibleSpawnCooldown = 0;
   private boostActive = false;
 
-  init(ctx: GameContext): void {
+  init(): void {
     this.playerLane = 1;
     this.playerX = this.laneOffsetLeft + this.playerLane * this.laneWidth + this.laneWidth / 2;
     this.playerY = 320;

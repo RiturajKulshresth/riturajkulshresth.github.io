@@ -28,7 +28,7 @@ export class SnakeGame implements GameEngine {
   private obstacles: Segment[] = [];
   private particles: Particle[] = [];
 
-  init(ctx: GameContext): void {
+  init(): void {
     this.snake = [
       { x: 12, y: 10 },
       { x: 11, y: 10 },

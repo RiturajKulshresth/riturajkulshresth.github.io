@@ -29,7 +29,7 @@ export class FroggerGame implements GameEngine {
   private score = 0;
   private deathsCount = 0;
 
-  init(ctx: GameContext): void {
+  init(): void {
     this.score = 0;
     this.deathsCount = 0;
     this.playerX = 300;

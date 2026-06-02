@@ -51,7 +51,7 @@ export class PacmanGame implements GameEngine {
 
   private triggerTimer = 0; // alarm alerted trigger (ghosts override behaviors)
 
-  init(ctx: GameContext): void {
+  init(): void {
     this.score = 0;
     this.playerX = 300;
     this.playerY = 240;
@@ -282,7 +282,6 @@ export class PacmanGame implements GameEngine {
       }
 
       // Simple grid intersection decision trees
-      const ghostGridTimer = 10;
       if (Math.random() < 0.08) {
         const dx = targetX - g.x;
         const dy = targetY - g.y;

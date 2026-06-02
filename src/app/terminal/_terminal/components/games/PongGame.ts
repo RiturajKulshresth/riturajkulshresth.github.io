@@ -181,7 +181,6 @@ export class PongGame implements GameEngine {
     // --------------------------------------------
     // Ball-Paddle checks (Left/Player)
     // --------------------------------------------
-    const hitTolerance = 4;
     const playerPaddleEdgeX = 24 + this.paddleWidth;
     
     if (this.ballX - 4 <= playerPaddleEdgeX && this.ballX + 4 >= 24) {
