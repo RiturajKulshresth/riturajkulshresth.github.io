@@ -129,6 +129,7 @@ export default function Navbar() {
             {routes.map((route) => {
               const isActive = pathname === route.href;
               const isTerminal = route.href === "/terminal";
+              const isPhoto = route.href === "/photography";
               return (
                 <li key={route.href}>
                   <Link
@@ -137,6 +138,7 @@ export default function Navbar() {
                     className={clsx(
                       "relative rounded-md px-3 py-1.5 text-sm transition",
                       isTerminal && "nav-glitch",
+                      isPhoto && "nav-photo",
                       isActive ? NAV_LINK_ACTIVE : NAV_LINK
                     )}
                   >
@@ -209,6 +211,7 @@ export default function Navbar() {
             ))}
             {routes.map((route) => {
               const isTerminal = route.href === "/terminal";
+              const isPhoto = route.href === "/photography";
               return (
                 <li key={route.href}>
                   <Link
@@ -218,6 +221,7 @@ export default function Navbar() {
                     className={clsx(
                       "block rounded-md px-3 py-2 transition",
                       isTerminal && "nav-glitch",
+                      isPhoto && "nav-photo",
                       MOBILE_ITEM
                     )}
                   >

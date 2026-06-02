@@ -462,3 +462,103 @@ header[data-nav-overlay="true"] {
     opacity: 0;
   }
 }
+
+/* ─── Photography nav focus ──────────────────────────────────────
+   The "Photography" navbar entry is a portal to the gallery, so it
+   gets a camera/optics treatment instead of reading like a normal
+   link. At rest the warm-amber label "breathes" like an exposure
+   meter and a faint light-leak sheen drifts across it (::after).
+   On hover, autofocus corner brackets snap in around the label
+   (::before) and the glow locks to a crisp white, like nailing
+   focus through a viewfinder. */
+.nav-photo {
+  position: relative;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #f59e0b;
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.5), 0 0 16px rgba(217, 119, 6, 0.25);
+  animation: nav-photo-breathe 4s ease-in-out infinite;
+}
+
+.nav-photo:hover {
+  color: #ffb327;
+  text-shadow: 0 0 9px rgba(255, 179, 39, 0.85), 0 0 22px rgba(245, 158, 11, 0.5);
+}
+
+/* Autofocus corner brackets: eight gradient slivers placed at the
+   four corners of the padded box, hidden and slightly oversized at
+   rest, then snapping to size + full opacity on hover (focus lock). */
+.nav-photo::before {
+  content: "";
+  position: absolute;
+  inset: 1px 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.18);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  --b: 1.5px;
+  --l: 7px;
+  --c: rgba(245, 158, 11, 0.95);
+  background:
+    linear-gradient(var(--c), var(--c)) 0 0 / var(--l) var(--b) no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 0 / var(--b) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / var(--l) var(--b) no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / var(--b) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / var(--l) var(--b) no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / var(--b) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / var(--l) var(--b) no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / var(--b) var(--l) no-repeat;
+}
+
+.nav-photo:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Light-leak sheen: a soft warm diagonal highlight that drifts across
+   the label at rest. Normal blend (not screen) so it stays visible on
+   light navbars too, where a screen blend would vanish into white. */
+.nav-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 196, 110, 0.55) 50%,
+    transparent 62%
+  );
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  animation: nav-photo-leak 5s ease-in-out infinite;
+}
+
+/* Exposure-meter breathing on the base label's glow. */
+@keyframes nav-photo-breathe {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(245, 158, 11, 0.4), 0 0 12px rgba(217, 119, 6, 0.18);
+  }
+  50% {
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.7), 0 0 20px rgba(217, 119, 6, 0.4);
+  }
+}
+
+/* Light leak drifts left-to-right, pausing off-frame between passes. */
+@keyframes nav-photo-leak {
+  0% { background-position: -60% 0; }
+  55%, 100% { background-position: 160% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-photo {
+    animation: none;
+  }
+  .nav-photo::after {
+    animation: none;
+    opacity: 0;
+  }
+  .nav-photo::before {
+    transition: none;
+  }
+}
