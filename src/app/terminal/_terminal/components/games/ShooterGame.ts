@@ -59,7 +59,6 @@ export class ShooterGame implements GameEngine {
   private playerShipX = 300;
   private readonly playerShipY = 365;
   private readonly shipWidth = 36;
-  private readonly shipHeight = 22;
 
   private bullets: Bullet[] = [];
   private invaders: Invader[] = [];
