@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 
 /**
  * The terminal app is entirely browser-driven (WebGL, Canvas 2D, Web Audio,
@@ -21,16 +20,5 @@ const TerminalApp = dynamic(() => import("./_terminal/App"), {
 });
 
 export default function TerminalPage() {
-  return (
-    <>
-      <Link
-        href="/"
-        aria-label="Back to the main site"
-        className="fixed left-4 top-4 z-[100] rounded border border-[#00f3ff]/30 bg-black/40 px-3 py-1.5 font-mono text-xs tracking-wide text-[#00f3ff] backdrop-blur transition hover:border-[#00f3ff]/70 hover:bg-black/70"
-      >
-        &larr; back to site
-      </Link>
-      <TerminalApp />
-    </>
-  );
+  return <TerminalApp />;
 }

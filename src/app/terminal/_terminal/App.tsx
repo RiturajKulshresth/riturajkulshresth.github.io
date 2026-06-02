@@ -403,6 +403,16 @@ function AppShell() {
 
           {/* Interactive controls and sound toggle */}
           <div className="flex flex-wrap items-center gap-3">
+            {/* Back to the main site, sits to the left of the spectrum colors */}
+            <a
+              href="/"
+              title="Back to main site"
+              className={`flex items-center gap-1.5 bg-cyan-950/20 border ${themeCtx.border} px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-widest ${themeCtx.text} hover:border-white/40 transition-colors`}
+            >
+              <span aria-hidden>&larr;</span>
+              <span>BACK TO SITE</span>
+            </a>
+
             {/* Theme switcher colors preset */}
             <div className={`flex items-center space-x-1.5 bg-cyan-950/20 border ${themeCtx.border} px-2 py-1 rounded`}>
               <span className={`font-mono text-[8px] ${themeCtx.text} opacity-50 uppercase mr-1`}>SPECTRUM COLORS:</span>
