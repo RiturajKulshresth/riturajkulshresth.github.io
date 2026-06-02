@@ -352,4 +352,5 @@ export const navItems = [
 // Internal routes that live outside the home-page scroll narrative.
 export const routes = [
   { href: "/photography", label: "Photography" },
+  { href: "/terminal", label: "Terminal" },
 ] as const;

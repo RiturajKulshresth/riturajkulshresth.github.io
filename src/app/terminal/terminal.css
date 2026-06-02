@@ -1,0 +1,191 @@
+/*
+ * Quantum Terminal route styles.
+ *
+ * Everything is scoped under `.terminal-root` and every keyframe is prefixed
+ * with `tq-` so this cyber aesthetic (fonts, glow colours, scrollbars,
+ * animations) is fully contained to the /terminal route and never leaks into
+ * the rest of the site, which has its own Tailwind @theme + globals.css. In
+ * particular the site already defines a global `::-webkit-scrollbar`, a
+ * `.animate-fade-in` utility, and a `@keyframes fade-in`; scoping + renaming
+ * avoids clobbering any of them.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;600;700&display=swap');
+
+.terminal-root {
+  /* Override the site font tokens for this subtree only, so Tailwind's
+     font-sans / font-mono utilities resolve to the terminal typefaces. */
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --glow-cyan: #00f3ff;
+  --glow-magenta: #ff00ff;
+  --bg-dark: #05050b;
+  --dim-cyan: rgba(0, 243, 255, 0.2);
+  --dim-magenta: rgba(255, 0, 255, 0.15);
+
+  min-height: 100vh;
+  background: var(--bg-dark);
+  color: #ffffff;
+  font-family: var(--font-mono);
+}
+
+/* Custom Cyber Terminal Effects & Animations */
+
+@keyframes tq-scan-beam {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes tq-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tq-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.terminal-root .animate-scan-beam {
+  animation: tq-scan-beam 8s linear infinite;
+}
+
+.terminal-root .animate-fade-in {
+  animation: tq-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.terminal-root .animate-shimmer {
+  animation: tq-shimmer 2s infinite;
+}
+
+/* Artistic Flair Theme Elements */
+
+.terminal-root .dither-bg {
+  background-image: radial-gradient(circle at 50% 50%, var(--dim-cyan) 0, transparent 70%),
+                    repeating-conic-gradient(rgba(0,0,0,0.2) 0% 25%, rgba(255,255,255,0.02) 0% 50%);
+  background-size: 100% 100%, 4px 4px;
+}
+
+.terminal-root .hud-bracket {
+  border: 1.5px solid var(--glow-cyan);
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.terminal-root .bracket-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+.terminal-root .bracket-tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+.terminal-root .bracket-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+.terminal-root .bracket-br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+.terminal-root .glitch-text {
+  text-shadow: 2px 0 var(--glow-magenta), -2px 0 #00ff00;
+  font-weight: 950;
+  letter-spacing: 4px;
+  font-family: var(--font-sans);
+}
+
+.terminal-root .quantum-card {
+  background: rgba(0, 243, 255, 0.03) !important;
+  border: 1px solid var(--dim-cyan) !important;
+  backdrop-filter: blur(4px);
+}
+
+.terminal-root .status-bar {
+  height: 5px;
+  background: var(--dim-cyan);
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-root .status-fill {
+  height: 100%;
+  background: var(--glow-cyan);
+  box-shadow: 0 0 8px var(--glow-cyan);
+}
+
+.terminal-root .perspective-frame {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.terminal-root .tilted {
+  transform: rotateY(-8deg) rotateX(3deg);
+  transition: transform 0.4s ease;
+}
+.terminal-root .tilted:hover {
+  transform: rotateY(-3deg) rotateX(1deg);
+}
+
+/* Custom Matrix Scanline Vignette Mask */
+.terminal-root .scanline-mask {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.4) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(0, 243, 255, 0.04),
+    rgba(255, 0, 255, 0.02),
+    rgba(0, 243, 255, 0.04)
+  );
+  background-size: 100% 4px, 3px 100%;
+}
+
+/* Cyber Slender Matrix Scrollbars (scoped to the terminal subtree) */
+.terminal-root .scroller-cyan::-webkit-scrollbar,
+.terminal-root ::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.terminal-root .scroller-cyan::-webkit-scrollbar-track,
+.terminal-root ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 1px solid rgba(0, 243, 255, 0.1);
+}
+
+.terminal-root .scroller-cyan::-webkit-scrollbar-thumb,
+.terminal-root ::-webkit-scrollbar-thumb {
+  background: rgba(0, 243, 255, 0.35);
+  border-radius: 2px;
+}
+
+.terminal-root .scroller-cyan::-webkit-scrollbar-thumb:hover,
+.terminal-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 243, 255, 0.7);
+}
+
+/* Scrollbar hiding util */
+.terminal-root .scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.terminal-root .scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Retro LCD monitors curvature simulated screen glow shadow */
+.terminal-root .screen-blur-glow {
+  text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.terminal-root .xxs-text {
+  font-size: 9px;
+}
