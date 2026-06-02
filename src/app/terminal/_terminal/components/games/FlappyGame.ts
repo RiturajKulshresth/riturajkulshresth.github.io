@@ -130,7 +130,7 @@ export class FlappyGame implements GameEngine {
 
     // Move and update Pillars
     const spacing = 220;
-    this.pillars.forEach((p, index) => {
+    this.pillars.forEach((p) => {
       p.x -= scrollSpeed;
       p.gapHeight = currentGapHeight;
 
