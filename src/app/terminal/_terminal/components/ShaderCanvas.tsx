@@ -10,9 +10,10 @@ import { useOverdrive } from "../contexts/OverdriveContext";
 
 interface ShaderCanvasProps {
   colorPreset?: "GREEN" | "AMBER" | "COSMIC";
+  opacity?: number;
 }
 
-export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProps) {
+export default function ShaderCanvas({ colorPreset = "GREEN", opacity = 0.08 }: ShaderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
 
@@ -28,9 +29,12 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
 
     const gl = canvas.getContext("webgl");
     if (!gl) {
-      setErrorStatus("WebGL not supported. Loading neural particle telemetry backup.");
+      setErrorStatus("WebGL not supported. Loading telemetry backup.");
       return;
     }
+
+    // Enable standard derivatives for fwidth
+    const derivativesExt = gl.getExtension("OES_standard_derivatives");
 
     // Vertex Shader Source
     const vsSource = `
@@ -45,19 +49,20 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
 
     // Fragment Shader Source with 3D math and Raymarching/Wave distortion + real-time 4x4 Bayer Dithering
     const fsSource = `
+      #extension GL_OES_standard_derivatives : enable
       precision mediump float;
       varying vec2 vUv;
       uniform float uTime;
       uniform vec2 uResolution;
+      uniform vec2 uMouse;
       uniform int uColorPreset; // 0=Green, 1=Amber, 2=Cosmic Blue/Purple
 
-      // 4x4 Bayer Dithering Matrix calculation directly in shader
+      // 4x4 Bayer Dithering Matrix
       float getDitherLimit(vec2 fragCoord) {
         int x = int(mod(fragCoord.x, 4.0));
         int y = int(mod(fragCoord.y, 4.0));
         int index = x + y * 4;
         
-        // 4x4 bayer thresholds mapped to 0..15 range divided by 16.0
         float val = 0.0;
         if (index == 0) val = 0.0;
         else if (index == 1) val = 8.0;
@@ -79,41 +84,39 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
         return (val + 0.5) / 16.0;
       }
 
-      // Simple pseudo random generator
       float hash(vec2 p) {
         return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
       }
 
-      // Generate 3D grid interference
-      float quantum3DGrid(vec2 uv, float time) {
-        // Perspective Warp
+      // 3D Grid Perspective Warp with Mouse Accents
+      float quantum3DGrid(vec2 uv, float time, vec2 mouse) {
         float d = 1.0 - uv.y;
         if (d < 0.02) d = 0.02;
         
         vec2 p = vec2((uv.x - 0.5) / d, 1.0 / d);
         p.y += time * 1.5;
-        p.x += sin(p.y * 0.1 + time) * 0.3; // Distort coordinates
         
-        // Grid lines
+        // Perspective warp driven by mouse coordinate shift
+        float warpX = (mouse.x - 0.5) * 1.8;
+        p.x += sin(p.y * 0.1 + time) * 0.3 + warpX / d;
+        p.y += (mouse.y - 0.5) * 2.0;
+        
         vec2 grid = abs(fract(p - 0.5) - 0.5) / fwidth(p);
         float line = min(grid.x, grid.y);
         float gridPattern = 1.0 - min(line, 1.0);
         
-        // Fade out grid in distance
         gridPattern *= pow(d, 1.5);
         return gridPattern;
       }
 
-      // Raymarched holographic quantum attractor ball
-      float quantumAttractor(vec2 uv, float time) {
+      // Raymarched holographic quantum attractor ball with Magnetic Pull
+      float quantumAttractor(vec2 uv, float time, vec2 mouse) {
         vec2 p = uv - 0.5;
         p.x *= uResolution.x / uResolution.y;
         
-        // 3D sphere raymarching coordinates
         float distance = length(p);
         float speed = time * 0.8;
         
-        // Shifting quantum energy shell
         float core = 0.0;
         for(int i = 1; i < 4; i++) {
           float fi = float(i);
@@ -121,12 +124,18 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
             sin(speed * fi * 1.1 + fi * 2.0) * 0.15,
             cos(speed * fi * 0.9 + fi) * 0.15
           );
+          
+          // Magnetic Pull towards mouse coords
+          vec2 mDiff = vec2((mouse.x - 0.5) * (uResolution.x / uResolution.y), -(mouse.y - 0.5));
+          float dToMouse = length(p - mDiff);
+          float attraction = smoothstep(0.5, 0.0, dToMouse) * 0.12;
+          center += normalize(p - mDiff) * attraction;
+          
           float rad = 0.12 + sin(time * 3.0 + fi) * 0.02;
           float item = smoothstep(rad + 0.01, rad - 0.05, length(p - center));
           core += item * (1.1 / fi);
         }
         
-        // Rings orbiting around sphere
         float ring = abs(p.x * cos(time) - p.y * sin(time)) + abs(p.y * cos(time) + p.x * sin(time)) * 0.5;
         float orbit = smoothstep(0.02, 0.00, abs(distance - 0.28 - sin(time * 2.0) * 0.03) - 0.005);
         orbit += smoothstep(0.01, 0.00, abs(ring - 0.02));
@@ -138,62 +147,44 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
         vec2 uv = vUv;
         float time = uTime;
         
-        // Combine 3D perspective grid + orbiting attractor
-        float grid = quantum3DGrid(uv, time);
-        float attractor = quantumAttractor(uv, time);
+        float grid = quantum3DGrid(uv, time, uMouse);
+        float attractor = quantumAttractor(uv, time, uMouse);
         
-        // Master luminance combining calculations
         float luma = mix(grid * 0.4, attractor, 0.65);
         
-        // Add subtle radial vignette
         float vignette = 1.0 - length(uv - 0.5) * 1.1;
         luma *= max(vignette, 0.0);
         
-        // Apply Bayer Thresholding (Dithering)
         vec2 pixelCoord = uv * uResolution;
-        float threshold = getDitherLimit(pixelCoord);
-        
-        // Pixelize dither grain: Make dither clusters chunky to feel retro
-        // We can group pixels into blocks of 2x2 for strong visible dithering!
         vec2 chunkCoord = floor(pixelCoord / 2.0) * 2.0;
         float chunkyThreshold = getDitherLimit(chunkCoord);
         
-        // CRT Scanline emulation
         float scanline = sin(pixelCoord.y * 1.5 + time * 4.0) * 0.08 + 0.92;
         luma *= scanline;
         
-        // Apply the dither comparison
         float finalBinary = (luma > chunkyThreshold) ? 1.0 : 0.0;
         
-        // Add very fine analog screen noise
         float noise = hash(uv + vec2(time)) * 0.06;
         float dynamicLuma = finalBinary + noise;
 
-        // Custom sci-fi color profiles
         vec3 finalColor = vec3(0.0);
         if (uColorPreset == 0) {
-          // Classic Matrix-Cyan-Green Terminal
           finalColor = vec3(dynamicLuma * 0.2, dynamicLuma * 0.95, dynamicLuma * 0.5);
-          // Highlight hotspots
           if(luma > 0.65) finalColor += vec3(0.3, 0.5, 0.2) * (luma - 0.65);
         } else if (uColorPreset == 1) {
-          // Cyberpunk Retro Amber
           finalColor = vec3(dynamicLuma * 1.0, dynamicLuma * 0.55, dynamicLuma * 0.05);
           if(luma > 0.6) finalColor += vec3(0.4, 0.2, 0.0) * (luma - 0.6);
         } else {
-          // Cosmic Overlord Blue & Magenta spectrum with cyan-hot cores
-          finalColor = vec3(dynamicLuma * 0.0, dynamicLuma * 0.75, dynamicLuma * 1.0); // Vibrant blue-cyan
-          // Infuse high energy fuchsia spikes
+          finalColor = vec3(dynamicLuma * 0.0, dynamicLuma * 0.75, dynamicLuma * 1.0);
           finalColor.r += dynamicLuma * 0.8 * (sin(time * 1.2 + uv.x * 2.0 + uv.y * 2.0) * 0.5 + 0.5);
           finalColor.b += dynamicLuma * 0.3 * (cos(time + uv.y * 3.0) * 0.5 + 0.5);
         }
 
-        // Add vintage CRT glow highlights
         gl_FragColor = vec4(finalColor, 1.0);
       }
     `;
 
-    // Initialize WebGL utils
+    // Initialize WebGL
     const compileShader = (source: string, type: number): WebGLShader | null => {
       const s = gl.createShader(type);
       if (!s) return null;
@@ -243,9 +234,9 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
 
     const timeLoc = gl.getUniformLocation(program, "uTime");
     const resolutionLoc = gl.getUniformLocation(program, "uResolution");
+    const mouseLoc = gl.getUniformLocation(program, "uMouse");
     const colorPresetLoc = gl.getUniformLocation(program, "uColorPreset");
 
-    // Handle resizing
     const resize = () => {
       if (!canvas) return;
       const dpr = window.devicePixelRatio || 1;
@@ -257,6 +248,30 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
     resize();
     window.addEventListener("resize", resize);
 
+    // Mouse coordinates tracking object
+    const mouseLocal = {
+      x: 0.5,
+      y: 0.5,
+      targetX: 0.5,
+      targetY: 0.5
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+
+      if (x >= -2 && x <= 3 && y >= -2 && y <= 3) {
+        mouseLocal.targetX = Math.min(Math.max(x, 0.0), 1.0);
+        mouseLocal.targetY = Math.min(Math.max(y, 0.0), 1.0);
+      } else {
+        mouseLocal.targetX = 0.5;
+        mouseLocal.targetY = 0.5;
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
     let animationId: number;
     let lastTs = Date.now();
     let simTime = 0;
@@ -266,13 +281,16 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
       const now = Date.now();
       const dt = (now - lastTs) / 1000;
       lastTs = now;
-      // Accumulate scaled time so toggling overdrive ramps speed smoothly
-      // instead of snapping the animation phase.
       simTime += dt * speedMulRef.current;
+
+      // Smooth interpolation for mouse movement coordinates with lerp
+      mouseLocal.x += (mouseLocal.targetX - mouseLocal.x) * 0.08;
+      mouseLocal.y += (mouseLocal.targetY - mouseLocal.y) * 0.08;
 
       gl.useProgram(program);
       gl.uniform1f(timeLoc, simTime);
       gl.uniform2f(resolutionLoc, canvas.width, canvas.height);
+      gl.uniform2f(mouseLoc, mouseLocal.x, mouseLocal.y);
 
       let presetIndex = 0;
       if (colorPreset === "AMBER") presetIndex = 1;
@@ -287,6 +305,7 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", handleMouseMove);
       gl.deleteProgram(program);
       gl.deleteShader(vs);
       gl.deleteShader(fs);
@@ -295,7 +314,10 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
   }, [colorPreset]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 mix-blend-screen transition-all duration-700">
+    <div 
+      className="absolute inset-0 overflow-hidden pointer-events-none mix-blend-screen transition-all duration-700"
+      style={{ opacity }}
+    >
       {errorStatus ? (
         <div className="absolute inset-0 flex items-center justify-center p-4 text-center">
           <div className="font-mono text-xs text-emerald-500/80 animate-pulse uppercase tracking-wider">
@@ -306,10 +328,9 @@ export default function ShaderCanvas({ colorPreset = "GREEN" }: ShaderCanvasProp
         <canvas
           ref={canvasRef}
           className="w-full h-full object-cover select-none scale-[1.01]"
-          style={{ filter: "contrast(1.4) brightness(1.2)" }}
+          style={{ filter: "contrast(1.0) brightness(0.7)" }}
         />
       )}
-      {/* Visual cyber scanner lines overlay */}
       <div className="absolute inset-0 scanline-mask bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] pointer-events-none" />
     </div>
   );

@@ -8,6 +8,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChatMessage } from "../types";
 import { synth } from "../audio";
+import ShaderCanvas from "./ShaderCanvas";
 import {
   Send,
   Terminal,
@@ -266,6 +267,9 @@ Type 'help' to see the main query manual.`;
 
   return (
     <div className="quantum-card border border-cyan-500/25 rounded shadow-2xl overflow-hidden relative flex flex-col h-[500px] backdrop-blur-md">
+      {/* Interactive WebGL Shader inside the terminal body */}
+      <ShaderCanvas colorPreset="COSMIC" opacity={0.30} />
+
       {/* Corner Accents */}
       <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-cyan-400" />
       <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-cyan-400" />

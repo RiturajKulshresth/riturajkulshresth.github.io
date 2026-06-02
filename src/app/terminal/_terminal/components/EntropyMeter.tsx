@@ -393,7 +393,7 @@ export default function EntropyMeter({ colorPreset = "COSMIC" }: EntropyMeterPro
   return (
     <div
       ref={containerRef}
-      className={`border ${overdrive ? "border-fuchsia-500/40 shadow-[0_0_16px_rgba(255,0,255,0.12)]" : `${theme.border} ${theme.glow}`} p-3.5 rounded relative overflow-hidden bg-[#05050b]/60 flex flex-col transition-colors duration-300`}
+      className={`border ${overdrive ? "border-fuchsia-500/40 shadow-[0_0_16px_rgba(255,0,255,0.12)]" : `${theme.border} ${theme.glow}`} p-3.5 rounded relative overflow-hidden bg-[#05050b]/88 flex flex-col transition-colors duration-300`}
     >
       {/* Corner Brackets */}
       <div className={`absolute top-0 left-0 w-2.5 h-2.5 border-t border-l ${theme.corners}`} />

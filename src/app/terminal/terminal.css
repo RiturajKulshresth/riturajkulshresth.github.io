@@ -61,6 +61,16 @@
   }
 }
 
+/* Blinking caret for the live-typed ambient log columns. */
+@keyframes tq-log-caret {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
 .terminal-root .animate-scan-beam {
   animation: tq-scan-beam 8s linear infinite;
 }
@@ -71,6 +81,41 @@
 
 .terminal-root .animate-shimmer {
   animation: tq-shimmer 2s infinite;
+}
+
+/* Ambient streaming log wall (deepest background layer). Kept faint so it
+   reads as atmosphere behind the shader and content, never as foreground. */
+.terminal-root .bg-log-stream {
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  filter: blur(2.2px);
+}
+
+.terminal-root .bg-log-caret {
+  display: inline-block;
+  width: 6px;
+  height: 11px;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: tq-log-caret 1s steps(1) infinite;
+}
+
+/* Top and bottom fade so the columns dissolve into the void instead of
+   hard-cutting at the viewport edges. */
+.terminal-root .bg-log-vignette {
+  background: linear-gradient(
+    to bottom,
+    var(--bg-dark) 0%,
+    transparent 18%,
+    transparent 82%,
+    var(--bg-dark) 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-root .bg-log-caret {
+    animation: none;
+  }
 }
 
 /* Artistic Flair Theme Elements */
@@ -103,7 +148,7 @@
 }
 
 .terminal-root .quantum-card {
-  background: rgba(0, 243, 255, 0.03) !important;
+  background: rgba(5, 8, 16, 0.88) !important;
   border: 1px solid var(--dim-cyan) !important;
   backdrop-filter: blur(4px);
 }

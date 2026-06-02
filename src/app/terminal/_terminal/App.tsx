@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import ShaderCanvas from "./components/ShaderCanvas";
+import BackgroundLogStream from "./components/BackgroundLogStream";
 import ProjectGrid from "./components/ProjectGrid";
 import SkillMatrix from "./components/SkillMatrix";
 import ResumeTimeline from "./components/ResumeTimeline";
@@ -352,6 +353,9 @@ function AppShell() {
       {/* Immersive Conic and Radial Dithering Pattern */}
       <div className="dither-bg absolute inset-0 pointer-events-none z-0" />
 
+      {/* Ambient streaming terminal log wall (deepest background, below shader) */}
+      <BackgroundLogStream colorPreset={colorPreset} />
+
       {/* Cybernetic HUD Corner Brackets */}
       <div className="hud-bracket bracket-tl" />
       <div className="hud-bracket bracket-tr" />
@@ -374,7 +378,7 @@ function AppShell() {
       <div className="max-w-7xl mx-auto px-4 py-6 relative z-10 space-y-6">
 
         {/* --- HEADER COCKPIT BAR --- */}
-        <header className={`border ${themeCtx.border} p-4 rounded relative overflow-hidden backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#05050b]/60 ${themeCtx.glow}`}>
+        <header className={`border ${themeCtx.border} p-4 rounded relative overflow-hidden backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#05050b]/88 ${themeCtx.glow}`}>
           <div className={`absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
           <div className={`absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
           <div className={`absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
@@ -623,7 +627,7 @@ function AppShell() {
             <ResumeTimeline colorPreset={colorPreset} />
 
             {/* Projects Section Card */}
-            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/60 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
+            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/88 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
               <div className={`absolute top-0 right-0 w-2 h-2 border-t border-r ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
               <div className={`absolute top-3 right-0 w-16 h-0.5 ${colorPreset === "GREEN" ? "bg-emerald-500/20" : colorPreset === "AMBER" ? "bg-amber-500/20" : "bg-cyan-500/20"}`} />
               <div className={`absolute bottom-0 left-0 w-2 h-2 border-b border-l ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
@@ -640,7 +644,7 @@ function AppShell() {
             </div>
 
             {/* Core Competencies Skill Matrix Card */}
-            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/60 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
+            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/88 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
               <div className={`absolute top-0 right-0 w-2 h-2 border-t border-r ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
               <div className={`absolute bottom-0 left-0 w-2 h-2 border-b border-l ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
 
