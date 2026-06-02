@@ -1,4 +1,4 @@
-import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
+import { GameEngine, GameInput, GameContext, getColorHex } from "./types";
 
 interface MazeDot {
   x: number;
