@@ -406,11 +406,11 @@ function AppShell() {
             {/* Back to the main site, sits to the left of the spectrum colors */}
             <a
               href="/"
-              title="Back to main site"
+              title="Back to the main site"
               className={`flex items-center gap-1.5 bg-cyan-950/20 border ${themeCtx.border} px-2.5 py-1 rounded font-mono text-[10px] uppercase tracking-widest ${themeCtx.text} hover:border-white/40 transition-colors`}
             >
               <span aria-hidden>&larr;</span>
-              <span>BACK TO SITE</span>
+              <span>BACK TO PAST</span>
             </a>
 
             {/* Theme switcher colors preset */}
