@@ -17,6 +17,7 @@ import CoreVisualizer from "./components/CoreVisualizer";
 import SpectralAnalyzer from "./components/SpectralAnalyzer";
 import TelemetrySparkGrid from "./components/TelemetrySparkGrid";
 import EntropyMeter from "./components/EntropyMeter";
+import ArcadeTerminal from "./components/ArcadeTerminal";
 import { synth } from "./audio";
 import { SystemLog } from "./types";
 import { OverdriveProvider, useOverdrive, useStamina } from "./contexts/OverdriveContext";
@@ -378,7 +379,7 @@ function AppShell() {
       <div className="max-w-7xl mx-auto px-4 py-6 relative z-10 space-y-6">
 
         {/* --- HEADER COCKPIT BAR --- */}
-        <header className={`border ${themeCtx.border} p-4 rounded relative overflow-hidden backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#05050b]/88 ${themeCtx.glow}`}>
+        <header className={`border ${themeCtx.border} p-4 rounded relative overflow-hidden backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#05050b]/60 ${themeCtx.glow}`}>
           <div className={`absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
           <div className={`absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
           <div className={`absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
@@ -579,7 +580,7 @@ function AppShell() {
                 column height via flex-1; below lg the column collapses to a
                 single grid track so we pin a sensible visible minimum so
                 the scroller never renders as a thin sliver. */}
-            <div className="quantum-card quantum-card-clear border border-cyan-500/20 p-4 rounded relative overflow-hidden backdrop-blur-md flex-1 flex flex-col min-h-[420px] lg:min-h-0">
+            <div className="quantum-card border border-cyan-500/20 p-4 rounded relative overflow-hidden backdrop-blur-md flex-1 flex flex-col min-h-[420px] lg:min-h-0">
               <div className="flex items-center justify-between border-b border-cyan-500/10 pb-2.5 mb-3 shrink-0">
                 <div className="flex items-center space-x-2">
                   <span className="w-1.5 h-1.5 bg-fuchsia-500 rounded-full animate-ping" />
@@ -627,7 +628,7 @@ function AppShell() {
             <ResumeTimeline colorPreset={colorPreset} />
 
             {/* Projects Section Card */}
-            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/88 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
+            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/60 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
               <div className={`absolute top-0 right-0 w-2 h-2 border-t border-r ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
               <div className={`absolute top-3 right-0 w-16 h-0.5 ${colorPreset === "GREEN" ? "bg-emerald-500/20" : colorPreset === "AMBER" ? "bg-amber-500/20" : "bg-cyan-500/20"}`} />
               <div className={`absolute bottom-0 left-0 w-2 h-2 border-b border-l ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
@@ -644,7 +645,7 @@ function AppShell() {
             </div>
 
             {/* Core Competencies Skill Matrix Card */}
-            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/88 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
+            <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/60 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
               <div className={`absolute top-0 right-0 w-2 h-2 border-t border-r ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
               <div className={`absolute bottom-0 left-0 w-2 h-2 border-b border-l ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
 
@@ -662,6 +663,11 @@ function AppShell() {
           </section>
 
         </main>
+
+        {/* Retro Arcade Sub-system (Full-Width) */}
+        <section className="mt-4">
+          <ArcadeTerminal colorPreset={colorPreset} />
+        </section>
 
         {/* --- ASSISTANT AI CONSOLE: Cognitive Oracle AEGIS --- */}
         <section className="mt-4">
