@@ -176,7 +176,6 @@ export class DinoGame implements GameEngine {
       }
 
       // Collisions check (Dino hitbox bounds)
-      const dinoHeight = this.isDucking ? 18 : 34;
       const dinoWidth = 24;
       const pl = 110;
       const pr = pl + dinoWidth;
