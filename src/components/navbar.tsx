@@ -128,12 +128,15 @@ export default function Navbar() {
             })}
             {routes.map((route) => {
               const isActive = pathname === route.href;
+              const isTerminal = route.href === "/terminal";
               return (
                 <li key={route.href}>
                   <Link
                     href={route.href}
+                    data-text={isTerminal ? route.label : undefined}
                     className={clsx(
                       "relative rounded-md px-3 py-1.5 text-sm transition",
+                      isTerminal && "nav-glitch",
                       isActive ? NAV_LINK_ACTIVE : NAV_LINK
                     )}
                   >
@@ -204,17 +207,25 @@ export default function Navbar() {
                 </a>
               </li>
             ))}
-            {routes.map((route) => (
-              <li key={route.href}>
-                <Link
-                  href={route.href}
-                  onClick={() => setOpen(false)}
-                  className={clsx("block rounded-md px-3 py-2 transition", MOBILE_ITEM)}
-                >
-                  {route.label}
-                </Link>
-              </li>
-            ))}
+            {routes.map((route) => {
+              const isTerminal = route.href === "/terminal";
+              return (
+                <li key={route.href}>
+                  <Link
+                    href={route.href}
+                    data-text={isTerminal ? route.label : undefined}
+                    onClick={() => setOpen(false)}
+                    className={clsx(
+                      "block rounded-md px-3 py-2 transition",
+                      isTerminal && "nav-glitch",
+                      MOBILE_ITEM
+                    )}
+                  >
+                    {route.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
           <div className="mt-4 flex flex-col gap-2">
             <a

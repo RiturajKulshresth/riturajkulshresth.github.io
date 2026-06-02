@@ -365,3 +365,100 @@ header[data-nav-overlay="true"] {
     }
   }
 }
+
+/* ─── Terminal nav glitch ────────────────────────────────────────
+   The "Terminal" navbar entry is a portal to the alternate cyber
+   visual, so it gets an always-on cyberpunk glitch instead of reading
+   like a normal link. The base label flickers with a neon cyan glow;
+   two pseudo-element copies (cyan + magenta) sit permanently offset for
+   constant chromatic aberration and animate clip-path "slice tears" so
+   the eye is drawn to it at rest. `padding: inherit` keeps the copies
+   aligned with the padded link text; data-text supplies the label. */
+.nav-glitch {
+  position: relative;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #aef6ff;
+  text-shadow: 0 0 6px rgba(0, 243, 255, 0.65), 0 0 14px rgba(0, 243, 255, 0.35);
+  animation: nav-glitch-flicker 3.5s infinite steps(1);
+}
+
+.nav-glitch:hover {
+  color: #ffffff;
+}
+
+.nav-glitch::before,
+.nav-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.nav-glitch::before {
+  color: #00f3ff;
+  text-shadow: 0 0 6px rgba(0, 243, 255, 0.7);
+  transform: translateX(-1.5px);
+  animation: nav-glitch-a 2.2s infinite linear alternate-reverse;
+}
+
+.nav-glitch::after {
+  color: #ff00ff;
+  text-shadow: 0 0 6px rgba(255, 0, 255, 0.7);
+  transform: translateX(1.5px);
+  animation: nav-glitch-b 1.7s infinite linear alternate-reverse;
+}
+
+.nav-glitch:hover::before {
+  animation-duration: 0.5s;
+}
+.nav-glitch:hover::after {
+  animation-duration: 0.4s;
+}
+
+/* Cyan copy: slices torn from the upper bands, nudged left. */
+@keyframes nav-glitch-a {
+  0%   { clip-path: inset(10% 0 78% 0); transform: translateX(-3px); }
+  15%  { clip-path: inset(40% 0 45% 0); transform: translateX(2px); }
+  30%  { clip-path: inset(70% 0 12% 0); transform: translateX(-2px); }
+  45%  { clip-path: inset(22% 0 60% 0); transform: translateX(3px); }
+  60%  { clip-path: inset(55% 0 30% 0); transform: translateX(-3px); }
+  75%  { clip-path: inset(8% 0 80% 0);  transform: translateX(1px); }
+  100% { clip-path: inset(48% 0 38% 0); transform: translateX(-1px); }
+}
+
+/* Magenta copy: complementary slices, nudged right. */
+@keyframes nav-glitch-b {
+  0%   { clip-path: inset(65% 0 18% 0); transform: translateX(3px); }
+  15%  { clip-path: inset(18% 0 66% 0); transform: translateX(-2px); }
+  30%  { clip-path: inset(45% 0 38% 0); transform: translateX(2px); }
+  45%  { clip-path: inset(78% 0 8% 0);  transform: translateX(-3px); }
+  60%  { clip-path: inset(30% 0 55% 0); transform: translateX(2px); }
+  75%  { clip-path: inset(60% 0 25% 0); transform: translateX(-1px); }
+  100% { clip-path: inset(12% 0 72% 0); transform: translateX(3px); }
+}
+
+/* Occasional brightness/opacity stutter on the base label. */
+@keyframes nav-glitch-flicker {
+  0%, 100% { opacity: 1; }
+  47% { opacity: 1; }
+  48% { opacity: 0.35; }
+  49% { opacity: 1; }
+  72% { opacity: 1; }
+  73% { opacity: 0.55; }
+  74% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-glitch {
+    animation: none;
+  }
+  .nav-glitch::before,
+  .nav-glitch::after {
+    animation: none;
+    opacity: 0;
+  }
+}
