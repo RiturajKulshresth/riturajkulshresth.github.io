@@ -381,7 +381,7 @@ function AppShell() {
           <div className={`absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 ${colorPreset === "GREEN" ? "border-emerald-400" : colorPreset === "AMBER" ? "border-amber-400" : "border-cyan-400"}`} />
 
           {/* Core Title */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 shrink-0">
             <div className="relative">
               <div className={`p-2 bg-cyan-950/40 border border-cyan-500/40 rounded animate-spin`} style={{ animationDuration: "15s" }}>
                 <Orbit className={`w-5 h-5 ${themeCtx.iconColor}`} />
@@ -390,7 +390,7 @@ function AppShell() {
             </div>
             <div>
               <div className="text-[10px] tracking-widest opacity-60 mb-1">SYSTEM_RECOGNITION // VER 9.4.1</div>
-              <h1 className={`text-3xl font-extrabold glitch-text tracking-[0.05em] ${themeCtx.text} uppercase flex items-baseline gap-2 italic`}>
+              <h1 className={`text-xl xl:text-2xl font-extrabold glitch-text tracking-[0.05em] ${themeCtx.text} uppercase flex items-baseline gap-2 italic whitespace-nowrap`}>
                 <span>RITURAJ KULSHRESTH</span>
                 <span className="text-xxs text-fuchsia-500 opacity-80 not-italic">SDE2_ACTIVE</span>
               </h1>
@@ -402,7 +402,7 @@ function AppShell() {
           </div>
 
           {/* Interactive controls and sound toggle */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Back to the main site, sits to the left of the spectrum colors */}
             <a
               href="/"
@@ -445,7 +445,7 @@ function AppShell() {
                   ? "Reactor recharging — overdrive locked until reserve recovers"
                   : "Toggle global overdrive (consumes stamina)"
               }
-              className={`relative overflow-hidden p-1.5 rounded border flex items-center gap-2 min-w-[152px] transition-colors duration-300 font-bold uppercase text-xs ${
+              className={`relative overflow-hidden p-1.5 rounded border flex items-center gap-2 min-w-[120px] transition-colors duration-300 font-bold uppercase text-xs ${
                 overdriveLocked ? "cursor-not-allowed" : "cursor-pointer"
               } ${
                 overdrive
