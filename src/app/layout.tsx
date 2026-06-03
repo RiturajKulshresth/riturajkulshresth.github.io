@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Instrument_Serif } from "next/font/google";
-import CursorGlow from "@/components/cursor-glow";
 import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
@@ -126,7 +125,6 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <CursorGlow />
         {children}
       </body>
     </html>

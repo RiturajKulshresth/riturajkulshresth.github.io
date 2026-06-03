@@ -1,15 +1,17 @@
-import Navbar from "@/components/navbar";
-import Hero from "@/components/hero";
-import Experience from "@/components/experience";
-import Projects from "@/components/projects";
-import Skills from "@/components/skills";
-import Accolades from "@/components/accolades";
-import Contact from "@/components/contact";
-import Footer from "@/components/footer";
+import CursorGlow from "./_default/components/cursor-glow";
+import Navbar from "./_default/components/navbar";
+import Hero from "./_default/components/hero";
+import Experience from "./_default/components/experience";
+import Projects from "./_default/components/projects";
+import Skills from "./_default/components/skills";
+import Accolades from "./_default/components/accolades";
+import Contact from "./_default/components/contact";
+import Footer from "./_default/components/footer";
 
 export default function Home() {
   return (
     <>
+      <CursorGlow />
       <Navbar />
       <main id="main" className="min-h-screen">
         <Hero />

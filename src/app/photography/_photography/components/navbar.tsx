@@ -1,10 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { navItems, RESUME_PATH, routes } from "@/lib/data";
+import {
+  Home,
+  Monitor,
+  Newspaper,
+  BookOpen,
+  Camera,
+  Gamepad2,
+  Terminal as TerminalIcon,
+  Eye,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
+import { navItems, RESUME_PATH, routes, renderModes } from "@/lib/data";
 import ThemeToggle from "./theme-toggle";
 import { MenuBars, XClose } from "./icons";
 
@@ -38,6 +50,30 @@ const MOBILE_ITEM =
 const MOBILE_TOGGLE =
   "border-[color:var(--color-border)] text-[color:var(--color-nav-mobile-toggle)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-fg)]";
 
+// Icon + bespoke themed effect class per portal route. The effect classes
+// live in globals.css and mirror the Terminal (.nav-glitch) and Photography
+// (.nav-photo) treatments. `Eye` is the fallback icon.
+const routeIcons: Record<string, LucideIcon> = {
+  "/": Home,
+  "/windows95": Monitor,
+  "/cli": TerminalIcon,
+  "/editorial": Newspaper,
+  "/magazine": BookOpen,
+  "/munchkincat": Gamepad2,
+  "/photography": Camera,
+  "/terminal": TerminalIcon,
+};
+
+const navEffect: Record<string, string> = {
+  "/editorial": "nav-editorial",
+  "/photography": "nav-photo",
+  "/terminal": "nav-glitch",
+  "/windows95": "nav-win95",
+  "/cli": "nav-cli",
+  "/magazine": "nav-magazine",
+  "/munchkincat": "nav-arcade",
+};
+
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/" || pathname === "";
@@ -51,6 +87,26 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("#top");
+  const [modesOpen, setModesOpen] = useState(false);
+  const modesRef = useRef<HTMLLIElement>(null);
+
+  // Close the desktop "Render Modes" dropdown on outside click.
+  useEffect(() => {
+    if (!modesOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (modesRef.current && !modesRef.current.contains(e.target as Node)) {
+        setModesOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [modesOpen]);
+
+  // Close both menus whenever the route changes.
+  useEffect(() => {
+    setModesOpen(false);
+    setOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -86,6 +142,9 @@ export default function Navbar() {
   // navigate back to /#section instead of being interpreted as relative.
   const sectionHref = (anchor: string) => (isHome ? anchor : `/${anchor}`);
   const brandHref = isHome ? "#top" : "/";
+  const isRenderModeActive = renderModes.some(
+    (m) => m.href !== "/" && m.href === pathname
+  );
 
   return (
     <header
@@ -128,17 +187,15 @@ export default function Navbar() {
             })}
             {routes.map((route) => {
               const isActive = pathname === route.href;
-              const isTerminal = route.href === "/terminal";
-              const isPhoto = route.href === "/photography";
+              const effect = navEffect[route.href];
               return (
                 <li key={route.href}>
                   <Link
                     href={route.href}
-                    data-text={isTerminal ? route.label : undefined}
+                    data-text={effect === "nav-glitch" ? route.label : undefined}
                     className={clsx(
                       "relative rounded-md px-3 py-1.5 text-sm transition",
-                      isTerminal && "nav-glitch",
-                      isPhoto && "nav-photo",
+                      effect,
                       isActive ? NAV_LINK_ACTIVE : NAV_LINK
                     )}
                   >
@@ -148,6 +205,62 @@ export default function Navbar() {
                 </li>
               );
             })}
+            <li ref={modesRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setModesOpen((v) => !v)}
+                aria-expanded={modesOpen}
+                aria-haspopup="menu"
+                className={clsx(
+                  "flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition",
+                  modesOpen || isRenderModeActive ? NAV_LINK_ACTIVE : NAV_LINK
+                )}
+              >
+                <span>Render Modes</span>
+                <ChevronDown
+                  className={clsx(
+                    "h-3.5 w-3.5 transition-transform duration-200",
+                    modesOpen && "rotate-180"
+                  )}
+                />
+              </button>
+              {modesOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-nav-bg)] p-1.5 shadow-card backdrop-blur-xl"
+                >
+                  {renderModes.map((mode) => {
+                    const isActive = pathname === mode.href;
+                    const Icon = routeIcons[mode.href] || Eye;
+                    const effect = navEffect[mode.href];
+                    return (
+                      <Link
+                        key={mode.href}
+                        href={mode.href}
+                        role="menuitem"
+                        onClick={() => setModesOpen(false)}
+                        className={clsx(
+                          "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition cursor-pointer",
+                          isActive
+                            ? "bg-[color:var(--color-surface-hover)] text-[color:var(--color-fg)] font-semibold"
+                            : MOBILE_ITEM
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span
+                          className={effect}
+                          data-text={
+                            effect === "nav-glitch" ? mode.label : undefined
+                          }
+                        >
+                          {mode.label}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </li>
           </ul>
           <div className="ml-3 flex items-center gap-2">
             <ThemeToggle variant={isOverlay ? "overlay" : "default"} />
@@ -210,26 +323,68 @@ export default function Navbar() {
               </li>
             ))}
             {routes.map((route) => {
-              const isTerminal = route.href === "/terminal";
-              const isPhoto = route.href === "/photography";
+              const isActive = pathname === route.href;
+              const Icon = routeIcons[route.href] || Eye;
+              const effect = navEffect[route.href];
               return (
                 <li key={route.href}>
                   <Link
                     href={route.href}
-                    data-text={isTerminal ? route.label : undefined}
                     onClick={() => setOpen(false)}
                     className={clsx(
-                      "block rounded-md px-3 py-2 transition",
-                      isTerminal && "nav-glitch",
-                      isPhoto && "nav-photo",
-                      MOBILE_ITEM
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition cursor-pointer",
+                      isActive
+                        ? "bg-[color:var(--color-surface-hover)] text-[color:var(--color-fg)] font-semibold"
+                        : MOBILE_ITEM
                     )}
                   >
-                    {route.label}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span
+                      className={effect}
+                      data-text={effect === "nav-glitch" ? route.label : undefined}
+                    >
+                      {route.label}
+                    </span>
                   </Link>
                 </li>
               );
             })}
+            <li className="mt-2 border-t border-[color:var(--color-border)] pt-2 font-sans">
+              <div className="px-3 py-1 text-[10px] font-semibold tracking-wider text-[color:var(--color-fg-subtle)] uppercase">
+                Render Modes
+              </div>
+              <ul className="mt-1 flex flex-col gap-0.5 pl-2">
+                {renderModes.map((mode) => {
+                  const isActive = pathname === mode.href;
+                  const Icon = routeIcons[mode.href] || Eye;
+                  const effect = navEffect[mode.href];
+                  return (
+                    <li key={mode.href}>
+                      <Link
+                        href={mode.href}
+                        onClick={() => setOpen(false)}
+                        className={clsx(
+                          "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition cursor-pointer",
+                          isActive
+                            ? "bg-[color:var(--color-surface-hover)] text-[color:var(--color-fg)] font-semibold"
+                            : MOBILE_ITEM
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span
+                          className={effect}
+                          data-text={
+                            effect === "nav-glitch" ? mode.label : undefined
+                          }
+                        >
+                          {mode.label}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
           </ul>
           <div className="mt-4 flex flex-col gap-2">
             <a

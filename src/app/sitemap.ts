@@ -28,5 +28,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    ...["windows95", "cli", "editorial", "magazine", "munchkincat"].map(
+      (slug) => ({
+        url: `${BASE_URL}/${slug}`,
+        lastModified: now,
+        changeFrequency: "monthly" as const,
+        priority: 0.7,
+      })
+    ),
   ];
 }

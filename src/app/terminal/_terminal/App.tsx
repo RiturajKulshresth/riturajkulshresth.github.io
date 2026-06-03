@@ -235,6 +235,14 @@ function AppShell() {
     return () => window.removeEventListener("mousemove", trackCursor);
   }, []);
 
+  // Tear the ambient drone down when leaving the terminal so it never keeps
+  // humming after the route unmounts.
+  useEffect(() => {
+    return () => {
+      synth.disable();
+    };
+  }, []);
+
   // Update clock & oscillatings indicators
   useEffect(() => {
     const timer = setInterval(() => {

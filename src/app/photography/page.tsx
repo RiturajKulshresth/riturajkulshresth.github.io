@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/navbar";
-import PhotoGallery from "@/components/photo-gallery";
-import { photos } from "@/lib/photography";
+import Navbar from "./_photography/components/navbar";
+import PhotoGallery from "./_photography/components/photo-gallery";
+import { photos } from "./_photography/data";
 
 export const metadata: Metadata = {
   title: "Photography",

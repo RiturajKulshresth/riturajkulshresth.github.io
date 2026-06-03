@@ -140,6 +140,33 @@ export const projects: Project[] = [
     link: "https://github.com/RiturajKulshresth/mouse",
     preview: "/images/mouse.gif",
   },
+  {
+    title: "Anomaly Detection in Wikipedia",
+    subtitle: "Graph-based network analysis",
+    description:
+      "Built a graph-based structure that uses article viewership counts to surface anomalies across Wikipedia articles, improving detection efficiency over naive baselines.",
+    year: "2022",
+    tags: ["Python", "Graphs", "NetworkX"],
+    link: "https://github.com/RiturajKulshresth",
+  },
+  {
+    title: "ECG Arrhythmia Detection",
+    subtitle: "Biomedical signal processing",
+    description:
+      "A MATLAB application for ECG signal analysis: heart-rate detection and classification of arrhythmia types, built during a biomedical instrumentation course.",
+    year: "2021",
+    tags: ["MATLAB", "Signal Processing", "Biomedical"],
+    link: "https://github.com/RiturajKulshresth",
+  },
+  {
+    title: "Kakuro Solver",
+    subtitle: "Constraint-satisfaction puzzle solver",
+    description:
+      "An application that solves Kakuro puzzles by modelling the grid as a constraint-satisfaction problem and searching for valid digit assignments.",
+    year: "2021",
+    tags: ["Python", "Algorithms", "CSP"],
+    link: "https://github.com/RiturajKulshresth",
+  },
 ];
 
 export type Experience = {
@@ -350,7 +377,18 @@ export const navItems = [
 ] as const;
 
 // Internal routes that live outside the home-page scroll narrative.
+// Photography and Terminal stay as their own standalone nav links.
 export const routes = [
   { href: "/photography", label: "Photography" },
   { href: "/terminal", label: "Terminal" },
+] as const;
+
+// Alternate render styles aggregated under the navbar "Render Modes" dropdown.
+export const renderModes = [
+  { href: "/", label: "Default" },
+  { href: "/windows95", label: "Windows 95" },
+  { href: "/cli", label: "CLI" },
+  { href: "/editorial", label: "Editorial" },
+  { href: "/magazine", label: "Magazine" },
+  { href: "/munchkincat", label: "Munchkin Cat" },
 ] as const;
