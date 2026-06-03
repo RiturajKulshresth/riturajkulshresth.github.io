@@ -15,6 +15,20 @@ import BackButton from "./back-button";
 
 const Book = HTMLFlipBook as any;
 
+// Pages are authored at a fixed "design" size and then uniformly transform-
+// scaled to the book's live dimensions, so type and spacing grow/shrink with
+// the magazine instead of staying at fixed pixel sizes. Design ratio matches
+// PAGE_RATIO (w/h = 0.66).
+// Larger design canvas = fixed-size type occupies a smaller fraction of the
+// page, i.e. a smaller overall font size once scaled to the live book.
+const DESIGN_W = 540;
+const DESIGN_H = Math.round(DESIGN_W / 0.66);
+const ScaleCtx = React.createContext<{ scale: number; w: number; h: number }>({
+  scale: 1,
+  w: DESIGN_W,
+  h: DESIGN_H,
+});
+
 const Eyebrow = ({ children }: { children: React.ReactNode }) => (
   <span className="block font-sans text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#887050]">
     {children}
@@ -25,34 +39,81 @@ const Eyebrow = ({ children }: { children: React.ReactNode }) => (
 const Page = React.forwardRef<
   HTMLDivElement,
   { children: React.ReactNode; hard?: boolean; folio?: string }
->(({ children, hard, folio }, ref) => (
-  <div
-    ref={ref}
-    data-density={hard ? "hard" : "soft"}
-    className={
-      hard
-        ? "flex h-full w-full flex-col items-center justify-center bg-[#2c2a29] p-8 text-[#f3efe6]"
-        : "flex h-full w-full flex-col bg-[#fbfaf7] shadow-[inset_0_0_50px_rgba(44,42,41,0.05)]"
-    }
-  >
-    {hard ? (
-      <div className="flex h-full w-full flex-col items-center justify-center text-center">
-        {children}
-      </div>
-    ) : (
-      <>
-        <div className="custom-scrollbar flex-grow select-text overflow-y-auto px-7 py-8 md:px-9">
-          {children}
-        </div>
-        {folio && (
-          <div className="shrink-0 border-t border-[#e8e4d5] px-7 py-2 text-center font-serif text-[9px] italic tracking-wider text-zinc-400 md:px-9">
-            {folio}
+>(({ children, hard, folio }, ref) => {
+  const { scale, w, h } = React.useContext(ScaleCtx);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Per-page auto-fit: if the content is taller than the page body, shrink it
+  // to fit so a magazine page NEVER shows a scrollbar.
+  const [fit, setFit] = useState(1);
+
+  React.useLayoutEffect(() => {
+    if (hard) return;
+    const measure = () => {
+      const wrap = wrapRef.current;
+      const content = contentRef.current;
+      if (!wrap || !content) return;
+      const avail = wrap.clientHeight;
+      // Natural (unscaled) content height; transforms don't affect layout box.
+      const natural = content.scrollHeight;
+      const next =
+        natural > avail && natural > 0 ? Math.max(0.45, avail / natural) : 1;
+      setFit((prev) => (Math.abs(prev - next) < 0.005 ? prev : next));
+    };
+    measure();
+    // Re-measure once fonts/images have settled.
+    const t = setTimeout(measure, 250);
+    return () => clearTimeout(t);
+  }, [children, hard, w, h]);
+
+  return (
+    <div
+      ref={ref}
+      data-density={hard ? "hard" : "soft"}
+      className={
+        hard
+          ? "h-full w-full overflow-hidden bg-[#2c2a29] text-[#f3efe6]"
+          : "h-full w-full overflow-hidden bg-[#fbfaf7] shadow-[inset_0_0_50px_rgba(44,42,41,0.05)]"
+      }
+    >
+      {/* Fixed-design canvas, scaled to fill the live page so all type scales. */}
+      <div
+        className="flex flex-col"
+        style={{
+          width: w,
+          height: h,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        {hard ? (
+          <div className="flex flex-grow flex-col items-center justify-center p-8 text-center">
+            {children}
           </div>
+        ) : (
+          <>
+            <div
+              ref={wrapRef}
+              className="flex-grow select-text overflow-hidden px-7 py-8"
+            >
+              <div
+                ref={contentRef}
+                style={{ transform: `scale(${fit})`, transformOrigin: "top center" }}
+              >
+                {children}
+              </div>
+            </div>
+            {folio && (
+              <div className="shrink-0 border-t border-[#e8e4d5] px-7 py-2 text-center font-serif text-[9px] italic tracking-wider text-zinc-400">
+                {folio}
+              </div>
+            )}
+          </>
         )}
-      </>
-    )}
-  </div>
-));
+      </div>
+    </div>
+  );
+});
 Page.displayName = "Page";
 
 function chunk<T>(arr: T[], n: number): T[][] {
@@ -181,6 +242,7 @@ export default function Magazine() {
         className="relative z-10 flex flex-grow items-center justify-center overflow-hidden p-3 md:p-5"
       >
         {dims.w > 0 && (
+        <ScaleCtx.Provider value={{ scale: dims.w / DESIGN_W, w: DESIGN_W, h: DESIGN_H }}>
         <Book
           key={`${dims.w}x${dims.h}`}
           ref={bookRef}
@@ -461,6 +523,7 @@ export default function Magazine() {
             </p>
           </Page>
         </Book>
+        </ScaleCtx.Provider>
         )}
       </main>
 

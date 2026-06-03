@@ -433,6 +433,61 @@ function Game({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // ── Pixel-art sprite kit ──────────────────────────────────────────────
+    // Decoded asynchronously; until each image is ready we fall back to the
+    // original canvas vector art so there is never a blank frame.
+    const SB = "/munchkin-sprites";
+    const mk = (p: string) => {
+      const i = new Image();
+      i.src = `${SB}/${p}.png`;
+      return i;
+    };
+    const S = {
+      idle: [1, 2, 3, 4].map((n) => mk(`cat/idle_${n}`)),
+      walk: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => mk(`cat/walk_${n}`)),
+      jump1: mk("cat/jump_1"),
+      jump2: mk("cat/jump_2"),
+      fall1: mk("cat/fall_1"),
+      fall2: mk("cat/fall_2"),
+      land1: mk("cat/land_1"),
+      ball: [1, 2, 3, 4, 5, 6, 7].map((n) => mk(`items/ball_${n}`)),
+      door: mk("objects/front_door"),
+    };
+    const furnImg: Record<StationKind, HTMLImageElement> = {
+      desk: mk("objects/desk_lamp"),
+      shelf: mk("objects/bookshelf"),
+      pc: mk("objects/computer"),
+      toolbox: mk("objects/toolbox"),
+      mailbox: mk("objects/mailbox"),
+    };
+    const ready = (img?: HTMLImageElement) =>
+      !!img && img.complete && img.naturalWidth > 0;
+    // Draw a sprite anchored at (cx, bottomY), centred horizontally, with an
+    // optional horizontal flip and per-axis squash/stretch.
+    const blit = (
+      img: HTMLImageElement | undefined,
+      cx: number,
+      bottomY: number,
+      scale: number,
+      flip = false,
+      sxz = 1,
+      syz = 1
+    ) => {
+      if (!ready(img)) return false;
+      const w = img!.naturalWidth * scale * sxz;
+      const h = img!.naturalHeight * scale * syz;
+      ctx.save();
+      ctx.translate(cx, bottomY);
+      ctx.scale(flip ? -1 : 1, 1);
+      ctx.drawImage(img!, -w / 2, -h, w, h);
+      ctx.restore();
+      return true;
+    };
+    const CAT_SCALE = 1.3;
+    const FURN_SCALE = 1.25;
+    const DOOR_SCALE = 1.7;
+    const BALL_SCALE = 1.4;
+
     const resize = () => {
       const parent = canvas.parentElement;
       canvas.width = parent?.clientWidth || 800;
@@ -610,6 +665,8 @@ function Game({
       const H = canvas.height;
       const t = Date.now() / 1000;
       const cameraX = Math.max(0, Math.min(WORLD_WIDTH - W, player.x - W / 2 + 13));
+      // Keep pixel art crisp (canvas resize resets this, so set it each frame).
+      ctx.imageSmoothingEnabled = false;
 
       // ── Background: cozy room ──
       const wall = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
@@ -788,17 +845,21 @@ function Game({
         }
         const cx = c.x - cameraX;
         const fy = Math.sin(t * 2.5 + c.x) * 4;
-        ctx.fillStyle = "#ec4899";
-        ctx.beginPath();
-        ctx.arc(cx, c.y + fy, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.5)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(cx, c.y + fy, 8, 0.3, 2.4);
-        ctx.moveTo(cx - 6, c.y - 3 + fy);
-        ctx.arc(cx, c.y + fy, 5, 1.2, 3.6);
-        ctx.stroke();
+        // rolling yarn-ball animation (per-ball phase offset)
+        const bframe = S.ball[Math.floor(t * 9 + c.x * 0.05) % 7];
+        if (!blit(bframe, cx, c.y + fy + 10, BALL_SCALE)) {
+          ctx.fillStyle = "#ec4899";
+          ctx.beginPath();
+          ctx.arc(cx, c.y + fy, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,0.5)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, c.y + fy, 8, 0.3, 2.4);
+          ctx.moveTo(cx - 6, c.y - 3 + fy);
+          ctx.arc(cx, c.y + fy, 5, 1.2, 3.6);
+          ctx.stroke();
+        }
       });
 
       // Surface proximity to the UI so Inspect only lights up when useful.
@@ -813,8 +874,19 @@ function Game({
       markers.forEach((st) => {
         const sx = st.x - cameraX;
         const near = Math.abs(player.x + 13 - st.x) <= 70;
-        drawFurniture(ctx, st.kind, sx, near, st.accent, t);
-        // glow + label when near
+        // soft glow pad on the floor under the object
+        const pad = ctx.createRadialGradient(sx, GROUND_Y, 0, sx, GROUND_Y, 56);
+        pad.addColorStop(0, near ? `${st.accent}55` : `${st.accent}14`);
+        pad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = pad;
+        ctx.beginPath();
+        ctx.ellipse(sx, GROUND_Y, 48, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // furniture sprite (vector art fallback while it decodes)
+        if (!blit(furnImg[st.kind], sx, GROUND_Y + 2, FURN_SCALE)) {
+          drawFurniture(ctx, st.kind, sx, near, st.accent, t);
+        }
+        // label when near
         if (near) {
           const bob = Math.sin(t * 4) * 2;
           ctx.fillStyle = "#ffffff";
@@ -825,30 +897,29 @@ function Game({
           ctx.font = "9px monospace";
           ctx.fillText("[E] inspect", sx, GROUND_Y - 92 + bob);
         }
-        ctx.font = "16px serif";
-        ctx.textAlign = "center";
-        ctx.fillText(st.emoji, sx, GROUND_Y - 74);
       });
 
       // ── Goal: front door ──
       const gx = GOAL_X - cameraX;
-      const dy = GROUND_Y - 130;
-      ctx.fillStyle = "#5b3920";
-      ctx.fillRect(gx - 6, dy - 6, 64, 136);
-      ctx.fillStyle = "#7a4e2a";
-      ctx.fillRect(gx, dy, 52, 130);
-      ctx.strokeStyle = "#4a2f17";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(gx + 6, dy + 10, 40, 50);
-      ctx.strokeRect(gx + 6, dy + 68, 40, 52);
-      ctx.fillStyle = "#fcd34d";
-      ctx.beginPath();
-      ctx.arc(gx + 42, dy + 70, 3, 0, Math.PI * 2);
-      ctx.fill();
+      if (!blit(S.door, gx + 26, GROUND_Y + 2, DOOR_SCALE)) {
+        const dy = GROUND_Y - 130;
+        ctx.fillStyle = "#5b3920";
+        ctx.fillRect(gx - 6, dy - 6, 64, 136);
+        ctx.fillStyle = "#7a4e2a";
+        ctx.fillRect(gx, dy, 52, 130);
+        ctx.strokeStyle = "#4a2f17";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(gx + 6, dy + 10, 40, 50);
+        ctx.strokeRect(gx + 6, dy + 68, 40, 52);
+        ctx.fillStyle = "#fcd34d";
+        ctx.beginPath();
+        ctx.arc(gx + 42, dy + 70, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 9px monospace";
       ctx.textAlign = "center";
-      ctx.fillText("HOME", gx + 26, dy - 12);
+      ctx.fillText("HOME", gx + 26, GROUND_Y - 118);
       if (!goalReached && Math.abs(player.x + 13 - (gx + 26 + cameraX)) < 34 && player.grounded) {
         goalReached = true;
         playSound("victory");
@@ -879,7 +950,33 @@ function Game({
       if (player.land < 0.02) player.land = 0;
       const moving = player.vx !== 0;
       player.idle = moving ? 0 : player.idle + 0.06;
-      drawCat(ctx, player, cameraX, t);
+      // Choose a sprite frame from the cat's current state.
+      let catImg: HTMLImageElement | undefined;
+      if (!player.grounded) {
+        if (player.vy <= -7) catImg = S.jump1; // launch crouch
+        else if (player.vy <= 1) catImg = S.jump2; // rising / apex
+        else if (player.vy <= 7) catImg = S.fall1; // start of fall
+        else catImg = S.fall2; // fast fall (stretched)
+      } else if (player.land > 0.25) {
+        catImg = S.land1; // landing impact (brief)
+      } else if (moving) {
+        catImg = S.walk[Math.floor(player.anim * 0.5) % 8];
+      } else {
+        catImg = S.idle[Math.floor(t * 3) % 4];
+      }
+      let csx = 1;
+      let csy = 1;
+      if (player.land > 0) {
+        csx = 1 + 0.2 * player.land;
+        csy = 1 - 0.2 * player.land;
+      }
+      const feetX = player.x + player.w / 2 - cameraX;
+      const catBob = player.grounded && player.idle > 0 ? Math.sin(t * 3) * 1.2 : 0;
+      if (
+        !blit(catImg, feetX, player.y + player.h + catBob, CAT_SCALE, player.facing === -1, csx, csy)
+      ) {
+        drawCat(ctx, player, cameraX, t);
+      }
 
       // ── CRT overlay ──
       if (crtRef.current) {

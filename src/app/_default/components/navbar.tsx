@@ -36,10 +36,6 @@ const NAV_LINK =
 const NAV_LINK_ACTIVE = "text-[color:var(--color-fg)]";
 const NAV_UNDERLINE =
   "absolute inset-x-3 -bottom-px h-px bg-gradient-to-r from-transparent via-[color:var(--color-nav-underline)] to-transparent";
-const BUTTON_GHOST =
-  "border-[color:var(--color-border)] text-[color:var(--color-nav-ghost-text)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-fg)]";
-const BUTTON_PRIMARY =
-  "bg-[color:var(--color-fg)] text-[color:var(--color-bg)] hover:bg-[color:var(--color-nav-primary-bg-hover)]";
 // Theme-matching (accent green) treatment for the Résumé CTA.
 const BUTTON_ACCENT =
   "border border-[color:var(--color-accent-strong)]/45 bg-[color:var(--color-accent)]/12 text-[color:var(--color-accent-strong)] hover:bg-[color:var(--color-accent)] hover:text-[color:var(--color-bg)] hover:border-transparent font-medium";
@@ -170,7 +166,7 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
-          <ul className="flex items-center gap-1 text-sm">
+          <ul className="flex items-center gap-0.5 text-sm">
             {navItems.map((item) => {
               const isActive = isHome && activeSection === item.href;
               return (
@@ -178,7 +174,7 @@ export default function Navbar() {
                   <a
                     href={sectionHref(item.href)}
                     className={clsx(
-                      "relative rounded-md px-3 py-1.5 transition",
+                      "relative rounded-md px-2 py-1.5 transition",
                       isActive ? NAV_LINK_ACTIVE : NAV_LINK
                     )}
                   >
@@ -277,15 +273,6 @@ export default function Navbar() {
               )}
             >
               Résumé
-            </a>
-            <a
-              href={sectionHref("#contact")}
-              className={clsx(
-                "whitespace-nowrap rounded-md border px-3 py-1.5 text-sm transition",
-                BUTTON_GHOST
-              )}
-            >
-              Get in touch
             </a>
           </div>
         </div>
@@ -400,16 +387,6 @@ export default function Navbar() {
               )}
             >
               Résumé
-            </a>
-            <a
-              href={sectionHref("#contact")}
-              onClick={() => setOpen(false)}
-              className={clsx(
-                "rounded-md px-3 py-2 text-center text-sm font-medium transition",
-                BUTTON_PRIMARY
-              )}
-            >
-              Get in touch
             </a>
           </div>
         </div>
