@@ -1,3 +1,7 @@
+/**
+ * Photography gallery data for `/photography`. Photos are hosted on Unsplash
+ * under @riturajworkemail.
+ */
 // Photos are hosted on Unsplash under @riturajworkemail.
 // Each entry has three URL variants for performance:
 //   - small:   thumbnail-quality (~400w) - used for the blurred backdrop
@@ -12,6 +16,7 @@ export type Photo = {
   small: string;
 };
 
+// `ixid` is required by Unsplash hotlink URLs; keep it paired with each photo id.
 const u = (id: string, ix: string) => ({
   full: `https://images.unsplash.com/photo-${id}?crop=entropy&cs=srgb&fm=jpg&ixid=${ix}&ixlib=rb-4.0.3&q=85`,
   regular: `https://images.unsplash.com/photo-${id}?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=${ix}&ixlib=rb-4.0.3&q=80&w=1080`,

@@ -5,6 +5,8 @@ interface Ghost {
   y: number;
   dirX: number;
   dirY: number;
+  tx: number; // pixel coords of the tile centre we are moving toward
+  ty: number;
   color: string;
   corner: { col: number; row: number };
   kind: "blinky" | "pinky" | "inky" | "clyde";
@@ -53,6 +55,8 @@ export class PacmanGame implements GameEngine {
   private py = 0;
   private dirX = 0;
   private dirY = 0;
+  private ptx = 0; // pixel coords of the tile centre the player is moving toward
+  private pty = 0;
   private wantX = 0;
   private wantY = 0;
   private faceAngle = 0;
@@ -152,6 +156,8 @@ export class PacmanGame implements GameEngine {
   private resetPositions() {
     this.px = this.centerX(this.startTile.col);
     this.py = this.centerY(this.startTile.row);
+    this.ptx = this.px;
+    this.pty = this.py;
     this.dirX = 0;
     this.dirY = 0;
     this.wantX = 0;
@@ -169,11 +175,15 @@ export class PacmanGame implements GameEngine {
     ];
     this.ghosts = defs.map((d, i) => {
       const t = this.spawns[i] ?? this.homeTile;
+      const x = this.centerX(t.col);
+      const y = this.centerY(t.row);
       return {
-        x: this.centerX(t.col),
-        y: this.centerY(t.row),
-        dirX: i % 2 === 0 ? 1 : -1,
+        x,
+        y,
+        dirX: 0,
         dirY: 0,
+        tx: x,
+        ty: y,
         color: d.color,
         corner: d.corner,
         kind: d.kind,
@@ -286,14 +296,14 @@ export class PacmanGame implements GameEngine {
   }
 
   private movePlayer(speed: number) {
-    const t = this.tileOf(this.px, this.py);
-    const cx = this.centerX(t.col);
-    const cy = this.centerY(t.row);
-    const atCenter = Math.abs(this.px - cx) <= speed && Math.abs(this.py - cy) <= speed;
+    // Reached the tile centre we were heading for: snap exactly, then decide
+    // the next tile. Anchoring to a destination tile (instead of testing the
+    // current tile centre each frame) avoids snapping back and stalling.
+    if (Math.abs(this.px - this.ptx) <= speed && Math.abs(this.py - this.pty) <= speed) {
+      this.px = this.ptx;
+      this.py = this.pty;
+      const t = this.tileOf(this.px, this.py);
 
-    if (atCenter) {
-      this.px = cx;
-      this.py = cy;
       // Apply a buffered turn only if that direction is open.
       if ((this.wantX !== 0 || this.wantY !== 0) && !this.isWall(t.col + this.wantX, t.row + this.wantY)) {
         this.dirX = this.wantX;
@@ -304,6 +314,9 @@ export class PacmanGame implements GameEngine {
         this.dirX = 0;
         this.dirY = 0;
       }
+      // Lock onto the next tile centre in our heading.
+      this.ptx = this.centerX(t.col + this.dirX);
+      this.pty = this.centerY(t.row + this.dirY);
     }
 
     this.px += this.dirX * speed;
@@ -317,14 +330,11 @@ export class PacmanGame implements GameEngine {
 
     this.ghosts.forEach((g) => {
       const speed = (frightened ? g.baseSpeed * 0.6 : g.baseSpeed * levelScale) * speedFactor;
-      const t = this.tileOf(g.x, g.y);
-      const cx = this.centerX(t.col);
-      const cy = this.centerY(t.row);
-      const atCenter = Math.abs(g.x - cx) <= speed && Math.abs(g.y - cy) <= speed;
 
-      if (atCenter) {
-        g.x = cx;
-        g.y = cy;
+      if (Math.abs(g.x - g.tx) <= speed && Math.abs(g.y - g.ty) <= speed) {
+        g.x = g.tx;
+        g.y = g.ty;
+        const t = this.tileOf(g.x, g.y);
 
         // Candidate moves: any open neighbour, no reversing (unless trapped).
         const dirs = [
@@ -361,7 +371,14 @@ export class PacmanGame implements GameEngine {
             g.dirX = best.x;
             g.dirY = best.y;
           }
+        } else {
+          g.dirX = 0;
+          g.dirY = 0;
         }
+
+        // Lock onto the chosen neighbour's centre.
+        g.tx = this.centerX(t.col + g.dirX);
+        g.ty = this.centerY(t.row + g.dirY);
       }
 
       g.x += g.dirX * speed;
@@ -377,8 +394,10 @@ export class PacmanGame implements GameEngine {
           this.createParticles(g.x, g.y, "#ffffff", 15);
           g.x = this.centerX(this.homeTile.col);
           g.y = this.centerY(this.homeTile.row);
+          g.tx = g.x;
+          g.ty = g.y;
           g.dirX = 0;
-          g.dirY = -1;
+          g.dirY = 0;
         } else {
           this.loseLife(ctx);
         }

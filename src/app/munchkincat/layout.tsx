@@ -1,3 +1,6 @@
+/**
+ * Per-route layout for /munchkincat. Sets SEO metadata; the game owns full-screen layout.
+ */
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

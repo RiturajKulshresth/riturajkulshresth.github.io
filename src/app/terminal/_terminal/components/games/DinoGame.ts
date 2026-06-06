@@ -1,3 +1,7 @@
+/**
+ * Chrome-dino style endless runner. Jump cacti, duck under high birds after 40 points.
+ * Score ticks continuously; scroll speed rises with score. Day/night palette cycles every 800 frames.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Hurdle {
@@ -160,7 +164,7 @@ export class DinoGame implements GameEngine {
       }
     }
 
-    // Obstacles updates
+    // Probabilistic spawn keeps at most two hurdles on screen without a fixed interval.
     if (this.obstacles.length < 2 && Math.random() < 0.008) {
       this.spawnObstacle(ctx.canvas.width);
     }
@@ -179,6 +183,7 @@ export class DinoGame implements GameEngine {
       const dinoWidth = 24;
       const pl = 110;
       const pr = pl + dinoWidth;
+      // Ducking shrinks the top of the hitbox so high birds become passable underneath.
       const pt = this.dinoY + (this.isDucking ? 16 : 0);
       const pb = this.dinoY + 34;
 

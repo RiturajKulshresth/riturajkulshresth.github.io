@@ -1,3 +1,6 @@
+/**
+ * Shared React hooks used across render modes (scroll locking, etc.).
+ */
 import { useEffect } from "react";
 
 type LockOptions = {

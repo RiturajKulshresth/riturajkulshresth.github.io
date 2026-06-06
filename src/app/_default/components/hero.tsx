@@ -1,3 +1,8 @@
+/**
+ * Above-the-fold hero (`id="top"`). Left column is copy and CTAs from
+ * `profile`; right column is a faux editor window with staggered `fade-up`
+ * entrance animations and floating tech pills (hidden below `sm`).
+ */
 import Link from "next/link";
 import { profile, RESUME_PATH } from "@/lib/data";
 
@@ -138,6 +143,7 @@ export default function Hero() {
                 width={480}
                 height={480}
                 loading="eager"
+                // Hero illustration is the LCP candidate on the home page.
                 fetchPriority="high"
                 decoding="async"
                 className="relative z-10 h-full w-full object-contain"
@@ -161,7 +167,8 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Floating tech tag pills */}
+          {/* Floating tech tag pills. `sm:inline-flex` keeps them off narrow
+              viewports where absolute offsets would overlap the copy. */}
           {floatingTags.map((tag) => (
             <span
               key={tag.label}

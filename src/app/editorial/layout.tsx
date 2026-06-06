@@ -1,3 +1,7 @@
+/**
+ * Per-route layout for /editorial. Sets SEO metadata and wraps content in a
+ * warm off-white canvas with horizontal padding.
+ */
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 

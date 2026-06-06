@@ -1,3 +1,7 @@
+/**
+ * Contact section (`id="contact"`). Primary CTA is a mailto link; social
+ * links and profile fields come from `@/lib/data`.
+ */
 import { profile, socialLinks } from "@/lib/data";
 import SectionHeader from "./section-header";
 import { ArrowUpRight } from "./icons";
@@ -42,6 +46,7 @@ export default function Contact() {
                 </dt>
                 <dd className="mt-1.5 text-[color:var(--color-fg)]">
                   <a
+                    // Strip spaces so `tel:` URIs parse correctly on mobile.
                     href={`tel:${profile.phone.replace(/\s/g, "")}`}
                     className="link-underline"
                   >

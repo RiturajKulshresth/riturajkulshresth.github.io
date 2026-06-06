@@ -1,3 +1,7 @@
+/**
+ * "Recognition" section on the home page. Renders awards from `accolades` in
+ * `@/lib/data` as a three-column card grid (`id="recognition"`).
+ */
 import { accolades } from "@/lib/data";
 import SectionHeader from "./section-header";
 

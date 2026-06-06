@@ -1,3 +1,7 @@
+/**
+ * Terminal route layout for the /terminal Next.js segment.
+ * Sets page metadata and wraps children in terminal-root styling (terminal.css).
+ */
 import type { Metadata } from "next";
 import "./terminal.css";
 

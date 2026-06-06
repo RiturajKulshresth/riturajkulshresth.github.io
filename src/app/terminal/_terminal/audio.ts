@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Procedural Web Audio engine for the terminal HUD.
+ * Exports a singleton `synth` used for UI blips, boot SFX, and an ambient drone.
+ * AudioContext must be unlocked via a user gesture (BootSequence calls enable()).
+ */
+
 class AudioSynthesizer {
   private ctx: AudioContext | null = null;
   private osc1: OscillatorNode | null = null;
@@ -294,4 +300,5 @@ class AudioSynthesizer {
   }
 }
 
+// Single shared instance; imported by BootSequence, HUD widgets, and OverdriveContext.
 export const synth = new AudioSynthesizer();

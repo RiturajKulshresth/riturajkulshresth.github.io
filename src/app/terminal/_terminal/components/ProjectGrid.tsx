@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Bento grid of portfolio projects re-skinned as "system nodes" with live
+ * efficiency oscillation. Click opens BlueprintModal: per-project canvas
+ * schematics (Lorenz, radar sweep, etc.) driven by each node's blueprints[] codes.
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import { ProjectNode } from "../types";
 import { synth } from "../audio";

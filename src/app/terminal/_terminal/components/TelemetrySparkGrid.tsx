@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Four-channel telemetry sparkline grid (HEAP, GPU, NET, IO).
+ * Rolling 64-sample buffers advance on a throttled clock; ALL shows a 2x2 mosaic,
+ * single-channel focus adds a stats column and 24-sample histogram.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";

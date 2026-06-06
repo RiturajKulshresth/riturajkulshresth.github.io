@@ -1,3 +1,7 @@
+/**
+ * Three-lane vertical highway dodge. Shift lanes to avoid oncoming traffic; collect fuel canisters for bonus score.
+ * Survival ticks score over time; hold Space/W/Up for nitro boost. 3 lives with post-crash invulnerability.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Car {
@@ -45,6 +49,9 @@ export class HighwayGame implements GameEngine {
   private score = 0;
   private survivalTimer = 0;
   private elapsedFrames = 0;
+  private readonly maxLives = 3;
+  private lives = 3;
+  private invuln = 0;
 
   private traffic: Car[] = [];
   private collectibles: FuelCanister[] = [];
@@ -61,6 +68,8 @@ export class HighwayGame implements GameEngine {
     this.score = 0;
     this.survivalTimer = 0;
     this.elapsedFrames = 0;
+    this.lives = this.maxLives;
+    this.invuln = 0;
     this.scrollOffset = 0;
     this.traffic = [];
     this.collectibles = [];
@@ -149,6 +158,7 @@ export class HighwayGame implements GameEngine {
 
     // Increase survival score ticking
     this.elapsedFrames += speedFactor;
+    if (this.invuln > 0) this.invuln -= speedFactor;
     this.survivalTimer += speedFactor;
     if (this.survivalTimer >= 40) {
       this.survivalTimer = 0;
@@ -159,8 +169,8 @@ export class HighwayGame implements GameEngine {
     // --------------------------------------------
     // Handle horizontal lane jumping / shifting
     // --------------------------------------------
-    // Boost activation upon W / Up arrow holds
-    this.boostActive = !!(keysPressed["ArrowUp"] || keysPressed["KeyW"]);
+    // Boost activation: hold Space (dedicated NITRO key), W, or Up arrow.
+    this.boostActive = !!(keysPressed["Space"] || keysPressed["ArrowUp"] || keysPressed["KeyW"]);
 
     // Key debounce checking for snappy lane switching
     if (keysPressed["ArrowLeft"] || keysPressed["KeyA"]) {
@@ -213,15 +223,24 @@ export class HighwayGame implements GameEngine {
       const ct = car.y;
       const cb = car.y + car.height;
 
-      if (pr >= cl && pl <= cr && pb >= ct && pt <= cb) {
+      if (this.invuln <= 0 && pr >= cl && pl <= cr && pb >= ct && pt <= cb) {
         // Exploding crash!
         this.createParticles(this.playerX + this.playerWidth / 2, this.playerY + 10, "#ffffff", 25);
         this.createParticles(car.x + car.width / 2, car.y + car.height / 2, "rgba(239, 68, 68, 0.95)", 20);
-        
-        ctx.setGameState("GAMEOVER");
+        this.lives--;
+        if (this.lives <= 0) {
+          ctx.setGameState("GAMEOVER");
+          ctx.playRetroSFX("CRASH");
+          ctx.checkAndSaveHighScore(this.score);
+          return;
+        }
+        // Clear the offending car, recentre and grant a brief shield.
+        this.traffic.splice(i, 1);
         ctx.playRetroSFX("CRASH");
-        ctx.checkAndSaveHighScore(this.score);
-        return;
+        this.playerLane = 1;
+        this.playerX = this.laneOffsetLeft + this.playerLane * this.laneWidth + this.laneWidth / 2;
+        this.invuln = 110;
+        continue;
       }
 
       // Recycle off-screen traffic
@@ -401,6 +420,7 @@ export class HighwayGame implements GameEngine {
     // Draw Player's Sports Car (Top-down vector)
     // --------------------------------------------
     c2d.save();
+    if (this.invuln > 0) c2d.globalAlpha = Math.floor(this.invuln / 6) % 2 === 0 ? 0.3 : 1;
     c2d.shadowBlur = 15;
     c2d.shadowColor = getColorHex(theme, 0.9);
     c2d.fillStyle = getColorHex(theme, 0.8);
@@ -451,7 +471,11 @@ export class HighwayGame implements GameEngine {
     const trafficSpeed = 6.0 + difficultyLevel * 1.2;
     c2d.fillText(`TRAFFIC_SPEED: ${trafficSpeed.toFixed(0)}m/h`, 110, ctx.canvas.height - 8);
     c2d.fillText(`SURVIVED: ${(this.elapsedFrames / 60).toFixed(1)}s`, 215, ctx.canvas.height - 8);
-    
+
+    c2d.fillStyle = getColorHex(theme, 0.9);
+    c2d.font = "bold 10px monospace";
+    c2d.fillText(`LIVES: ${"♥".repeat(this.lives)}${"·".repeat(Math.max(0, this.maxLives - this.lives))}`, 8, 16);
+
     if (this.boostActive) {
       c2d.fillStyle = "rgba(239, 68, 68, 0.7)";
       c2d.fillText("NITROUS NITRO BOOSTED ACTIVE", 330, ctx.canvas.height - 8);

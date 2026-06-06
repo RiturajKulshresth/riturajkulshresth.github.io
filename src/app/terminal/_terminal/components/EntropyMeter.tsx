@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Dual semi-circular gauge HUD for synthetic entropy/stability/flux readouts.
+ * Values are sine-driven with jitter; PRIMARY and FLUX modes swap dial pairs.
+ * Rolling history strips and peak markers update inside the canvas rAF loop.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";

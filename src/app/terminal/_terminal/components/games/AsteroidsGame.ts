@@ -1,3 +1,7 @@
+/**
+ * Asteroids orbit sim with thrust inertia and toroidal screen wrapping.
+ * 3 lives; waves spawn more rocks; gravity well pulls from wave 3. Power-ups: RAPID, TRIPLE, SHIELD, LIFE.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Laser {
@@ -7,6 +11,24 @@ interface Laser {
   vy: number;
   life: number;
 }
+
+type PowerKind = "RAPID" | "TRIPLE" | "SHIELD" | "LIFE";
+
+interface PowerUp {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  kind: PowerKind;
+}
+
+const POWER_META: Record<PowerKind, { label: string; color: string }> = {
+  RAPID: { label: "R", color: "rgba(56, 189, 248, 0.95)" },
+  TRIPLE: { label: "3", color: "rgba(250, 204, 21, 0.95)" },
+  SHIELD: { label: "S", color: "rgba(52, 211, 153, 0.95)" },
+  LIFE: { label: "+", color: "rgba(244, 63, 94, 0.95)" },
+};
 
 interface Asteroid {
   x: number;
@@ -43,6 +65,13 @@ export class AsteroidsGame implements GameEngine {
   private shootCooldown = 0;
   private score = 0;
   private currentWave = 1;
+  private readonly maxLives = 3;
+  private lives = 3;
+  private invuln = 0;
+  private powerups: PowerUp[] = [];
+  private rapidTimer = 0;
+  private tripleTimer = 0;
+  private shieldTimer = 0;
   private cw = 600;
   private ch = 400;
   private gravityWell = { x: 300, y: 200, pullRadius: 180, active: false };
@@ -50,6 +79,12 @@ export class AsteroidsGame implements GameEngine {
   init(ctx: GameContext): void {
     this.score = 0;
     this.currentWave = 1;
+    this.lives = this.maxLives;
+    this.invuln = 0;
+    this.powerups = [];
+    this.rapidTimer = 0;
+    this.tripleTimer = 0;
+    this.shieldTimer = 0;
     this.cw = ctx.canvas.width;
     this.ch = ctx.canvas.height;
     this.shipX = ctx.canvas.width / 2;
@@ -123,6 +158,87 @@ export class AsteroidsGame implements GameEngine {
     }
   }
 
+  // Random capsule drop from a destroyed rock. Capsules drift and wrap like
+  // everything else in this toroidal field.
+  private maybeDropPowerUp(x: number, y: number) {
+    if (Math.random() > 0.16) return;
+    const roll = Math.random();
+    const kind: PowerKind =
+      roll < 0.34 ? "RAPID" : roll < 0.64 ? "TRIPLE" : roll < 0.88 ? "SHIELD" : "LIFE";
+    this.powerups.push({
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 1.2,
+      vy: (Math.random() - 0.5) * 1.2,
+      life: 600,
+      kind,
+    });
+  }
+
+  private applyPowerUp(kind: PowerKind, ctx: GameContext) {
+    ctx.playRetroSFX("SECURE");
+    this.createParticles(this.shipX, this.shipY, POWER_META[kind].color, 14);
+    if (kind === "RAPID") this.rapidTimer = 420;
+    else if (kind === "TRIPLE") this.tripleTimer = 420;
+    else if (kind === "SHIELD") this.shieldTimer = 480;
+    else if (kind === "LIFE") {
+      if (this.lives < this.maxLives) this.lives++;
+      else {
+        this.score += 75;
+        ctx.setScore(this.score);
+      }
+    }
+  }
+
+  private updatePowerUps(speedFactor: number, ctx: GameContext) {
+    for (let i = this.powerups.length - 1; i >= 0; i--) {
+      const p = this.powerups[i];
+
+      // Magnet: a capsule within range drifts toward the ship so it is always
+      // catchable, even if the player keeps the ship mostly still and just
+      // rotates/shoots (the classic Asteroids playstyle).
+      const dxs = this.shipX - p.x;
+      const dys = this.shipY - p.y;
+      const dShip = Math.hypot(dxs, dys) || 1;
+      if (dShip < 140) {
+        p.x += (dxs / dShip) * 2.2 * speedFactor;
+        p.y += (dys / dShip) * 2.2 * speedFactor;
+      } else {
+        p.x += p.vx * speedFactor;
+        p.y += p.vy * speedFactor;
+      }
+
+      if (p.x < 0) p.x = this.cw;
+      if (p.x > this.cw) p.x = 0;
+      if (p.y < 0) p.y = this.ch;
+      if (p.y > this.ch) p.y = 0;
+      p.life -= speedFactor;
+      if (p.life <= 0) {
+        this.powerups.splice(i, 1);
+        continue;
+      }
+      // Fly into it to collect.
+      if (dShip < 20) {
+        this.applyPowerUp(p.kind, ctx);
+        this.powerups.splice(i, 1);
+      }
+    }
+  }
+
+  // Shooting a capsule also collects it: ideal when the ship is held still and
+  // the player only rotates and fires. Called from the laser update loop.
+  private collectPowerUpByLaser(lx: number, ly: number, ctx: GameContext): boolean {
+    for (let i = this.powerups.length - 1; i >= 0; i--) {
+      const p = this.powerups[i];
+      if (Math.hypot(lx - p.x, ly - p.y) < 12) {
+        this.applyPowerUp(p.kind, ctx);
+        this.powerups.splice(i, 1);
+        return true;
+      }
+    }
+    return false;
+  }
+
   update(input: GameInput, ctx: GameContext): void {
     const { keysPressed, mouseClicked } = input;
     const speedFactor = ctx.speedFactor;
@@ -131,6 +247,11 @@ export class AsteroidsGame implements GameEngine {
     this.gravityWell.active = this.currentWave >= 3;
 
     if (this.shootCooldown > 0) this.shootCooldown -= speedFactor;
+    if (this.invuln > 0) this.invuln -= speedFactor;
+    if (this.rapidTimer > 0) this.rapidTimer -= speedFactor;
+    if (this.tripleTimer > 0) this.tripleTimer -= speedFactor;
+    if (this.shieldTimer > 0) this.shieldTimer -= speedFactor;
+    this.updatePowerUps(speedFactor, ctx);
 
     // Movement Angle Steers
     if (keysPressed["ArrowLeft"] || keysPressed["KeyA"]) {
@@ -182,14 +303,18 @@ export class AsteroidsGame implements GameEngine {
 
     // Shooting Lasers
     if ((keysPressed["Space"] || keysPressed["KeyS"] || mouseClicked) && this.shootCooldown <= 0) {
-      this.lasers.push({
-        x: this.shipX + Math.cos(this.shipAngle) * 14,
-        y: this.shipY + Math.sin(this.shipAngle) * 14,
-        vx: Math.cos(this.shipAngle) * 8.0,
-        vy: Math.sin(this.shipAngle) * 8.0,
-        life: 50 // frames of lifetime
+      const angles = this.tripleTimer > 0 ? [-0.2, 0, 0.2] : [0];
+      angles.forEach((off) => {
+        const a = this.shipAngle + off;
+        this.lasers.push({
+          x: this.shipX + Math.cos(a) * 14,
+          y: this.shipY + Math.sin(a) * 14,
+          vx: Math.cos(a) * 8.0,
+          vy: Math.sin(a) * 8.0,
+          life: 50, // frames of lifetime
+        });
       });
-      this.shootCooldown = 11;
+      this.shootCooldown = this.rapidTimer > 0 ? 5 : 11;
       ctx.playRetroSFX("LAUNCH");
     }
 
@@ -218,6 +343,12 @@ export class AsteroidsGame implements GameEngine {
 
       l.life -= speedFactor;
       if (l.life <= 0) {
+        this.lasers.splice(i, 1);
+        continue;
+      }
+
+      // A laser that strikes a capsule collects it (and is consumed).
+      if (this.collectPowerUpByLaser(l.x, l.y, ctx)) {
         this.lasers.splice(i, 1);
         continue;
       }
@@ -261,6 +392,7 @@ export class AsteroidsGame implements GameEngine {
             }
           }
 
+          this.maybeDropPowerUp(ast.x, ast.y);
           this.asteroids.splice(a, 1);
 
           // All cleared trigger
@@ -301,14 +433,34 @@ export class AsteroidsGame implements GameEngine {
         }
       }
 
-      // Check collision on ship
+      // Check collision on ship (only when not briefly shielded after a hit)
       const distS = Math.pow(this.shipX - ast.x, 2) + Math.pow(this.shipY - ast.y, 2);
-      if (distS < Math.pow(ast.radius + 10, 2)) {
-        // Ship crashed
+      if (this.invuln <= 0 && distS < Math.pow(ast.radius + 10, 2)) {
+        // A SHIELD power-up absorbs the impact and vaporises the rock.
+        if (this.shieldTimer > 0) {
+          this.shieldTimer = 0;
+          this.invuln = 90;
+          this.createParticles(this.shipX, this.shipY, "rgba(52, 211, 153, 0.95)", 18);
+          ctx.playRetroSFX("COLLIDE");
+          this.asteroids.splice(a, 1);
+          a--;
+          continue;
+        }
         this.createParticles(this.shipX, this.shipY, "#ffffff", 25);
-        ctx.setGameState("GAMEOVER");
+        this.lives--;
+        if (this.lives <= 0) {
+          ctx.setGameState("GAMEOVER");
+          ctx.playRetroSFX("CRASH");
+          ctx.checkAndSaveHighScore(this.score);
+          return;
+        }
+        // Respawn at centre with a short shield window.
         ctx.playRetroSFX("CRASH");
-        ctx.checkAndSaveHighScore(this.score);
+        this.shipX = this.cw / 2;
+        this.shipY = this.ch / 2;
+        this.shipVx = 0;
+        this.shipVy = 0;
+        this.invuln = 120;
         return;
       }
     }
@@ -386,8 +538,46 @@ export class AsteroidsGame implements GameEngine {
       c2d.restore();
     });
 
-    // Draw spaceships fighter with vector outlines
+    // Draw drifting power-up capsules.
+    this.powerups.forEach((p) => {
+      const meta = POWER_META[p.kind];
+      c2d.save();
+      c2d.globalAlpha = p.life < 120 && Math.floor(Date.now() / 150) % 2 === 0 ? 0.4 : 1;
+      c2d.shadowBlur = 12;
+      c2d.shadowColor = meta.color;
+      c2d.strokeStyle = meta.color;
+      c2d.fillStyle = "rgba(0,0,0,0.55)";
+      c2d.lineWidth = 2;
+      c2d.beginPath();
+      c2d.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      c2d.fill();
+      c2d.stroke();
+      c2d.fillStyle = meta.color;
+      c2d.font = "bold 11px monospace";
+      c2d.textAlign = "center";
+      c2d.textBaseline = "middle";
+      c2d.fillText(meta.label, p.x, p.y + 0.5);
+      c2d.restore();
+    });
+    c2d.textBaseline = "alphabetic";
+
+    // Shield bubble while the SHIELD power-up is active.
+    if (this.shieldTimer > 0) {
+      c2d.save();
+      c2d.globalAlpha = this.shieldTimer < 90 && Math.floor(Date.now() / 120) % 2 === 0 ? 0.3 : 0.7;
+      c2d.shadowBlur = 12;
+      c2d.shadowColor = "rgba(52, 211, 153, 0.9)";
+      c2d.strokeStyle = "rgba(52, 211, 153, 0.9)";
+      c2d.lineWidth = 2;
+      c2d.beginPath();
+      c2d.arc(this.shipX, this.shipY, 20, 0, Math.PI * 2);
+      c2d.stroke();
+      c2d.restore();
+    }
+
+    // Draw spaceships fighter with vector outlines (blink while shielded)
     c2d.save();
+    if (this.invuln > 0) c2d.globalAlpha = Math.floor(this.invuln / 6) % 2 === 0 ? 0.3 : 1;
     c2d.translate(this.shipX, this.shipY);
     c2d.rotate(this.shipAngle);
     
@@ -425,6 +615,21 @@ export class AsteroidsGame implements GameEngine {
     c2d.textAlign = "left";
     c2d.fillText(`GRID_COGNITION: WAVE ${this.currentWave}`, 8, ctx.canvas.height - 8);
     c2d.fillText(`DEBRIS_INDEX: ${this.asteroids.length}`, 110, ctx.canvas.height - 8);
+
+    c2d.fillStyle = getColorHex(ctx.colorPreset, 0.9);
+    c2d.font = "bold 10px monospace";
+    c2d.fillText(`LIVES: ${"♥".repeat(this.lives)}${"·".repeat(Math.max(0, this.maxLives - this.lives))}`, 8, 16);
+
+    const buffs: { t: string; c: string }[] = [];
+    if (this.rapidTimer > 0) buffs.push({ t: `RAPID ${(this.rapidTimer / 60).toFixed(0)}s`, c: POWER_META.RAPID.color });
+    if (this.tripleTimer > 0) buffs.push({ t: `TRIPLE ${(this.tripleTimer / 60).toFixed(0)}s`, c: POWER_META.TRIPLE.color });
+    if (this.shieldTimer > 0) buffs.push({ t: `SHIELD ${(this.shieldTimer / 60).toFixed(0)}s`, c: POWER_META.SHIELD.color });
+    c2d.font = "bold 9px monospace";
+    buffs.forEach((b, idx) => {
+      c2d.fillStyle = b.c;
+      c2d.fillText(b.t, 8, 30 + idx * 12);
+    });
+
     if (this.gravityWell.active) {
       c2d.fillStyle = "rgba(217,70,239,0.55)";
       c2d.fillText("▼ GRAVITY WELL COMPROMISED ▼", 210, ctx.canvas.height - 8);

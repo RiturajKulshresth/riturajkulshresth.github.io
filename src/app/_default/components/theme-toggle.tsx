@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Light/dark theme switch. Writes `data-theme` on `<html>` (read by
+ * globals.css) and persists the choice in localStorage when available.
+ */
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 
@@ -47,6 +51,7 @@ export default function ThemeToggle({
   }, []);
 
   function apply(next: Theme) {
+    // `data-theme` drives CSS variables; `colorScheme` hints native UI (scrollbars).
     document.documentElement.dataset.theme = next;
     document.documentElement.style.colorScheme = next;
   }

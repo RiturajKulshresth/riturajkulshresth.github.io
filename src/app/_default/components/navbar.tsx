@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Fixed site header. On the home page it is transparent until scroll; on other
+ * routes it stays opaque. Section links use IntersectionObserver for active
+ * state; standalone routes and render modes come from `@/lib/data`.
+ */
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -63,6 +68,8 @@ const routeIcons: Record<string, LucideIcon> = {
   "/terminal": TerminalIcon,
 };
 
+// Bespoke nav link effects in globals.css. Terminal's `nav-glitch` reads
+// `data-text` (set on the label span) to duplicate the label for the glitch.
 const navEffect: Record<string, string> = {
   "/editorial": "nav-editorial",
   "/photography": "nav-photo",
@@ -130,6 +137,8 @@ export default function Navbar() {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         if (visible[0]) setActiveSection(`#${visible[0].target.id}`);
       },
+      // Shrink the observed viewport so the active link tracks the section
+      // in the upper-middle of the screen, not whichever edge barely intersects.
       { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5, 1] }
     );
 

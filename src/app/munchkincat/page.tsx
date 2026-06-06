@@ -1,14 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
 /**
- * The game is entirely browser-driven (canvas render loop, keyboard input,
- * Web Audio). The site is a static export, so we mount it client-only via
- * `ssr: false`: the module never runs during prerender. This is the single
- * client boundary for the munchkincat tree, so the component itself needs no
- * `"use client"` of its own.
+ * Munchkin Cat render mode entry. Dynamically imports the canvas platformer with
+ * `ssr: false` because the game loop, Web Audio, and touch pad need the browser.
  */
+import dynamic from "next/dynamic";
 const MunchkinCat = dynamic(
   () => import("./_munchkincat/components/munchkin-cat"),
   {

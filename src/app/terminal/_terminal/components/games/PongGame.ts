@@ -1,3 +1,7 @@
+/**
+ * Single-player Pong vs CPU. Rally the ball for score; 3 lives, lose one when the ball exits left.
+ * CPU tracks ball Y with scaling reactivity; central rotating obstacle activates at 40 points.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Particle {
@@ -36,10 +40,14 @@ export class PongGame implements GameEngine {
   private consecutiveHits = 0;
   private readonly maxLives = 3;
   private playerLives = 3;
+  // The pointer only steers the paddle when it actually moves, so releasing a
+  // key no longer snaps the paddle to the default centred pointer position.
+  private lastPointerY: number | null = null;
 
   init(ctx: GameContext): void {
     this.score = 0;
     this.playerLives = this.maxLives;
+    this.lastPointerY = null;
     this.playerY = (ctx.canvas.height - this.paddleHeight) / 2;
     this.cpuY = (ctx.canvas.height - this.paddleHeight) / 2;
     this.ballX = ctx.canvas.width / 2;
@@ -111,11 +119,15 @@ export class PongGame implements GameEngine {
     if (keysPressed["ArrowUp"] || keysPressed["KeyW"]) {
       this.playerY = Math.max(10, this.playerY - 6.5 * speedFactor);
       playerMoveDir = -1;
+      this.lastPointerY = mouseY;
     } else if (keysPressed["ArrowDown"] || keysPressed["KeyS"]) {
       this.playerY = Math.min(ctx.canvas.height - paddleScalingFactor - 10, this.playerY + 6.5 * speedFactor);
       playerMoveDir = 1;
-    } else {
-      // Smooth tracking of mouseY centered on the paddle
+      this.lastPointerY = mouseY;
+    } else if (this.lastPointerY === null || Math.abs(mouseY - this.lastPointerY) > 0.5) {
+      // Smooth tracking of mouseY centered on the paddle, only while the
+      // pointer is actually moving (otherwise the paddle stays where keys left it).
+      this.lastPointerY = mouseY;
       const paddleCenter = paddleScalingFactor / 2;
       const targetY = mouseY - paddleCenter;
       this.playerY += (targetY - this.playerY) * 0.25;

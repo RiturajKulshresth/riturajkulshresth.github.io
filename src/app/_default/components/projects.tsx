@@ -1,3 +1,7 @@
+/**
+ * Projects gallery section (`id="projects"`). Responsive card grid; each
+ * tile is a `ProjectCard` backed by `projects` in `@/lib/data`.
+ */
 import { projects } from "@/lib/data";
 import SectionHeader from "./section-header";
 import ProjectCard from "./project-card";

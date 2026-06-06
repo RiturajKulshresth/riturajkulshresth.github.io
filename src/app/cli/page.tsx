@@ -1,13 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
 /**
- * The CLI is fully browser-driven (keyboard input, optional canvas rain). The
- * site is a static export, so we mount it client-only via `ssr: false`: the
- * module never runs during prerender. This is the single client boundary for
- * the cli tree, so the component itself needs no `"use client"` of its own.
+ * CLI render mode entry. Dynamically imports the shell with `ssr: false` because
+ * the static export cannot prerender keyboard input or the Matrix canvas.
  */
+import dynamic from "next/dynamic";
 const Cli = dynamic(() => import("./_cli/components/cli"), {
   ssr: false,
   loading: () => (

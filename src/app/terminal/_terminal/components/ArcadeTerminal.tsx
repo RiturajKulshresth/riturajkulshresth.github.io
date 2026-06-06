@@ -52,7 +52,7 @@ const GAME_CONTROLS: Record<ActiveGame, GameControls> = {
   FLAPPY: { dirs: [], actions: [{ code: "Space", label: "FLAP", pulse: true }] },
   FROGGER: { dirs: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"], actions: [] },
   PACMAN: { dirs: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"], actions: [] },
-  HIGHWAY: { dirs: ["ArrowLeft", "ArrowRight"], actions: [{ code: "ArrowUp", label: "NITRO" }] },
+  HIGHWAY: { dirs: ["ArrowLeft", "ArrowRight"], actions: [{ code: "Space", label: "NITRO" }] },
   DINO: { dirs: [], actions: [{ code: "Space", label: "JUMP", pulse: true }, { code: "ArrowDown", label: "DUCK" }] },
 };
 
@@ -582,6 +582,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
                 <div className="space-y-1">
                   <p>• <span className="text-fuchsia-300 font-bold">NEURAL DEFENSE SHIELD:</span> Destroy hostile malware blobs falling down from the sky matrix.</p>
                   <p>• Move with <span className="text-[#00f3ff] font-bold">Mouse / Left-Right Arrows</span>. Fire cyber lasers by <span className="text-[#00f3ff] font-bold">Clicking Canvas</span> or pressing <span className="text-[#00f3ff] font-bold">Spacebar</span>! Face boss motherboards on even waves.</p>
+                  <p>• Catch dropped capsules for power-ups: <span className="text-sky-300 font-bold">R</span> rapid-fire, <span className="text-yellow-300 font-bold">3</span> triple spread, <span className="text-emerald-300 font-bold">S</span> shield (absorbs one hit), <span className="text-rose-300 font-bold">+</span> extra life.</p>
                 </div>
               )}
 
@@ -596,6 +597,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
                 <div className="space-y-1">
                   <p>• <span className="text-fuchsia-300 font-bold">COSMIC ORBIT RUNNER:</span> Navigate space-debris field using your spaceship.</p>
                   <p>• Press <span className="text-[#00f3ff] font-bold">Arrow Up / W</span> to engage engine thrust, <span className="text-[#00f3ff] font-bold">Left/Right or A/D</span> to rotate, and <span className="text-[#00f3ff] font-bold">Spacebar / Click</span> to fire lasers. Watch out for black holes!</p>
+                  <p>• Grab dropped capsules for power-ups by <span className="text-[#00f3ff] font-bold">shooting</span> them or flying close (they drift toward you): <span className="text-sky-300 font-bold">R</span> rapid-fire, <span className="text-yellow-300 font-bold">3</span> triple shot, <span className="text-emerald-300 font-bold">S</span> shield (absorbs one hit), <span className="text-rose-300 font-bold">+</span> extra life. Lasers wrap around the screen edges.</p>
                 </div>
               )}
 
@@ -623,7 +625,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
               {activeGame === "HIGHWAY" && (
                 <div className="space-y-1">
                   <p>• <span className="text-fuchsia-300 font-bold">NETWORK SPEEDWAY RACER:</span> Drive a supercharged sports car to dodge incoming red malware traffic in a vertical lane grid.</p>
-                  <p>• Avoid collisions under accelerated speeds! Press <span className="text-[#00f3ff] font-bold">Arrow Left / Right</span> or <span className="text-[#00f3ff] font-bold">A / D</span> to switch lanes, and hold <span className="text-[#00f3ff] font-bold">Arrow Up / W</span> to engage Nitro speed boost!</p>
+                  <p>• Avoid collisions under accelerated speeds! Press <span className="text-[#00f3ff] font-bold">Arrow Left / Right</span> or <span className="text-[#00f3ff] font-bold">A / D</span> to switch lanes, and hold <span className="text-[#00f3ff] font-bold">Space / Arrow Up / W</span> (or the NITRO pad) to engage Nitro speed boost!</p>
                 </div>
               )}
 
@@ -739,7 +741,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
             {activeGame === "FLAPPY" && "SPACEBAR / CLICK ON CANVAS (QUANTUM FLAP)"}
             {activeGame === "FROGGER" && "ARROW KEYS / WASD (STEPPING HOP)"}
             {activeGame === "PACMAN" && "ARROW KEYS / WASD (MAZE STEERING)"}
-            {activeGame === "HIGHWAY" && "ARROW LEFT / RIGHT (SHIFT) + ARROW UP (NITRO SPEEDWAY BOOST)"}
+            {activeGame === "HIGHWAY" && "ARROW LEFT / RIGHT (SHIFT) + SPACE / UP / W (NITRO SPEEDWAY BOOST)"}
             {activeGame === "DINO" && "SPACEBAR (JUMP) + ARROW DOWN / S (CROUCH/DUCK)"}
             <span className="text-fuchsia-400/70"> · OR USE THE PAD BELOW</span>
           </span>

@@ -1,3 +1,7 @@
+/**
+ * Skills section (`id="skills"`). Four-column grid of skill groups from
+ * `skillGroups` in `@/lib/data`, each with titled tags.
+ */
 import { skillGroups } from "@/lib/data";
 import SectionHeader from "./section-header";
 

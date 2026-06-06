@@ -1,3 +1,9 @@
+/**
+ * Interactive command-line portfolio shell. Portfolio content from `@/lib/data`
+ * is exposed as a virtual filesystem (`ls`, `cd`, `cat`) plus named commands.
+ * Tab completion, arrow-key history, ghost suggestions, and a Matrix screensaver
+ * round out the terminal experience.
+ */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Terminal as CliIcon } from "lucide-react";
 import {
@@ -746,6 +752,8 @@ export default function Cli() {
                   className={`pointer-events-none absolute left-0 top-0 whitespace-pre ${
                     light ? "text-zinc-400" : "text-zinc-600"
                   }`}
+                  // `ch` tracks monospace character width so the ghost suffix
+                  // lines up with the typed prefix in the real input.
                   style={{ paddingLeft: `${input.length}ch` }}
                   aria-hidden
                 >

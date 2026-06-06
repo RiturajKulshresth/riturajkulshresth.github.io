@@ -1,3 +1,7 @@
+/**
+ * Photography gallery route. Server page that wires metadata, the back button,
+ * and the client-side drag-to-pan gallery fed by local photo data.
+ */
 import type { Metadata } from "next";
 import BackButton from "./_photography/components/back-button";
 import PhotoGallery from "./_photography/components/photo-gallery";

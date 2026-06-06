@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Fullscreen drag-to-pan photo carousel with infinite wrap, per-image parallax
+ * object-position, and a lightbox opener. All input paths share one `applyX` pipeline.
+ */
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import clsx from "clsx";
 import type { Photo } from "@/lib/photography";

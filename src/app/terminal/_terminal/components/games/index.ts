@@ -1,3 +1,7 @@
+/**
+ * Game engine factory registry for ArcadeTerminal.
+ * Maps each GameID string to a fresh GameEngine instance when a cabinet is selected.
+ */
 import { GameEngine } from "./types";
 import { SnakeGame } from "./SnakeGame";
 import { BreakoutGame } from "./BreakoutGame";

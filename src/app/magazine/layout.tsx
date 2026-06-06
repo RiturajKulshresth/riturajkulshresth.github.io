@@ -1,3 +1,7 @@
+/**
+ * Per-route layout for /magazine. Sets SEO metadata; the magazine component
+ * owns its own full-screen chrome.
+ */
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

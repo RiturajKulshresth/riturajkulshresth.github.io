@@ -1,3 +1,7 @@
+/**
+ * Per-route layout for /cli. Sets SEO metadata and loads Roboto + Roboto Mono
+ * as CSS variables for the terminal UI.
+ */
 import type { Metadata } from "next";
 import { Roboto, Roboto_Mono } from "next/font/google";
 

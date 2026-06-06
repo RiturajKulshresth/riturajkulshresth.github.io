@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Full-bleed WebGL background: perspective grid warp plus raymarched attractor orbs.
+ * Fragment shader applies 4x4 Bayer dithering on 2x2 pixel chunks for a retro HUD look.
+ * Accepts GREEN / AMBER / COSMIC presets and scales uTime by overdrive speedMul.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { useOverdrive } from "../contexts/OverdriveContext";
 
@@ -155,6 +161,7 @@ export default function ShaderCanvas({ colorPreset = "GREEN", opacity = 0.08 }: 
         float vignette = 1.0 - length(uv - 0.5) * 1.1;
         luma *= max(vignette, 0.0);
         
+        // Quantize to 2x2 blocks before Bayer lookup so dither reads chunky, not per-pixel.
         vec2 pixelCoord = uv * uResolution;
         vec2 chunkCoord = floor(pixelCoord / 2.0) * 2.0;
         float chunkyThreshold = getDitherLimit(chunkCoord);

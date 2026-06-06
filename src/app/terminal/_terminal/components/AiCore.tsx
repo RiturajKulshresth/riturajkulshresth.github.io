@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * AEGIS cognition channel: a chat-style portfolio oracle with offline keyword routing.
+ * Renders inside a ShaderCanvas-backed card; uplink to a live LLM is intentionally
+ * unavailable (no API credentials), so responses come from scripted semantic registers.
+ */
+
 import React, { useState, useRef, useEffect } from "react";
 import { ChatMessage } from "../types";
 import { synth } from "../audio";
@@ -45,6 +51,7 @@ export default function AiCore() {
     }
   }, [messages, isLoading]);
 
+  // Keyword router: maps visitor queries to pre-authored portfolio blocks. No network call.
   const getOfflineResponse = (query: string): string => {
     const q = query.toLowerCase().trim();
     
@@ -175,6 +182,7 @@ Supported offline tags:
 Type 'help' to see the main query manual.`;
   };
 
+  // Theatrical handshake sequence. Always times out because no Gemini API key is bound.
   const attemptUplink = () => {
     if (isConnecting) return;
 
@@ -233,7 +241,7 @@ Type 'help' to see the main query manual.`;
     setIsLoading(true);
     setErrorText(null);
 
-    // Simulate computational latency to look fully real
+    // Artificial delay so the loading state reads as real inference, not instant lookup.
     setTimeout(() => {
       try {
         const replyText = getOfflineResponse(promptText);

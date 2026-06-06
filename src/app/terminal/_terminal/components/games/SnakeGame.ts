@@ -1,3 +1,7 @@
+/**
+ * Grid-based Snake. Eat data packets to grow; miss a super packet before its timer expires.
+ * Speed ramps with score; static obstacle nodes spawn every 30 points. GAMEOVER on wall, self, or obstacle hit.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Segment {
@@ -103,7 +107,7 @@ export class SnakeGame implements GameEngine {
     const { keysPressed } = input;
     const speedFactor = ctx.speedFactor;
 
-    // Track input
+    // Buffer next direction; applied on the movement tick so a 180-degree reversal in one frame is rejected.
     if ((keysPressed["ArrowLeft"] || keysPressed["KeyA"]) && this.snakeDir !== "RIGHT") this.snakeNextDir = "LEFT";
     if ((keysPressed["ArrowRight"] || keysPressed["KeyD"]) && this.snakeDir !== "LEFT") this.snakeNextDir = "RIGHT";
     if ((keysPressed["ArrowUp"] || keysPressed["KeyW"]) && this.snakeDir !== "DOWN") this.snakeNextDir = "UP";
@@ -218,7 +222,8 @@ export class SnakeGame implements GameEngine {
 
         this.superPacket = { x: -1, y: -1, duration: 0 };
       } else {
-        this.snake.pop(); // regular slither
+        // No food eaten: drop the tail so length stays constant (classic snake slither).
+        this.snake.pop();
       }
 
       // Tick down super packet life

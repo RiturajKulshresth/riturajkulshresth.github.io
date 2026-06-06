@@ -5,6 +5,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Shared TypeScript contracts for the terminal HUD data layer.
+ * Defines shapes for the live log stream, project/skill nodes, and AEGIS chat messages.
+ */
+
 export interface SystemLog {
     id: string;
     timestamp: string;
@@ -23,7 +28,7 @@ export interface SystemLog {
     description: string;
     quantumCost: string;
     specs: string[];
-    blueprints: string[]; // Steps for canvas drawing
+    blueprints: string[]; // BlueprintModal schematic codes (GRID_SPIN, LORENZ_ATTRACT, etc.)
     link?: string; // Optional external link (GitHub, LinkedIn, etc.)
     year?: string;
   }

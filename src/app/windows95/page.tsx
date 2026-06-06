@@ -1,13 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
 /**
- * The desktop is fully browser-driven (drag/resize via window events, live
- * clock, local game state). The site is a static export, so we mount it
- * client-only via `ssr: false`. This is the single client boundary for the
- * windows95 tree, so the component itself needs no `"use client"` of its own.
+ * Windows 95 render mode entry. Dynamically imports the desktop with `ssr: false`
+ * because window drag/resize, boot animation, and Minesweeper need browser APIs.
  */
+import dynamic from "next/dynamic";
 const Windows95 = dynamic(() => import("./_windows95/components/windows95"), {
   ssr: false,
   loading: () => (

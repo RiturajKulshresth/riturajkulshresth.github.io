@@ -1,3 +1,7 @@
+/**
+ * Breakout brick breaker. Clear all bricks for VICTORY; 3 lives on ball loss.
+ * Bricks step down on a timer; fortified (2 HP) and quantum (bonus) types mix in the grid.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Brick {
@@ -36,8 +40,15 @@ export class BreakoutGame implements GameEngine {
   private bricks: Brick[] = [];
   private particles: Particle[] = [];
   private score = 0;
+  private readonly maxLives = 3;
+  private lives = 3;
   private stepDownTimer = 0;
   private stepDownInterval = 1200; // frames before bricks step down
+  // The paddle eases toward `targetX`. `targetX` only changes when the pointer
+  // actually moves or a key is pressed, so releasing a key no longer snaps the
+  // paddle back toward the default centred pointer position.
+  private targetX = 0;
+  private lastPointerX: number | null = null;
   
   private colorRows = 5;
   private bricksPerRow = 9;
@@ -49,19 +60,26 @@ export class BreakoutGame implements GameEngine {
 
   init(ctx: GameContext): void {
     this.score = 0;
+    this.lives = this.maxLives;
     this.paddleWidth = 95;
     this.paddleX = (ctx.canvas.width - this.paddleWidth) / 2;
-    this.ballX = ctx.canvas.width / 2;
-    this.ballY = ctx.canvas.height - 40;
     this.baseBallSpeed = 4.5;
-    
-    const angle = (Math.random() * 0.4 + 0.3) * Math.PI; // Launch angle
-    this.ballSpeedX = Math.cos(angle) * this.baseBallSpeed * (Math.random() > 0.5 ? 1 : -1);
-    this.ballSpeedY = -this.baseBallSpeed;
-    
+    this.resetBall(ctx);
+
     this.stepDownTimer = 0;
     this.particles = [];
+    this.targetX = this.paddleX;
+    this.lastPointerX = null;
     this.initBricks();
+  }
+
+  // Re-centre and re-serve the ball above the paddle.
+  private resetBall(ctx: GameContext) {
+    this.ballX = ctx.canvas.width / 2;
+    this.ballY = ctx.canvas.height - 40;
+    const angle = (Math.random() * 0.4 + 0.3) * Math.PI;
+    this.ballSpeedX = Math.cos(angle) * this.baseBallSpeed * (Math.random() > 0.5 ? 1 : -1);
+    this.ballSpeedY = -this.baseBallSpeed;
   }
 
   private initBricks() {
@@ -119,15 +137,24 @@ export class BreakoutGame implements GameEngine {
       }
     }
 
-    // Keyboard controls
+    // Keyboard controls take priority. The pointer only retargets the paddle
+    // when it actually moves, so releasing a key leaves the paddle put instead
+    // of snapping back toward the centred default pointer position.
     if (keysPressed["ArrowLeft"] || keysPressed["KeyA"]) {
       this.paddleX = Math.max(this.paddleX - 7 * speedFactor, 0);
+      this.targetX = this.paddleX;
+      this.lastPointerX = mouseX;
     } else if (keysPressed["ArrowRight"] || keysPressed["KeyD"]) {
       this.paddleX = Math.min(this.paddleX + 7 * speedFactor, ctx.canvas.width - this.paddleWidth);
+      this.targetX = this.paddleX;
+      this.lastPointerX = mouseX;
     } else {
-      // Smooth dragging mouse lock fallback
-      const targetX = mouseX - this.paddleWidth / 2;
-      this.paddleX += (targetX - this.paddleX) * 0.25;
+      if (this.lastPointerX === null || Math.abs(mouseX - this.lastPointerX) > 0.5) {
+        this.targetX = mouseX - this.paddleWidth / 2;
+        this.lastPointerX = mouseX;
+      }
+      // Ease toward the standing target every frame for smooth pointer drags.
+      this.paddleX += (this.targetX - this.paddleX) * 0.25;
       this.paddleX = Math.min(Math.max(this.paddleX, 0), ctx.canvas.width - this.paddleWidth);
     }
 
@@ -190,9 +217,18 @@ export class BreakoutGame implements GameEngine {
 
     // Behind safety/dead lines fail check
     if (this.ballY + this.ballRadius >= ctx.canvas.height) {
-      ctx.setGameState("GAMEOVER");
-      ctx.playRetroSFX("CRASH");
-      ctx.checkAndSaveHighScore(this.score);
+      this.lives--;
+      this.createParticles(this.ballX, ctx.canvas.height, getColorHex(ctx.colorPreset, 0.8), 14);
+      if (this.lives <= 0) {
+        ctx.setGameState("GAMEOVER");
+        ctx.playRetroSFX("CRASH");
+        ctx.checkAndSaveHighScore(this.score);
+        return;
+      }
+      ctx.playRetroSFX("COLLIDE");
+      this.resetBall(ctx);
+      this.paddleX = (ctx.canvas.width - this.paddleWidth) / 2;
+      this.targetX = this.paddleX;
       return;
     }
 
@@ -344,6 +380,10 @@ export class BreakoutGame implements GameEngine {
     c2d.textAlign = "left";
     c2d.fillText(`PADDLE_SPAN: ${this.paddleWidth}PX`, 8, ctx.canvas.height - 8);
     c2d.fillText(`REMAINING_BLOCKS: ${this.bricks.filter(b => b.durability > 0).length}`, 110, ctx.canvas.height - 8);
+
+    c2d.fillStyle = getColorHex(ctx.colorPreset, 0.9);
+    c2d.font = "bold 10px monospace";
+    c2d.fillText(`LIVES: ${"♥".repeat(this.lives)}${"·".repeat(Math.max(0, this.maxLives - this.lives))}`, 8, 16);
 
     // Warning alert warning for step down timer
     const timeRatio = this.stepDownTimer / this.stepDownInterval;

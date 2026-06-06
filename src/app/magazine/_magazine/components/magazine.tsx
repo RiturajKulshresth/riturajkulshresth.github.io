@@ -1,3 +1,8 @@
+/**
+ * Magazine render mode. Portfolio sections are bound into a react-pageflip book
+ * with responsive sizing, per-page auto-fit scaling, and chapter jumps from the
+ * contents page.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useState, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";

@@ -1,3 +1,7 @@
+/**
+ * Windows 95 desktop render mode. Portfolio sections open as draggable windows;
+ * includes a BIOS boot sequence, Start menu, and a full Minesweeper game.
+ */
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Square, Minus, ExternalLink } from "lucide-react";
@@ -49,7 +53,8 @@ const GRID = 64;
 const MINE_TOTAL = 10;
 
 export default function Windows95() {
-  const [bootStep, setBootStep] = useState(0); // 0 BIOS, 1 splash, 2 desktop
+  // Boot sequence: 0 = BIOS text, 1 = Windows splash + progress bar, 2 = desktop.
+  const [bootStep, setBootStep] = useState(0);
   const [bootProgress, setBootProgress] = useState(0);
   const [time, setTime] = useState("");
   const [startOpen, setStartOpen] = useState(false);
@@ -303,6 +308,7 @@ export default function Windows95() {
     toggleFlag(idx);
   };
 
+  // Bump z-index on every focus so the clicked window always stacks on top.
   const focus = (id: string) => {
     const z = topZ + 1;
     setTopZ(z);

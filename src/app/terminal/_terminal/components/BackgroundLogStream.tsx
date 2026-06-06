@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Full-viewport ambient log wallpaper behind the terminal HUD.
+ * Multiple columns type procedurally generated lines character by character;
+ * overdrive speedMul accelerates the typing cadence without restarting timers.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { useOverdrive } from "../contexts/OverdriveContext";
 

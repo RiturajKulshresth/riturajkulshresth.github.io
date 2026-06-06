@@ -1,3 +1,7 @@
+/**
+ * Work history section (`id="work"`). Uses a semantic `<ol>` timeline;
+ * entries with `current: true` get a "Now" badge.
+ */
 import { experience } from "@/lib/data";
 import SectionHeader from "./section-header";
 

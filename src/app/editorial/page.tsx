@@ -1,4 +1,9 @@
 "use client";
+
+/**
+ * Swiss editorial render mode. Presents the portfolio as a print-grid layout with
+ * a custom cursor ring, hover-reveal project previews, and an infinite filmstrip.
+ */
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -20,7 +25,8 @@ export default function EditorialSwiss() {
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [cursorHoveringHeader, setCursorHoveringHeader] = useState(false);
 
-  // Mouse coordinates for the custom ring follower.
+  // Mouse coordinates relative to the container (not the viewport) for the ring follower.
+  // The page uses `cursor-none`, so this ring is the only visible pointer on desktop.
   useEffect(() => {
     const handleMousePosition = (e: MouseEvent) => {
       if (!containerRef.current) return;

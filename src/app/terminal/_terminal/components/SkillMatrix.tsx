@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Cybernetic skill lattice with three canvas views: Reactor, Rack, Constellation.
+ * Four pillars map to real stack areas; overdrive toggle shares the global stamina
+ * reserve from OverdriveContext and hot-shifts accent/speed across all views.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive, useStamina } from "../contexts/OverdriveContext";

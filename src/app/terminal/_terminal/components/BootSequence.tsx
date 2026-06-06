@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Cold-boot overlay shown before the main AEGIS bridge is revealed.
+ * Gate phase unlocks Web Audio on user gesture; sequencing phase animates
+ * diegetic subsystem checks then calls onComplete to dismiss the overlay.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";

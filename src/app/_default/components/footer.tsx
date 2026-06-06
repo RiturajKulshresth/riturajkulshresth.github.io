@@ -1,3 +1,7 @@
+/**
+ * Site footer. Social icon buttons reuse `socialLinks` from `@/lib/data`;
+ * `iconMap` resolves each link's `icon` string to a react-icons component.
+ */
 import { FaGithub, FaLinkedinIn, FaXTwitter } from "react-icons/fa6";
 import { GrInstagram } from "react-icons/gr";
 import { socialLinks } from "@/lib/data";

@@ -1,3 +1,7 @@
+/**
+ * Static sitemap for GitHub Pages (`output: "export"`). Lists the home page,
+ * standalone routes (Photography, Terminal), and all alternate render modes.
+ */
 import type { MetadataRoute } from "next";
 
 const BASE_URL = "https://riturajkulshresth.github.io";
@@ -28,6 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    // Render modes share lower priority than primary content routes.
     ...["windows95", "cli", "editorial", "magazine", "munchkincat"].map(
       (slug) => ({
         url: `${BASE_URL}/${slug}`,

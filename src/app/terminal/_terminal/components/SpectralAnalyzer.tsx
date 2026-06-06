@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Propagation waveband HUD: Lorenz attractor 3D trace or stacked DSP sine harmonics.
+ * ATTRACTOR mode integrates and projects a pre-warmed chaos path; SIGNAL mode
+ * synthesizes oscilloscope waves plus an 8-bin peak-hold spectrum strip.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";

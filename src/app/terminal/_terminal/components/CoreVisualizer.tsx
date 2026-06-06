@@ -5,6 +5,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * 3D system cognition map HUD widget.
+ * Canvas rAF loop projects labeled platform nodes (ACME, Daisy, etc.) with
+ * NEURAL / ORBIT / MATRIX display modes; mouse tilt and overdrive speedMul
+ * feed the rotation via refs to avoid restarting the animation loop.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";

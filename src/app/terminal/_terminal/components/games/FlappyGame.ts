@@ -1,3 +1,7 @@
+/**
+ * Side-scrolling Flappy clone. Flap to stay aloft through scrolling pillar gaps.
+ * Gap height shrinks with score; gaps oscillate vertically after 10 points. Endless survival, no win state.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Pillar {
@@ -147,7 +151,7 @@ export class FlappyGame implements GameEngine {
         p.gapY = 170 + Math.sin(p.phase) * p.oscillationRange;
       }
 
-      // Check passing boundaries
+      // Score when the pillar center clears the fixed player X (70px from the left edge).
       if (!p.passed && p.x + p.width / 2 < 70) {
         p.passed = true;
         this.score += 10;
@@ -173,7 +177,7 @@ export class FlappyGame implements GameEngine {
         }
       }
 
-      // Recycle Pillars
+      // Recycle off-screen pillars to the right of the furthest pillar for seamless infinite scroll.
       if (p.x + p.width < -50) {
         let maxRightX = -1;
         this.pillars.forEach(item => { if (item.x > maxRightX) maxRightX = item.x; });

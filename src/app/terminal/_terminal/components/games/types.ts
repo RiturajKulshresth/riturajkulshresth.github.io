@@ -1,3 +1,8 @@
+/**
+ * Shared contracts for ArcadeTerminal canvas games.
+ * Every engine implements GameEngine: init, update(input), draw per frame.
+ * GameContext supplies the canvas, theme preset, speedFactor overdrive, score/state callbacks, and retro SFX.
+ */
 export interface GameInput {
   keysPressed: Record<string, boolean>;
   mouseX: number;

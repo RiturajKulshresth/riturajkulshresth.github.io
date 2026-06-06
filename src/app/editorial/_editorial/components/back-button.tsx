@@ -1,3 +1,6 @@
+/**
+ * Navigation control for the editorial mode. Returns to the main site home page.
+ */
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 

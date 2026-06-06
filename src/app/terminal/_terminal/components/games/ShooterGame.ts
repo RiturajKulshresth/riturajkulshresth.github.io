@@ -1,13 +1,34 @@
+/**
+ * Space-invaders shooter with destructible shields and a motherboard boss per level.
+ * 3 lives with post-hit invulnerability; power-ups: RAPID, SPREAD, SHIELD, LIFE. Clear waves to advance.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface Bullet {
   x: number;
   y: number;
   speedY: number;
+  speedX?: number;
   isEnemy: boolean;
   damage: number;
   isLaserBeam?: boolean;
 }
+
+type PowerKind = "RAPID" | "SPREAD" | "SHIELD" | "LIFE";
+
+interface PowerUp {
+  x: number;
+  y: number;
+  vy: number;
+  kind: PowerKind;
+}
+
+const POWER_META: Record<PowerKind, { label: string; color: string }> = {
+  RAPID: { label: "R", color: "rgba(56, 189, 248, 0.95)" },
+  SPREAD: { label: "3", color: "rgba(250, 204, 21, 0.95)" },
+  SHIELD: { label: "S", color: "rgba(52, 211, 153, 0.95)" },
+  LIFE: { label: "+", color: "rgba(244, 63, 94, 0.95)" },
+};
 
 interface Invader {
   id: number;
@@ -74,6 +95,12 @@ export class ShooterGame implements GameEngine {
   private readonly maxLives = 3;
   private lives = 3;
   private invuln = 0;
+  private lastPointerX: number | null = null;
+
+  private powerups: PowerUp[] = [];
+  private rapidTimer = 0;
+  private spreadTimer = 0;
+  private shieldTimer = 0;
 
   init(ctx: GameContext): void {
     this.score = 0;
@@ -81,7 +108,12 @@ export class ShooterGame implements GameEngine {
     this.canvasWidth = ctx.canvas.width;
     this.lives = this.maxLives;
     this.invuln = 0;
+    this.lastPointerX = null;
     this.playerShipX = ctx.canvas.width / 2;
+    this.powerups = [];
+    this.rapidTimer = 0;
+    this.spreadTimer = 0;
+    this.shieldTimer = 0;
     this.bullets = [];
     this.particles = [];
     this.boss = null;
@@ -96,6 +128,15 @@ export class ShooterGame implements GameEngine {
   // of instantly ending the run.
   private hitPlayer(ctx: GameContext) {
     if (this.invuln > 0) return;
+    // A SHIELD power-up absorbs one hit instead of costing a life.
+    if (this.shieldTimer > 0) {
+      this.shieldTimer = 0;
+      this.invuln = 60;
+      this.createParticles(this.playerShipX, this.playerShipY, "rgba(52, 211, 153, 0.95)", 16);
+      ctx.playRetroSFX("COLLIDE");
+      this.bullets = this.bullets.filter((b) => !b.isEnemy);
+      return;
+    }
     this.lives--;
     this.createParticles(this.playerShipX, this.playerShipY, "rgba(244, 63, 94, 0.95)", 18);
     ctx.playRetroSFX("CRASH");
@@ -186,19 +227,72 @@ export class ShooterGame implements GameEngine {
     }
   }
 
+  // Random capsule drop when an enemy dies. Tuned low so buffs feel earned.
+  private maybeDropPowerUp(x: number, y: number) {
+    if (Math.random() > 0.16) return;
+    const roll = Math.random();
+    const kind: PowerKind =
+      roll < 0.34 ? "RAPID" : roll < 0.64 ? "SPREAD" : roll < 0.88 ? "SHIELD" : "LIFE";
+    this.powerups.push({ x, y, vy: 1.6, kind });
+  }
+
+  private applyPowerUp(kind: PowerKind, ctx: GameContext) {
+    ctx.playRetroSFX("SECURE");
+    this.createParticles(this.playerShipX, this.playerShipY, POWER_META[kind].color, 14);
+    if (kind === "RAPID") this.rapidTimer = 420;
+    else if (kind === "SPREAD") this.spreadTimer = 420;
+    else if (kind === "SHIELD") this.shieldTimer = 480;
+    else if (kind === "LIFE") {
+      if (this.lives < this.maxLives) this.lives++;
+      else {
+        this.score += 75;
+        ctx.setScore(this.score);
+      }
+    }
+  }
+
+  private updatePowerUps(speedFactor: number, ctx: GameContext) {
+    for (let i = this.powerups.length - 1; i >= 0; i--) {
+      const p = this.powerups[i];
+      p.y += p.vy * speedFactor;
+      if (p.y > ctx.canvas.height + 12) {
+        this.powerups.splice(i, 1);
+        continue;
+      }
+      // Caught by the ship.
+      if (
+        p.y >= this.playerShipY - 16 &&
+        p.y <= this.playerShipY + 14 &&
+        Math.abs(p.x - this.playerShipX) <= this.shipWidth / 2 + 8
+      ) {
+        this.applyPowerUp(p.kind, ctx);
+        this.powerups.splice(i, 1);
+      }
+    }
+  }
+
   update(input: GameInput, ctx: GameContext): void {
     const { keysPressed, mouseX, mouseClicked } = input;
     const speedFactor = ctx.speedFactor;
 
     if (this.shootCooldown > 0) this.shootCooldown -= speedFactor;
     if (this.invuln > 0) this.invuln -= speedFactor;
+    if (this.rapidTimer > 0) this.rapidTimer -= speedFactor;
+    if (this.spreadTimer > 0) this.spreadTimer -= speedFactor;
+    if (this.shieldTimer > 0) this.shieldTimer -= speedFactor;
+    this.updatePowerUps(speedFactor, ctx);
 
-    // Movement controls (Arrows + Mouse interpolation fallback)
+    // Movement controls. Keys take priority; the pointer only steers when it
+    // actually moves, so releasing a key leaves the ship put instead of
+    // sliding back toward the default centred pointer position.
     if (keysPressed["ArrowLeft"] || keysPressed["KeyA"]) {
       this.playerShipX = Math.max(this.playerShipX - 6.5 * speedFactor, this.shipWidth / 2);
+      this.lastPointerX = mouseX;
     } else if (keysPressed["ArrowRight"] || keysPressed["KeyD"]) {
       this.playerShipX = Math.min(this.playerShipX + 6.5 * speedFactor, ctx.canvas.width - this.shipWidth / 2);
-    } else {
+      this.lastPointerX = mouseX;
+    } else if (this.lastPointerX === null || Math.abs(mouseX - this.lastPointerX) > 0.5) {
+      this.lastPointerX = mouseX;
       const targetX = mouseX;
       this.playerShipX += (targetX - this.playerShipX) * 0.22;
       this.playerShipX = Math.min(Math.max(this.playerShipX, this.shipWidth / 2), ctx.canvas.width - this.shipWidth / 2);
@@ -206,14 +300,17 @@ export class ShooterGame implements GameEngine {
 
     // Fire weapon trigger
     if ((keysPressed["Space"] || keysPressed["KeyW"] || mouseClicked) && this.shootCooldown <= 0) {
-      this.bullets.push({
-        x: this.playerShipX,
-        y: this.playerShipY - 14,
-        speedY: -7.5,
-        isEnemy: false,
-        damage: 1
-      });
-      this.shootCooldown = Math.max(8, 14 - this.shooterLevel); // Fire rate speeds up slightly
+      const by = this.playerShipY - 14;
+      if (this.spreadTimer > 0) {
+        // Triple spread: centre shot plus two angled rounds.
+        this.bullets.push({ x: this.playerShipX, y: by, speedY: -7.5, isEnemy: false, damage: 1 });
+        this.bullets.push({ x: this.playerShipX, y: by, speedY: -7.2, speedX: -2.4, isEnemy: false, damage: 1 });
+        this.bullets.push({ x: this.playerShipX, y: by, speedY: -7.2, speedX: 2.4, isEnemy: false, damage: 1 });
+      } else {
+        this.bullets.push({ x: this.playerShipX, y: by, speedY: -7.5, isEnemy: false, damage: 1 });
+      }
+      const baseCooldown = Math.max(8, 14 - this.shooterLevel); // Fire rate speeds up slightly
+      this.shootCooldown = this.rapidTimer > 0 ? Math.max(4, baseCooldown - 6) : baseCooldown;
       ctx.playRetroSFX("LAUNCH");
     }
 
@@ -336,10 +433,14 @@ export class ShooterGame implements GameEngine {
     // --------------------------------------------
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
+      // Clearing a wave / taking a hit can replace `this.bullets` mid-loop,
+      // leaving stale indices; skip any that no longer exist.
+      if (!b) continue;
       b.y += b.speedY * speedFactor;
+      if (b.speedX) b.x += b.speedX * speedFactor;
 
       // Unregister out-of-screen bullets
-      if (b.y < 0 || b.y > ctx.canvas.height) {
+      if (b.y < 0 || b.y > ctx.canvas.height || b.x < 0 || b.x > ctx.canvas.width) {
         this.bullets.splice(i, 1);
         continue;
       }
@@ -389,6 +490,13 @@ export class ShooterGame implements GameEngine {
               ctx.playRetroSFX("LEVELUP");
               // Particle shockwaves
               this.createParticles(bossObj.x + bossObj.width / 2, bossObj.y + bossObj.height / 2, "#ffffff", 35);
+              // A felled boss always drops a capsule as a reward.
+              this.powerups.push({
+                x: bossObj.x + bossObj.width / 2,
+                y: bossObj.y + bossObj.height / 2,
+                vy: 1.6,
+                kind: Math.random() < 0.5 ? "SHIELD" : "LIFE",
+              });
               this.boss = null;
               
               // Enter new stage wave
@@ -412,6 +520,7 @@ export class ShooterGame implements GameEngine {
               this.score += inv.scoreVal;
               ctx.setScore(this.score);
               ctx.playRetroSFX("EAT");
+              this.maybeDropPowerUp(inv.x + inv.width / 2, inv.y + inv.height / 2);
               this.invaders.splice(n, 1);
             } else {
               ctx.playRetroSFX("COLLIDE");
@@ -575,6 +684,28 @@ export class ShooterGame implements GameEngine {
       c2d.restore();
     });
 
+    // Draw floating power-up capsules.
+    this.powerups.forEach((p) => {
+      const meta = POWER_META[p.kind];
+      c2d.save();
+      c2d.shadowBlur = 12;
+      c2d.shadowColor = meta.color;
+      c2d.strokeStyle = meta.color;
+      c2d.fillStyle = "rgba(0,0,0,0.55)";
+      c2d.lineWidth = 2;
+      c2d.beginPath();
+      c2d.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      c2d.fill();
+      c2d.stroke();
+      c2d.fillStyle = meta.color;
+      c2d.font = "bold 11px monospace";
+      c2d.textAlign = "center";
+      c2d.textBaseline = "middle";
+      c2d.fillText(meta.label, p.x, p.y + 0.5);
+      c2d.restore();
+    });
+    c2d.textBaseline = "alphabetic";
+
     // Draw Hero spaceship (vector spacefighter). Blink while invulnerable.
     c2d.save();
     if (this.invuln > 0) {
@@ -606,6 +737,21 @@ export class ShooterGame implements GameEngine {
     c2d.fill();
     c2d.restore();
 
+    // Shield bubble while the SHIELD power-up is active.
+    if (this.shieldTimer > 0) {
+      c2d.save();
+      const breaking = this.shieldTimer < 90 && Math.floor(Date.now() / 120) % 2 === 0;
+      c2d.globalAlpha = breaking ? 0.3 : 0.7;
+      c2d.shadowBlur = 12;
+      c2d.shadowColor = "rgba(52, 211, 153, 0.9)";
+      c2d.strokeStyle = "rgba(52, 211, 153, 0.9)";
+      c2d.lineWidth = 2;
+      c2d.beginPath();
+      c2d.arc(this.playerShipX, this.playerShipY - 2, this.shipWidth / 2 + 9, 0, Math.PI * 2);
+      c2d.stroke();
+      c2d.restore();
+    }
+
     // Draw Active Bullets
     this.bullets.forEach(b => {
       c2d.save();
@@ -633,6 +779,17 @@ export class ShooterGame implements GameEngine {
     c2d.fillStyle = getColorSecondaryHex(ctx.colorPreset, 0.7);
     c2d.fillText(`LIVES: ${Math.max(0, this.lives)}/${this.maxLives}`, ctx.canvas.width - 8, ctx.canvas.height - 8);
     c2d.textAlign = "left";
+
+    // Active power-up readout (top-left).
+    const buffs: { t: string; c: string }[] = [];
+    if (this.rapidTimer > 0) buffs.push({ t: `RAPID ${(this.rapidTimer / 60).toFixed(0)}s`, c: POWER_META.RAPID.color });
+    if (this.spreadTimer > 0) buffs.push({ t: `SPREAD ${(this.spreadTimer / 60).toFixed(0)}s`, c: POWER_META.SPREAD.color });
+    if (this.shieldTimer > 0) buffs.push({ t: `SHIELD ${(this.shieldTimer / 60).toFixed(0)}s`, c: POWER_META.SHIELD.color });
+    c2d.font = "bold 9px monospace";
+    buffs.forEach((b, idx) => {
+      c2d.fillStyle = b.c;
+      c2d.fillText(b.t, 8, 16 + idx * 12);
+    });
 
     if (this.boss) {
       c2d.fillStyle = "rgba(239, 68, 68, 0.5)";

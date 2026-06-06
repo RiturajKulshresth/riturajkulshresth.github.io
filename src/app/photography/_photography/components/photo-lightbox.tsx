@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Full-resolution photo lightbox overlay. Arrow keys step through the set,
+ * Escape closes, and body scroll is locked while open.
+ */
 import { useEffect, useState } from "react";
 import type { Photo } from "@/lib/photography";
 import { useLockBodyScroll } from "@/lib/hooks";
@@ -19,6 +23,7 @@ export default function PhotoLightbox({
   const [loaded, setLoaded] = useState(false);
   const photo = photos[index];
 
+  // Reset the spinner whenever the index changes so a new full-size fetch shows feedback.
   useEffect(() => {
     setLoaded(false);
   }, [index]);
@@ -88,6 +93,7 @@ export default function PhotoLightbox({
       </button>
 
       {/* Image */}
+      {/* stopPropagation: clicking the image must not bubble to the backdrop close handler */}
       <div
         onClick={(e) => e.stopPropagation()}
         className="relative flex max-h-[88vh] max-w-[90vw] items-center justify-center"

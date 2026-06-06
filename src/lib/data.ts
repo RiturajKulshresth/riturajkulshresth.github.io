@@ -1,3 +1,8 @@
+/**
+ * Single source of truth for portfolio content and navigation metadata.
+ * Profile, projects, experience, skills, accolades, and nav config all live
+ * here so every render mode can import the same data without duplication.
+ */
 export const RESUME_PATH = "/resume/RiturajKulshresth_Resume.pdf";
 
 export const profile = {

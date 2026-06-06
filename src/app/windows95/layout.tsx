@@ -1,3 +1,7 @@
+/**
+ * Per-route layout for /windows95. Sets SEO metadata; the desktop component
+ * fills the viewport on its own.
+ */
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

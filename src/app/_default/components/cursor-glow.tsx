@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Custom cursor overlay for the Default render mode. See the block comment
+ * below for the rAF loop, lerp speeds, and visibility rules.
+ */
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 

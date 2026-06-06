@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Single project tile in the Projects grid. Whole card is one link; preview
+ * images fade in after load (with a mount-time `complete` check for cache hits).
+ */
 import { useEffect, useRef, useState } from "react";
 import type { Project } from "@/lib/data";
 import { ArrowUpRight } from "./icons";
@@ -24,6 +28,7 @@ export default function ProjectCard({ project }: { project: Project }) {
       href={project.link ?? undefined}
       target={isExternalLink ? "_blank" : undefined}
       rel={isExternalLink ? "noopener noreferrer" : undefined}
+      // Cards without a `link` still render but are not navigable.
       aria-disabled={!isExternalLink || undefined}
       className="card group flex h-full flex-col overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/30"
     >

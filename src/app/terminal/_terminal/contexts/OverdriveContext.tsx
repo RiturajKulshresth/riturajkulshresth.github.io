@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Global overdrive state for the terminal shell.
+ * Provides a draining/recharging stamina reserve, speedMul for visualizers, and
+ * syncs urgent audio voicing via synth.setOverdrive().
+ */
+
 import React, {
     createContext,
     useCallback,

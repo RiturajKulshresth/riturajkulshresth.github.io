@@ -1,3 +1,7 @@
+/**
+ * Frogger-style lane hopper. Cross traffic and ride logs to secure 5 top-row core slots.
+ * 3 lives; river rows require a log carrier; logs submerge periodically after 50 points.
+ */
 import { GameEngine, GameInput, GameContext, getColorHex, getColorSecondaryHex } from "./types";
 
 interface VehicleLog {

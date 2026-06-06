@@ -5,6 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Tabbed career timeline dispatch: WBD, Deloitte, Oyo, academics, accolades.
+ * Nested sub-tabs drill into ACME/Knowledge/Daisy and Deloitte workstreams.
+ * RedactedBriefing tails pad shorter panels so tab switches do not jump layout height.
+ */
+
 import React, { useState } from "react";
 import { synth } from "../audio";
 import { 

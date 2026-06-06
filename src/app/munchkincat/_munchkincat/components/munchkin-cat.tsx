@@ -1,3 +1,8 @@
+/**
+ * Munchkin Cat render mode. A side-scrolling platformer where the cat explores
+ * rooms and inspects furniture stations that surface portfolio content from
+ * `@/lib/data`. Yarn collection and reaching the front door trigger victory.
+ */
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -697,6 +702,7 @@ function Game({
       const W = canvas.width;
       const H = canvas.height;
       const t = Date.now() / 1000;
+      // Centre the cat in the viewport; clamp so we never show empty space past world edges.
       const cameraX = Math.max(0, Math.min(WORLD_WIDTH - W, player.x - W / 2 + 13));
       // Keep pixel art crisp (canvas resize resets this, so set it each frame).
       ctx.imageSmoothingEnabled = false;
@@ -837,6 +843,7 @@ function Game({
           player.x < p.x + p.w &&
           player.x + player.w > p.x &&
           player.y + player.h >= p.y &&
+          // +16 tolerance: only land when falling through the top face, not from below.
           player.y + player.h - player.vy <= p.y + 16 &&
           player.vy >= 0
         ) {
