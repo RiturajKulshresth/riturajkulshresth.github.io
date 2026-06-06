@@ -28,10 +28,13 @@ export class FroggerGame implements GameEngine {
   private coreSlots: CoreSlot[] = [];
   private score = 0;
   private deathsCount = 0;
+  private readonly maxLives = 3;
+  private gameOver = false;
 
   init(): void {
     this.score = 0;
     this.deathsCount = 0;
+    this.gameOver = false;
     this.playerX = 300;
     this.playerY = 370;
 
@@ -80,10 +83,21 @@ export class FroggerGame implements GameEngine {
   }
 
   private handleDeath(ctx: GameContext) {
-    this.playerX = 300;
-    this.playerY = 370;
+    if (this.gameOver) return;
     this.deathsCount++;
     ctx.playRetroSFX("CRASH");
+
+    // Out of lives: end the run (previously the game never ended).
+    if (this.deathsCount >= this.maxLives) {
+      this.gameOver = true;
+      ctx.checkAndSaveHighScore(this.score);
+      ctx.setGameState("GAMEOVER");
+      return;
+    }
+
+    // Respawn at the starting bank for the next life.
+    this.playerX = 300;
+    this.playerY = 370;
   }
 
   private keyCooldowns: Record<string, boolean> = {};
@@ -369,7 +383,8 @@ export class FroggerGame implements GameEngine {
     c2d.font = "bold 8px monospace";
     c2d.textAlign = "left";
     c2d.fillText(`CHIPS SECURED: ${this.coreSlots.filter(s => s.secured).length}/5`, 8, ctx.canvas.height - 8);
-    c2d.fillText(`SYSTEM FAULTS: ${this.deathsCount}`, 120, ctx.canvas.height - 8);
+    c2d.fillStyle = "rgba(34, 197, 94, 0.6)";
+    c2d.fillText(`LIVES: ${Math.max(0, this.maxLives - this.deathsCount)}/${this.maxLives}`, 120, ctx.canvas.height - 8);
     
     if (this.score >= 50) {
       c2d.fillStyle = "rgba(239, 68, 68, 0.55)";

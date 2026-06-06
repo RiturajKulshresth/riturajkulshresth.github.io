@@ -124,8 +124,13 @@ export class FlappyGame implements GameEngine {
       return;
     }
     if (this.nodeY - this.nodeRadius <= 0) {
+      // Crash ceiling (previously this only bumped the node down).
       this.nodeY = this.nodeRadius + 2;
-      this.nodeVelocity = 0.5; // stop rising, bump down
+      this.createParticles(70, this.nodeY, "rgba(239, 68, 68, 0.95)", 14);
+      ctx.setGameState("GAMEOVER");
+      ctx.playRetroSFX("CRASH");
+      ctx.checkAndSaveHighScore(this.score);
+      return;
     }
 
     // Move and update Pillars

@@ -43,11 +43,15 @@ export class AsteroidsGame implements GameEngine {
   private shootCooldown = 0;
   private score = 0;
   private currentWave = 1;
+  private cw = 600;
+  private ch = 400;
   private gravityWell = { x: 300, y: 200, pullRadius: 180, active: false };
 
   init(ctx: GameContext): void {
     this.score = 0;
     this.currentWave = 1;
+    this.cw = ctx.canvas.width;
+    this.ch = ctx.canvas.height;
     this.shipX = ctx.canvas.width / 2;
     this.shipY = ctx.canvas.height / 2;
     this.shipAngle = -Math.PI / 2;
@@ -55,6 +59,8 @@ export class AsteroidsGame implements GameEngine {
     this.shipVy = 0;
     this.lasers = [];
     this.particles = [];
+    this.gravityWell.x = ctx.canvas.width / 2;
+    this.gravityWell.y = ctx.canvas.height / 2;
     this.gravityWell.active = false;
 
     this.spawnAsteroidWave(4);
@@ -78,11 +84,13 @@ export class AsteroidsGame implements GameEngine {
     this.asteroids = [];
     for (let i = 0; i < count; i++) {
       // Spawn near edges of screen to leave ship centerpiece safe initially
-      let sx = Math.random() * 600;
-      let sy = Math.random() * 400;
-      while (Math.abs(sx - 300) < 100 && Math.abs(sy - 200) < 100) {
-        sx = Math.random() * 600;
-        sy = Math.random() * 400;
+      const safeCx = this.cw / 2;
+      const safeCy = this.ch / 2;
+      let sx = Math.random() * this.cw;
+      let sy = Math.random() * this.ch;
+      while (Math.abs(sx - safeCx) < 100 && Math.abs(sy - safeCy) < 100) {
+        sx = Math.random() * this.cw;
+        sy = Math.random() * this.ch;
       }
 
       const radius = Math.random() * 12 + 20; // larger rocks

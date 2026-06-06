@@ -14,7 +14,11 @@ import {
   HelpCircle, 
   Zap, 
   Award, 
-  Keyboard
+  Keyboard,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 interface ArcadeTerminalProps {
@@ -22,6 +26,35 @@ interface ArcadeTerminalProps {
   initialGame?: ActiveGame;
   embedded?: boolean;
 }
+
+// Direction codes used by the on-screen D-pad. They match the `e.code` values
+// the keyboard listener already understands, so the touch deck can drive every
+// game by dispatching synthetic keyboard events - no per-game wiring needed.
+type PadDir = "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
+interface ActionBtn {
+  code: string;
+  label: string;
+  // pulse = tap (quick down/up), used for jump/flap; otherwise hold-to-press.
+  pulse?: boolean;
+}
+interface GameControls {
+  dirs: PadDir[];
+  actions: ActionBtn[];
+}
+
+// Per-game on-screen control layout. Mirrors each engine's keyboard handling.
+const GAME_CONTROLS: Record<ActiveGame, GameControls> = {
+  SNAKE: { dirs: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"], actions: [] },
+  BREAKOUT: { dirs: ["ArrowLeft", "ArrowRight"], actions: [] },
+  SHOOTER: { dirs: ["ArrowLeft", "ArrowRight"], actions: [{ code: "Space", label: "FIRE" }] },
+  PONG: { dirs: ["ArrowUp", "ArrowDown"], actions: [] },
+  ASTEROIDS: { dirs: ["ArrowLeft", "ArrowRight", "ArrowUp"], actions: [{ code: "Space", label: "FIRE" }] },
+  FLAPPY: { dirs: [], actions: [{ code: "Space", label: "FLAP", pulse: true }] },
+  FROGGER: { dirs: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"], actions: [] },
+  PACMAN: { dirs: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"], actions: [] },
+  HIGHWAY: { dirs: ["ArrowLeft", "ArrowRight"], actions: [{ code: "ArrowUp", label: "NITRO" }] },
+  DINO: { dirs: [], actions: [{ code: "Space", label: "JUMP", pulse: true }, { code: "ArrowDown", label: "DUCK" }] },
+};
 
 export default function ArcadeTerminal({ colorPreset, initialGame, embedded = false }: ArcadeTerminalProps) {
   const [activeGame, setActiveGame] = useState<ActiveGame>(initialGame || "SNAKE");
@@ -159,11 +192,44 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       mouseClicked = false;
     };
 
+    // TOUCH TRACKING - maps a finger on the canvas to the same mouseX/Y/click
+    // pipeline so paddle/aim/flap games work on phones. We only block the
+    // browser's scroll/zoom while a round is PLAYING, so tap-to-start and
+    // tap-to-reboot still fire the canvas onClick on idle/gameover screens.
+    const setPosFromTouch = (touch: Touch) => {
+      const rect = canvas.getBoundingClientRect();
+      const relativeX = ((touch.clientX - rect.left) / rect.width) * canvas.width;
+      const relativeY = ((touch.clientY - rect.top) / rect.height) * canvas.height;
+      mouseX = Math.min(Math.max(relativeX, 0), canvas.width);
+      mouseY = Math.min(Math.max(relativeY, 0), canvas.height);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch) setPosFromTouch(touch);
+      mouseClicked = true;
+      if (localGameState === "PLAYING") e.preventDefault();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch) setPosFromTouch(touch);
+      if (localGameState === "PLAYING") e.preventDefault();
+    };
+
+    const handleTouchEnd = () => {
+      mouseClicked = false;
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+    canvas.addEventListener("touchend", handleTouchEnd);
+    canvas.addEventListener("touchcancel", handleTouchEnd);
 
     // Instantiate and initialize the dedicated game module
     const gameEngine = getGameEngine(activeGame);
@@ -332,6 +398,10 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mouseup", handleMouseUp);
+      canvas.removeEventListener("touchstart", handleTouchStart);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchEnd);
+      canvas.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [activeGame, gameState, colorPreset]);
 
@@ -375,6 +445,51 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
   };
 
   const currentStyle = containerStyler();
+
+  // The on-screen control deck drives games by dispatching the same window
+  // keyboard events the engines already listen for. This keeps every game
+  // engine input-source agnostic (real keys, touch deck, all funnel through
+  // `keysPressed`).
+  const dispatchGameKey = (type: "keydown" | "keyup", code: string) => {
+    window.dispatchEvent(new KeyboardEvent(type, { code }));
+  };
+
+  // Hold-to-press: key is down while the finger/pointer is on the button.
+  const holdHandlers = (code: string) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      dispatchGameKey("keydown", code);
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      e.preventDefault();
+      dispatchGameKey("keyup", code);
+    },
+    onPointerLeave: () => dispatchGameKey("keyup", code),
+    onPointerCancel: () => dispatchGameKey("keyup", code),
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  });
+
+  // Tap-to-fire: short pulse for edge-triggered actions (jump / flap).
+  const pulseHandlers = (code: string) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      dispatchGameKey("keydown", code);
+      setTimeout(() => dispatchGameKey("keyup", code), 90);
+    },
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  });
+
+  const controls = GAME_CONTROLS[activeGame];
+  const padBtnClass =
+    "flex items-center justify-center rounded-md border border-cyan-500/30 bg-black/40 text-cyan-200/90 backdrop-blur-sm transition-colors active:bg-cyan-500/30 active:border-cyan-300 hover:border-cyan-400/60 touch-none select-none h-12 w-12 sm:h-11 sm:w-11 md:h-10 md:w-10";
+  const dpadCell = (dir: PadDir, icon: React.ReactNode) =>
+    controls.dirs.includes(dir) ? (
+      <button type="button" aria-label={dir.replace("Arrow", "")} {...holdHandlers(dir)} className={padBtnClass}>
+        {icon}
+      </button>
+    ) : (
+      <span className="h-12 w-12 sm:h-11 sm:w-11 md:h-10 md:w-10" />
+    );
 
   return (
     <div 
@@ -626,7 +741,45 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
             {activeGame === "PACMAN" && "ARROW KEYS / WASD (MAZE STEERING)"}
             {activeGame === "HIGHWAY" && "ARROW LEFT / RIGHT (SHIFT) + ARROW UP (NITRO SPEEDWAY BOOST)"}
             {activeGame === "DINO" && "SPACEBAR (JUMP) + ARROW DOWN / S (CROUCH/DUCK)"}
+            <span className="text-fuchsia-400/70"> · OR USE THE PAD BELOW</span>
           </span>
+        </div>
+
+        {/* Always-visible translucent touch/click control deck. Drives every
+            game through synthetic key events, so it works with mouse and touch
+            alike and needs no per-game wiring. */}
+        <div className="relative z-30 mt-3 flex w-full max-w-[600px] select-none items-center justify-between gap-4">
+          {controls.dirs.length > 0 ? (
+            <div className="grid grid-cols-3 grid-rows-3 gap-1">
+              <span />
+              {dpadCell("ArrowUp", <ChevronUp className="h-5 w-5" />)}
+              <span />
+              {dpadCell("ArrowLeft", <ChevronLeft className="h-5 w-5" />)}
+              <span className="h-12 w-12 sm:h-11 sm:w-11 md:h-10 md:w-10" />
+              {dpadCell("ArrowRight", <ChevronRight className="h-5 w-5" />)}
+              <span />
+              {dpadCell("ArrowDown", <ChevronDown className="h-5 w-5" />)}
+              <span />
+            </div>
+          ) : (
+            <span />
+          )}
+
+          {controls.actions.length > 0 && (
+            <div className="flex items-center gap-2.5">
+              {controls.actions.map((action) => (
+                <button
+                  key={action.code}
+                  type="button"
+                  aria-label={action.label}
+                  {...(action.pulse ? pulseHandlers(action.code) : holdHandlers(action.code))}
+                  className="flex h-16 w-16 items-center justify-center rounded-full border border-fuchsia-500/40 bg-fuchsia-950/30 font-mono text-[10px] font-black uppercase tracking-wider text-fuchsia-200/90 backdrop-blur-sm transition-colors active:bg-fuchsia-500/30 active:border-fuchsia-300 hover:border-fuchsia-400/70 touch-none select-none sm:h-14 sm:w-14 md:h-12 md:w-12"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

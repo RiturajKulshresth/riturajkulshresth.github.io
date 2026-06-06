@@ -34,9 +34,12 @@ export class PongGame implements GameEngine {
   private particles: Particle[] = [];
   private obstacle: CentralObstacle = { x: 290, y: 180, width: 20, height: 40, active: false, angle: 0 };
   private consecutiveHits = 0;
+  private readonly maxLives = 3;
+  private playerLives = 3;
 
   init(ctx: GameContext): void {
     this.score = 0;
+    this.playerLives = this.maxLives;
     this.playerY = (ctx.canvas.height - this.paddleHeight) / 2;
     this.cpuY = (ctx.canvas.height - this.paddleHeight) / 2;
     this.ballX = ctx.canvas.width / 2;
@@ -220,23 +223,33 @@ export class PongGame implements GameEngine {
     // Left/Right Dead Margins Checks
     // --------------------------------------------
     if (this.ballX < 0) {
-      // Player lost
-      ctx.setGameState("GAMEOVER");
+      // Player missed: lose a life. Game over only when all lives are spent,
+      // so a single miss no longer instantly ends the run.
+      this.playerLives--;
       ctx.playRetroSFX("CRASH");
-      ctx.checkAndSaveHighScore(this.score);
+      this.createRipple(8, this.ballY, "rgba(239,68,68,0.9)", 16);
+
+      if (this.playerLives <= 0) {
+        ctx.setGameState("GAMEOVER");
+        ctx.checkAndSaveHighScore(this.score);
+      } else {
+        // Re-serve toward the player for the next rally.
+        this.ballX = ctx.canvas.width / 2;
+        this.ballY = ctx.canvas.height / 2;
+        this.ballSpeedX = -4.0;
+        this.ballSpeedY = (Math.random() - 0.5) * 4;
+        this.consecutiveHits = 0;
+      }
     } else if (this.ballX > ctx.canvas.width) {
-      // CPU bypass scoring reward
+      // CPU missed: player scores and the rally resets toward the CPU.
       this.score += 25;
       ctx.setScore(this.score);
       ctx.playRetroSFX("SECURE");
-      
-      // Particle burst inside cpu goal
       this.createRipple(ctx.canvas.width - 10, this.ballY, "rgba(236,72,153,0.9)", 16);
 
-      // Reset Ball location towards center toward CPU
       this.ballX = ctx.canvas.width / 2;
       this.ballY = ctx.canvas.height / 2;
-      this.ballSpeedX = -4.0;
+      this.ballSpeedX = 4.0;
       this.ballSpeedY = (Math.random() - 0.5) * 4;
       this.consecutiveHits = 0;
     }
@@ -331,10 +344,15 @@ export class PongGame implements GameEngine {
     c2d.textAlign = "left";
     c2d.fillText(`CHANNEL_LOAD: ${(1.0 + this.consecutiveHits * 0.04).toFixed(2)}X`, 8, ctx.canvas.height - 8);
     c2d.fillText(`AI_REACTION_PULSE: ${Math.floor(difficultyLevel * 15 + 40)}%`, 140, ctx.canvas.height - 8);
-    
+
+    c2d.textAlign = "right";
+    c2d.fillStyle = getColorHex(ctx.colorPreset, 0.6);
+    c2d.fillText(`LIVES: ${Math.max(0, this.playerLives)}/${this.maxLives}`, ctx.canvas.width - 8, ctx.canvas.height - 8);
+    c2d.textAlign = "left";
+
     if (this.obstacle.active) {
       c2d.fillStyle = "rgba(239, 68, 68, 0.55)";
-      c2d.fillText("WARNING: CENTRAL CORE FLOATER DETECTED", 280, ctx.canvas.height - 8);
+      c2d.fillText("WARNING: CENTRAL CORE FLOATER", 280, ctx.canvas.height - 8);
     }
   }
 }

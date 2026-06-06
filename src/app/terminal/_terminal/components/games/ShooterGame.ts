@@ -70,10 +70,17 @@ export class ShooterGame implements GameEngine {
   private shooterLevel = 1;
   private shootCooldown = 0;
   private score = 0;
+  private canvasWidth = 600;
+  private readonly maxLives = 3;
+  private lives = 3;
+  private invuln = 0;
 
   init(ctx: GameContext): void {
     this.score = 0;
     this.shooterLevel = 1;
+    this.canvasWidth = ctx.canvas.width;
+    this.lives = this.maxLives;
+    this.invuln = 0;
     this.playerShipX = ctx.canvas.width / 2;
     this.bullets = [];
     this.particles = [];
@@ -83,6 +90,23 @@ export class ShooterGame implements GameEngine {
 
     this.initInvaders();
     this.initShields();
+  }
+
+  // One hit costs a life (with brief invulnerability + a bullet wipe) instead
+  // of instantly ending the run.
+  private hitPlayer(ctx: GameContext) {
+    if (this.invuln > 0) return;
+    this.lives--;
+    this.createParticles(this.playerShipX, this.playerShipY, "rgba(244, 63, 94, 0.95)", 18);
+    ctx.playRetroSFX("CRASH");
+    if (this.lives <= 0) {
+      ctx.setGameState("GAMEOVER");
+      ctx.checkAndSaveHighScore(this.score);
+    } else {
+      this.invuln = 90;
+      this.bullets = this.bullets.filter((b) => !b.isEnemy);
+      this.playerShipX = ctx.canvas.width / 2;
+    }
   }
 
   private initInvaders() {
@@ -115,7 +139,7 @@ export class ShooterGame implements GameEngine {
     this.shields = [];
     const shieldCount = 3;
     const shieldWidth = 60;
-    const canvasWidth = 600;
+    const canvasWidth = this.canvasWidth;
 
     for (let i = 0; i < shieldCount; i++) {
       const sx = (canvasWidth / (shieldCount + 1)) * (i + 1) - shieldWidth / 2;
@@ -167,6 +191,7 @@ export class ShooterGame implements GameEngine {
     const speedFactor = ctx.speedFactor;
 
     if (this.shootCooldown > 0) this.shootCooldown -= speedFactor;
+    if (this.invuln > 0) this.invuln -= speedFactor;
 
     // Movement controls (Arrows + Mouse interpolation fallback)
     if (keysPressed["ArrowLeft"] || keysPressed["KeyA"]) {
@@ -245,10 +270,8 @@ export class ShooterGame implements GameEngine {
 
           // Check player collision with laser beam
           if (this.playerShipX + this.shipWidth / 2 >= beamLeft && this.playerShipX - this.shipWidth / 2 <= beamRight) {
-            ctx.setGameState("GAMEOVER");
-            ctx.playRetroSFX("CRASH");
-            ctx.checkAndSaveHighScore(this.score);
-            return;
+            this.hitPlayer(ctx);
+            if (this.lives <= 0) return;
           }
 
           // Check shields collision with laser beam
@@ -339,15 +362,16 @@ export class ShooterGame implements GameEngine {
       if (b.isEnemy) {
         // Player hitbox check
         if (
+          this.invuln <= 0 &&
           b.x >= this.playerShipX - this.shipWidth / 2 &&
           b.x <= this.playerShipX + this.shipWidth / 2 &&
           b.y >= this.playerShipY - 5 &&
           b.y <= this.playerShipY + 12
         ) {
-          ctx.setGameState("GAMEOVER");
-          ctx.playRetroSFX("CRASH");
-          ctx.checkAndSaveHighScore(this.score);
-          return;
+          this.bullets.splice(i, 1);
+          this.hitPlayer(ctx);
+          if (this.lives <= 0) return;
+          continue;
         }
       } else {
         // Hero shot hits Boss Motherboard
@@ -551,8 +575,11 @@ export class ShooterGame implements GameEngine {
       c2d.restore();
     });
 
-    // Draw Hero spaceship (vector spacefighter)
+    // Draw Hero spaceship (vector spacefighter). Blink while invulnerable.
     c2d.save();
+    if (this.invuln > 0) {
+      c2d.globalAlpha = Math.floor(Date.now() / 100) % 2 === 0 ? 0.35 : 0.85;
+    }
     c2d.shadowBlur = 15;
     c2d.shadowColor = getColorSecondaryHex(ctx.colorPreset, 0.9);
     c2d.strokeStyle = "#ffffff";
@@ -600,11 +627,16 @@ export class ShooterGame implements GameEngine {
     c2d.font = "bold 8px monospace";
     c2d.textAlign = "left";
     c2d.fillText(`SECTOR_DEFENSE: LVL ${this.shooterLevel}`, 8, ctx.canvas.height - 8);
-    c2d.fillText(`VIRUS_INDEX: ${this.invaders.length}`, 110, ctx.canvas.height - 8);
-    
+    c2d.fillText(`VIRUS_INDEX: ${this.invaders.length}`, 130, ctx.canvas.height - 8);
+
+    c2d.textAlign = "right";
+    c2d.fillStyle = getColorSecondaryHex(ctx.colorPreset, 0.7);
+    c2d.fillText(`LIVES: ${Math.max(0, this.lives)}/${this.maxLives}`, ctx.canvas.width - 8, ctx.canvas.height - 8);
+    c2d.textAlign = "left";
+
     if (this.boss) {
       c2d.fillStyle = "rgba(239, 68, 68, 0.5)";
-      c2d.fillText("BOSS COMPROMISE COMPILING", 200, ctx.canvas.height - 8);
+      c2d.fillText("BOSS COMPROMISE COMPILING", 250, ctx.canvas.height - 8);
     }
   }
 }

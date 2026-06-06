@@ -64,6 +64,7 @@ export default function MunchkinCat() {
   const [score, setScore] = useState(0);
   const [victory, setVictory] = useState(false);
   const [gameKey, setGameKey] = useState(0);
+  const [visited, setVisited] = useState<Set<string>>(new Set());
 
   const mutedRef = useRef(isMuted);
   const crtRef = useRef(crtOn);
@@ -245,7 +246,18 @@ export default function MunchkinCat() {
     setScore(0);
     setVictory(false);
     setActiveStationId(null);
+    setVisited(new Set());
     setGameKey((k) => k + 1); // remount the game → fresh crystals/player
+  };
+
+  const handleInteract = (id: string) => {
+    setActiveStationId(id);
+    setVisited((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
   };
 
   return (
@@ -268,6 +280,9 @@ export default function MunchkinCat() {
         </div>
 
         <div className="flex items-center gap-3 font-mono text-xs font-bold text-amber-300">
+          <span className="rounded-lg border border-amber-900/60 bg-amber-950/40 px-2.5 py-1">
+            EXPLORED <span className="font-black text-[#fbbf24]">{visited.size}/{stations.length}</span>
+          </span>
           <span className="rounded-lg border border-amber-900/60 bg-amber-950/40 px-2.5 py-1">
             YARN <span className="font-black text-[#fbbf24]">{score}</span>
           </span>
@@ -299,7 +314,7 @@ export default function MunchkinCat() {
           markers={markers}
           mutedRef={mutedRef}
           crtRef={crtRef}
-          onInteract={setActiveStationId}
+          onInteract={handleInteract}
           onScore={(d) => setScore((s) => Math.max(0, s + d))}
           onVictory={() => setVictory(true)}
         />
@@ -648,6 +663,24 @@ function Game({
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
 
+    // Direct canvas tap: inspect a nearby station, otherwise hop. Gives touch
+    // players a way to act without hunting for the pad, and works for mouse too.
+    const onCanvasPointerDown = (e: PointerEvent) => {
+      e.preventDefault();
+      const near = markers.find((s) => Math.abs(player.x + 13 - s.x) <= 70);
+      if (near) {
+        interact();
+      } else {
+        keys["jump"] = true;
+      }
+    };
+    const onCanvasPointerUp = () => {
+      keys["jump"] = false;
+    };
+    canvas.addEventListener("pointerdown", onCanvasPointerDown);
+    window.addEventListener("pointerup", onCanvasPointerUp);
+    window.addEventListener("pointercancel", onCanvasPointerUp);
+
     padRef.current = (action: string, down: boolean) => {
       if (action === "left") keys["a"] = down;
       else if (action === "right") keys["d"] = down;
@@ -762,13 +795,15 @@ function Game({
       ctx.fill();
 
       // ── Input ──
+      // Holding both directions cancels out instead of letting "right" win.
       player.vx = 0;
-      if (keys["a"] || keys["arrowleft"]) {
+      const goLeft = keys["a"] || keys["arrowleft"];
+      const goRight = keys["d"] || keys["arrowright"];
+      if (goLeft && !goRight) {
         player.vx = -speed;
         player.facing = -1;
         player.anim += 0.3;
-      }
-      if (keys["d"] || keys["arrowright"]) {
+      } else if (goRight && !goLeft) {
         player.vx = speed;
         player.facing = 1;
         player.anim += 0.3;
@@ -997,6 +1032,9 @@ function Game({
       cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      canvas.removeEventListener("pointerdown", onCanvasPointerDown);
+      window.removeEventListener("pointerup", onCanvasPointerUp);
+      window.removeEventListener("pointercancel", onCanvasPointerUp);
       ro.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1013,20 +1051,23 @@ function Game({
           <span className="hidden sm:inline">
             Move: A/D or ← →   ·   Jump / double-jump: W / Space   ·   Inspect: E
           </span>
-          <span className="sm:hidden">Use the pad below to hop &amp; inspect</span>
+          <span className="sm:hidden">Tap the room to hop, or walk up to inspect</span>
         </div>
       </div>
 
-      {/* Virtual pad (touch / click) */}
-      <div className="z-10 flex shrink-0 items-center justify-between gap-3 border-t border-amber-950 bg-[#241710]/95 p-3 select-none">
-        <div className="flex gap-2">
+      {/* Virtual pad (touch / click), translucent so the room shows through. */}
+      <div className="z-10 flex shrink-0 items-center justify-between gap-3 border-t border-amber-950/70 bg-[#241710]/55 p-3 backdrop-blur-md select-none">
+        <div className="flex gap-2.5">
           {(["left", "right"] as const).map((d) => (
             <button
               key={d}
               onPointerDown={() => padPress(d, true)}
               onPointerUp={() => padPress(d, false)}
               onPointerLeave={() => padPress(d, false)}
-              className="flex h-11 items-center justify-center rounded-lg border border-amber-900 bg-[#321f12] px-3 font-mono text-[11px] font-extrabold uppercase text-amber-100 transition hover:brightness-110 active:scale-95"
+              onPointerCancel={() => padPress(d, false)}
+              onContextMenu={(e) => e.preventDefault()}
+              aria-label={d === "left" ? "Move left" : "Move right"}
+              className="flex h-14 w-14 touch-none items-center justify-center rounded-xl border border-amber-900/70 bg-[#321f12]/70 font-mono text-base font-extrabold uppercase text-amber-100 backdrop-blur-sm transition hover:brightness-110 active:scale-95 sm:h-12 sm:w-12"
             >
               {d === "left" ? "◀" : "▶"}
             </button>
@@ -1034,12 +1075,13 @@ function Game({
         </div>
         <button
           onPointerDown={() => nearLabel && padPress("interact", true)}
+          onContextMenu={(e) => e.preventDefault()}
           disabled={!nearLabel}
           title={nearLabel ? `Inspect ${nearLabel}` : "Walk up to an object to inspect it"}
-          className={`rounded-lg px-4 py-2.5 font-mono text-[11px] font-black uppercase transition active:scale-95 ${
+          className={`touch-none rounded-xl px-4 py-3 font-mono text-[11px] font-black uppercase transition active:scale-95 ${
             nearLabel
-              ? "animate-pulse bg-amber-500 text-slate-950 hover:bg-amber-400"
-              : "cursor-not-allowed border border-amber-900/60 bg-[#241710] text-amber-200/30"
+              ? "animate-pulse bg-amber-500/90 text-slate-950 hover:bg-amber-400"
+              : "cursor-not-allowed border border-amber-900/50 bg-[#241710]/50 text-amber-200/30"
           }`}
         >
           🐾 {nearLabel ? `Inspect ${nearLabel}` : "Inspect"}
@@ -1048,7 +1090,10 @@ function Game({
           onPointerDown={() => padPress("jump", true)}
           onPointerUp={() => padPress("jump", false)}
           onPointerLeave={() => padPress("jump", false)}
-          className="flex h-11 items-center rounded-lg bg-orange-600 px-3 font-mono text-[11px] font-extrabold text-white transition hover:bg-orange-500 active:scale-95"
+          onPointerCancel={() => padPress("jump", false)}
+          onContextMenu={(e) => e.preventDefault()}
+          aria-label="Jump"
+          className="flex h-14 touch-none items-center rounded-xl bg-orange-600/85 px-4 font-mono text-[11px] font-extrabold text-white backdrop-blur-sm transition hover:bg-orange-500 active:scale-95 sm:h-12"
         >
           ▲ JUMP
         </button>

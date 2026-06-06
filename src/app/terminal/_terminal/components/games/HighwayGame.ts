@@ -44,6 +44,7 @@ export class HighwayGame implements GameEngine {
   private scrollOffset = 0;
   private score = 0;
   private survivalTimer = 0;
+  private elapsedFrames = 0;
 
   private traffic: Car[] = [];
   private collectibles: FuelCanister[] = [];
@@ -59,6 +60,7 @@ export class HighwayGame implements GameEngine {
     this.playerY = 320;
     this.score = 0;
     this.survivalTimer = 0;
+    this.elapsedFrames = 0;
     this.scrollOffset = 0;
     this.traffic = [];
     this.collectibles = [];
@@ -146,6 +148,7 @@ export class HighwayGame implements GameEngine {
     const roadScrollSpeed = (6.0 + difficultyLevel * 1.2) * speedFactor * (this.boostActive ? 1.5 : 1.0);
 
     // Increase survival score ticking
+    this.elapsedFrames += speedFactor;
     this.survivalTimer += speedFactor;
     if (this.survivalTimer >= 40) {
       this.survivalTimer = 0;
@@ -382,6 +385,15 @@ export class HighwayGame implements GameEngine {
       c2d.fillRect(car.x + 3, car.y + car.height - 3, 3, 3);
       c2d.fillRect(car.x + car.width - 6, car.y + car.height - 3, 3, 3);
 
+      // Erratic "alarm" vehicles flash a warning halo so they read as a threat.
+      if (car.alarmBlink && Math.floor(Date.now() / 200) % 2 === 0) {
+        c2d.shadowBlur = 12;
+        c2d.shadowColor = "rgba(239, 68, 68, 0.9)";
+        c2d.strokeStyle = "rgba(239, 68, 68, 0.9)";
+        c2d.lineWidth = 2;
+        c2d.strokeRect(car.x - 2, car.y - 2, car.width + 4, car.height + 4);
+      }
+
       c2d.restore();
     });
 
@@ -438,7 +450,7 @@ export class HighwayGame implements GameEngine {
     const difficultyLevel = Math.floor(this.score / 150);
     const trafficSpeed = 6.0 + difficultyLevel * 1.2;
     c2d.fillText(`TRAFFIC_SPEED: ${trafficSpeed.toFixed(0)}m/h`, 110, ctx.canvas.height - 8);
-    c2d.fillText(`SURVIVED_TIME: ${(Date.now() % 1000).toString(16)}`, 215, ctx.canvas.height - 8);
+    c2d.fillText(`SURVIVED: ${(this.elapsedFrames / 60).toFixed(1)}s`, 215, ctx.canvas.height - 8);
     
     if (this.boostActive) {
       c2d.fillStyle = "rgba(239, 68, 68, 0.7)";

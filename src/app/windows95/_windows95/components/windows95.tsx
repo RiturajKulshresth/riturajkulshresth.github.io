@@ -46,6 +46,7 @@ const BEVEL_PRESSED =
   "bg-[#bdbdbd] border-2 border-t-neutral-800 border-l-neutral-800 border-b-white border-r-white shadow-[inset_1px_1px_rgba(0,0,0,0.15)]";
 
 const GRID = 64;
+const MINE_TOTAL = 10;
 
 export default function Windows95() {
   const [bootStep, setBootStep] = useState(0); // 0 BIOS, 1 splash, 2 desktop
@@ -65,7 +66,7 @@ export default function Windows95() {
     { id: "contact", title: "Contact.exe", icon: MailIcon, isOpen: false, isMinimized: false, isMaximized: false, zIndex: 6, x: 220, y: 100, w: 420, h: 330 },
     { id: "mycomputer", title: "My Computer", icon: ComputerIcon, isOpen: false, isMinimized: false, isMaximized: false, zIndex: 7, x: 150, y: 80, w: 460, h: 330 },
     { id: "recyclebin", title: "Recycle Bin", icon: RecycleIcon, isOpen: false, isMinimized: false, isMaximized: false, zIndex: 8, x: 250, y: 140, w: 400, h: 280 },
-    { id: "minesweeper", title: "Minesweeper", icon: MineIcon, isOpen: false, isMinimized: false, isMaximized: false, zIndex: 9, x: 320, y: 60, w: 290, h: 370 },
+    { id: "minesweeper", title: "Minesweeper", icon: MineIcon, isOpen: false, isMinimized: false, isMaximized: false, zIndex: 9, x: 320, y: 60, w: 320, h: 440 },
   ]);
 
   // Drag / resize
@@ -78,8 +79,11 @@ export default function Windows95() {
   const [mines, setMines] = useState<boolean[]>([]);
   const [revealed, setRevealed] = useState<boolean[]>([]);
   const [flagged, setFlagged] = useState<boolean[]>([]);
-  const [mineCount, setMineCount] = useState(10);
+  const [mineCount, setMineCount] = useState(MINE_TOTAL);
   const [mineState, setMineState] = useState<"playing" | "win" | "lost">("playing");
+  const [minesPlaced, setMinesPlaced] = useState(false);
+  const [mineTime, setMineTime] = useState(0);
+  const [flagMode, setFlagMode] = useState(false);
 
   useEffect(() => {
     const tick = () => {
@@ -136,24 +140,50 @@ export default function Windows95() {
 
   const initMines = () => {
     const total = GRID;
-    const m = Array(total).fill(false);
-    let placed = 0;
-    while (placed < 10) {
-      const i = Math.floor(Math.random() * total);
-      if (!m[i]) {
-        m[i] = true;
-        placed++;
-      }
-    }
-    setMines(m);
+    // Mines are placed lazily on the first reveal (see clickCell) so the
+    // opening click is always safe, matching the real game.
+    setMines(Array(total).fill(false));
     setRevealed(Array(total).fill(false));
     setFlagged(Array(total).fill(false));
-    setMineCount(10);
+    setMineCount(MINE_TOTAL);
     setMineState("playing");
+    setMinesPlaced(false);
+    setMineTime(0);
+    setFlagMode(false);
   };
   useEffect(() => {
     initMines();
   }, []);
+
+  // Run the elapsed-time clock while a placed board is in play.
+  useEffect(() => {
+    if (!minesPlaced || mineState !== "playing") return;
+    const id = setInterval(() => setMineTime((t) => Math.min(999, t + 1)), 1000);
+    return () => clearInterval(id);
+  }, [minesPlaced, mineState]);
+
+  // Place mines avoiding the first-clicked cell and its 8 neighbours.
+  const placeMines = (safeIdx: number): boolean[] => {
+    const m = Array(GRID).fill(false);
+    const sr = Math.floor(safeIdx / 8);
+    const sc = safeIdx % 8;
+    const safe = new Set<number>();
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        const nr = sr + dr;
+        const nc = sc + dc;
+        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) safe.add(nr * 8 + nc);
+      }
+    let placed = 0;
+    while (placed < MINE_TOTAL) {
+      const i = Math.floor(Math.random() * GRID);
+      if (!m[i] && !safe.has(i)) {
+        m[i] = true;
+        placed++;
+      }
+    }
+    return m;
+  };
 
   const neighborCount = (idx: number, m = mines) => {
     const r = Math.floor(idx / 8);
@@ -168,42 +198,109 @@ export default function Windows95() {
     return n;
   };
 
-  const flood = (idx: number, arr: boolean[]) => {
-    if (arr[idx]) return;
+  // Flood empty regions, never crossing a flagged cell.
+  const flood = (idx: number, arr: boolean[], m: boolean[], flags: boolean[]) => {
+    if (arr[idx] || flags[idx]) return;
     arr[idx] = true;
-    if (neighborCount(idx) === 0) {
+    if (neighborCount(idx, m) === 0) {
       const r = Math.floor(idx / 8);
       const c = idx % 8;
       for (let dr = -1; dr <= 1; dr++)
         for (let dc = -1; dc <= 1; dc++) {
           const nr = r + dr;
           const nc = c + dc;
-          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !mines[nr * 8 + nc]) flood(nr * 8 + nc, arr);
+          const ni = nr * 8 + nc;
+          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !m[ni] && !flags[ni]) {
+            flood(ni, arr, m, flags);
+          }
         }
     }
   };
 
-  const clickCell = (idx: number) => {
-    if (mineState !== "playing" || flagged[idx]) return;
-    if (mines[idx]) {
+  const checkWin = (m: boolean[], rev: boolean[]) => {
+    const won = m.every((isMine, i) => isMine || rev[i]);
+    if (won) {
+      setMineState("win");
+      setFlagged(m.map(Boolean)); // auto-flag every mine on a win
+      setMineCount(0);
+    }
+  };
+
+  // Chord: open all unflagged neighbours of a satisfied number.
+  const chordCell = (idx: number) => {
+    const m = mines;
+    const count = neighborCount(idx, m);
+    if (count === 0) return;
+    const r = Math.floor(idx / 8);
+    const c = idx % 8;
+    let flags = 0;
+    const neigh: number[] = [];
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8) continue;
+        const ni = nr * 8 + nc;
+        if (flagged[ni]) flags++;
+        else if (!revealed[ni]) neigh.push(ni);
+      }
+    if (flags !== count) return;
+
+    const next = [...revealed];
+    let hitMine = false;
+    for (const ni of neigh) {
+      if (m[ni]) hitMine = true;
+      else flood(ni, next, m, flagged);
+    }
+    if (hitMine) {
       setRevealed(Array(GRID).fill(true));
       setMineState("lost");
       return;
     }
-    const next = [...revealed];
-    flood(idx, next);
     setRevealed(next);
-    const won = mines.every((isMine, i) => isMine || next[i]);
-    if (won) setMineState("win");
+    checkWin(m, next);
   };
 
-  const rightClickCell = (e: React.MouseEvent, idx: number) => {
-    e.preventDefault();
+  const clickCell = (idx: number) => {
+    if (mineState !== "playing" || flagged[idx]) return;
+
+    // Tapping an already-open number chords its neighbours.
+    if (revealed[idx]) {
+      chordCell(idx);
+      return;
+    }
+
+    let m = mines;
+    if (!minesPlaced) {
+      m = placeMines(idx);
+      setMines(m);
+      setMinesPlaced(true);
+    }
+
+    if (m[idx]) {
+      setRevealed(Array(GRID).fill(true));
+      setMineState("lost");
+      return;
+    }
+
+    const next = [...revealed];
+    flood(idx, next, m, flagged);
+    setRevealed(next);
+    checkWin(m, next);
+  };
+
+  const toggleFlag = (idx: number) => {
     if (mineState !== "playing" || revealed[idx]) return;
     const next = [...flagged];
     next[idx] = !next[idx];
     setFlagged(next);
     setMineCount((c) => c + (next[idx] ? -1 : 1));
+  };
+
+  const rightClickCell = (e: React.MouseEvent, idx: number) => {
+    e.preventDefault();
+    toggleFlag(idx);
   };
 
   const focus = (id: string) => {
@@ -460,9 +557,13 @@ export default function Windows95() {
                     flagged={flagged}
                     mineCount={mineCount}
                     mineState={mineState}
+                    time={mineTime}
+                    flagMode={flagMode}
+                    onToggleFlagMode={() => setFlagMode((v) => !v)}
                     onReset={initMines}
                     onClick={clickCell}
                     onRightClick={rightClickCell}
+                    onToggleFlag={toggleFlag}
                     neighborCount={neighborCount}
                   />
                 )}
@@ -826,9 +927,13 @@ function MinesweeperContent({
   flagged,
   mineCount,
   mineState,
+  time,
+  flagMode,
+  onToggleFlagMode,
   onReset,
   onClick,
   onRightClick,
+  onToggleFlag,
   neighborCount,
 }: {
   mines: boolean[];
@@ -836,23 +941,56 @@ function MinesweeperContent({
   flagged: boolean[];
   mineCount: number;
   mineState: "playing" | "win" | "lost";
+  time: number;
+  flagMode: boolean;
+  onToggleFlagMode: () => void;
   onReset: () => void;
   onClick: (idx: number) => void;
   onRightClick: (e: React.MouseEvent, idx: number) => void;
+  onToggleFlag: (idx: number) => void;
   neighborCount: (idx: number) => number;
 }) {
   const numColor = ["", "#0000ff", "#008000", "#ff0000", "#000080", "#800000", "#008080", "#000", "#808080"];
+
+  // Long-press flags on touch (where right-click is unreliable). A long press
+  // sets a guard so the trailing click does not also reveal the cell.
+  const pressTimer = useRef<number | null>(null);
+  const longPressed = useRef(false);
+
+  const startPress = (idx: number) => {
+    longPressed.current = false;
+    pressTimer.current = window.setTimeout(() => {
+      longPressed.current = true;
+      onToggleFlag(idx);
+    }, 450);
+  };
+  const cancelPress = () => {
+    if (pressTimer.current !== null) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+  const handleCellClick = (idx: number) => {
+    cancelPress();
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    if (flagMode) onToggleFlag(idx);
+    else onClick(idx);
+  };
+
   return (
-    <div className="flex h-full flex-col items-center gap-4">
+    <div className="flex h-full flex-col items-center gap-3">
       <div className={`${BEVEL_PRESSED} flex w-full items-center justify-between p-2 font-mono text-xs font-bold`}>
-        <span className="bg-black px-1.5 py-0.5 text-lg tracking-wider text-red-600">
+        <span className="bg-black px-1.5 py-0.5 text-lg tracking-wider text-red-600" title="Mines remaining">
           {String(mineCount).padStart(3, "0")}
         </span>
         <button onClick={onReset} className={`flex h-8 w-8 items-center justify-center text-base ${BEVEL}`} title="New game">
           {mineState === "win" ? "😎" : mineState === "lost" ? "😵" : "🙂"}
         </button>
-        <span className="bg-black px-1.5 py-0.5 text-lg tracking-wider text-red-600">
-          {mineState === "win" ? "WIN" : mineState === "lost" ? "DED" : "8x8"}
+        <span className="bg-black px-1.5 py-0.5 text-lg tracking-wider text-red-600" title="Time elapsed">
+          {String(time).padStart(3, "0")}
         </span>
       </div>
 
@@ -863,9 +1001,13 @@ function MinesweeperContent({
           return (
             <button
               key={idx}
-              onClick={() => onClick(idx)}
+              onClick={() => handleCellClick(idx)}
               onContextMenu={(e) => onRightClick(e, idx)}
-              className={`flex h-6 w-6 items-center justify-center font-mono text-xs font-black focus:outline-none ${
+              onPointerDown={() => startPress(idx)}
+              onPointerUp={cancelPress}
+              onPointerLeave={cancelPress}
+              onPointerCancel={cancelPress}
+              className={`flex h-7 w-7 touch-none items-center justify-center font-mono text-sm font-black focus:outline-none ${
                 rev ? "border border-neutral-400 bg-neutral-300" : `${BEVEL} hover:brightness-105`
               }`}
             >
@@ -876,7 +1018,21 @@ function MinesweeperContent({
           );
         })}
       </div>
-      <p className="font-mono text-[10px] text-neutral-500">Left-click reveals · right-click flags</p>
+
+      <button
+        onClick={onToggleFlagMode}
+        className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-bold ${BEVEL} ${
+          flagMode ? "text-red-700" : "text-neutral-700"
+        }`}
+        title="Toggle flag mode for tapping"
+      >
+        {flagMode ? "🚩 Flag mode: ON" : "⛏️ Dig mode (tap to flag)"}
+      </button>
+      <p className="text-center font-mono text-[10px] leading-tight text-neutral-500">
+        Tap to dig · long-press or right-click to flag.
+        <br />
+        Tap a number to chord. First click is always safe.
+      </p>
     </div>
   );
 }
