@@ -404,7 +404,7 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
         />
 
         {/* Counter pill - fixed in the upper right, doesn't drag with the track */}
-        <div className="pointer-events-none absolute right-4 top-20 z-20 md:right-8 md:top-24">
+        <div className="pointer-events-none absolute right-4 top-4 z-20 md:right-8 md:top-6">
           <div className="flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 backdrop-blur-md">
             <span className="h-1.5 w-1.5 rounded-full bg-white/80 shadow-[0_0_10px_rgba(255,255,255,0.6)]" />
             <span className="font-mono text-[11px] tracking-[0.22em] text-white/90">

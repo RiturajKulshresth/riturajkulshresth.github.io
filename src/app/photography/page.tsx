@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Navbar from "./_photography/components/navbar";
+import BackButton from "./_photography/components/back-button";
 import PhotoGallery from "./_photography/components/photo-gallery";
 import { photos } from "./_photography/data";
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function PhotographyPage() {
   return (
     <>
-      <Navbar />
+      <BackButton />
       <main id="main" className="overflow-hidden">
         <PhotoGallery photos={photos} />
       </main>
