@@ -64,7 +64,10 @@ const GOAL_X = 2900;
 
 export default function MunchkinCat() {
   const [activeStationId, setActiveStationId] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(true);
+  // Sound on by default. The Web Audio context is created lazily on the first
+  // play and resumed inside playSound(), so the first user gesture (jump /
+  // inspect) satisfies browser autoplay policies.
+  const [isMuted, setIsMuted] = useState(false);
   const [crtOn, setCrtOn] = useState(true);
   const [score, setScore] = useState(0);
   const [victory, setVictory] = useState(false);
@@ -442,6 +445,7 @@ function Game({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
   const padRef = useRef<(action: string, down: boolean) => void>(() => {});
   // Label of the object the cat is currently standing next to (null = nothing
   // inspectable in range), surfaced so the Inspect pad button can disable.
@@ -517,7 +521,7 @@ function Game({
     const ro = new ResizeObserver(resize);
     if (canvas.parentElement) ro.observe(canvas.parentElement);
 
-    const playSound = (type: "coin" | "jump" | "victory") => {
+    const playSound = (type: "coin" | "jump" | "victory" | "land") => {
       if (mutedRef.current) return;
       if (!audioCtxRef.current) {
         try {
@@ -532,13 +536,23 @@ function Game({
       const actx = audioCtxRef.current;
       if (!actx) return;
       if (actx.state === "suspended") actx.resume();
+      // Master bus: a single gain node scales every effect, so overall loudness
+      // lives in one place. Bump MASTER_VOLUME to make the whole site louder.
+      const MASTER_VOLUME = 100;
+      if (!masterGainRef.current) {
+        const mg = actx.createGain();
+        mg.gain.value = MASTER_VOLUME;
+        mg.connect(actx.destination);
+        masterGainRef.current = mg;
+      }
+      const out = masterGainRef.current;
       try {
         if (type === "victory") {
           [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
             const o = actx.createOscillator();
             const g = actx.createGain();
             o.connect(g);
-            g.connect(actx.destination);
+            g.connect(out);
             o.type = "triangle";
             o.frequency.setValueAtTime(f, actx.currentTime + i * 0.1);
             g.gain.setValueAtTime(0.02, actx.currentTime + i * 0.1);
@@ -551,7 +565,7 @@ function Game({
         const o = actx.createOscillator();
         const g = actx.createGain();
         o.connect(g);
-        g.connect(actx.destination);
+        g.connect(out);
         if (type === "coin") {
           o.type = "sine";
           o.frequency.setValueAtTime(880, actx.currentTime);
@@ -560,6 +574,15 @@ function Game({
           g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.2);
           o.start();
           o.stop(actx.currentTime + 0.2);
+        } else if (type === "land") {
+          // Soft low thud when the cat touches down.
+          o.type = "sine";
+          o.frequency.setValueAtTime(180, actx.currentTime);
+          o.frequency.exponentialRampToValueAtTime(90, actx.currentTime + 0.1);
+          g.gain.setValueAtTime(0.018, actx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.12);
+          o.start();
+          o.stop(actx.currentTime + 0.12);
         } else {
           o.type = "sine";
           o.frequency.setValueAtTime(320, actx.currentTime);
@@ -702,10 +725,34 @@ function Game({
       const W = canvas.width;
       const H = canvas.height;
       const t = Date.now() / 1000;
-      // Centre the cat in the viewport; clamp so we never show empty space past world edges.
-      const cameraX = Math.max(0, Math.min(WORLD_WIDTH - W, player.x - W / 2 + 13));
+
+      // ── Fit the room to the canvas ───────────────────────────────────────
+      // The room is authored at a fixed height (sky down to GROUND_Y, then an
+      // 80px floor → WORLD_H tall). The canvas stretches to whatever stage
+      // height the layout gives us, so without this the playfield gets pinned to
+      // the top with dead space beneath it. Scale the whole scene to fill the
+      // height (capped so it never over-zooms) and anchor the floor to the
+      // bottom. Game logic stays in unscaled world coordinates; only drawing is
+      // transformed, so collisions, pickups, and the goal are unaffected.
+      const FLOOR_H = 80;
+      const WORLD_H = GROUND_Y + FLOOR_H;
+      const scale = Math.min(Math.max(H / WORLD_H, 1), 1.6);
+      const drawnH = WORLD_H * scale;
+      const anchorY = H - drawnH; // negative only on short canvases (top sky clipped)
+      const viewW = W / scale; // width of world visible after scaling
+      // Centre the cat horizontally; clamp so we never show past the world edges.
+      const cameraX = Math.max(0, Math.min(WORLD_WIDTH - viewW, player.x - viewW / 2 + 13));
       // Keep pixel art crisp (canvas resize resets this, so set it each frame).
       ctx.imageSmoothingEnabled = false;
+
+      // Prefill the full canvas with the wall's top colour so any band above the
+      // scaled room (the ceiling on very tall canvases) is always painted. This
+      // also clears the frame since the loop does not otherwise wipe the canvas.
+      ctx.fillStyle = "#3a2a3f";
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.translate(0, anchorY);
+      ctx.scale(scale, scale);
 
       // ── Background: cozy room ──
       const wall = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
@@ -857,6 +904,7 @@ function Game({
         if (!wasGrounded) {
           player.land = 1; // trigger squash
           addParticles(player.x + 13, player.y + player.h, 5, ["#d6c7a1", "#efe3c4"], 3, 16);
+          playSound("land");
         }
       }
 
@@ -983,7 +1031,7 @@ function Game({
       });
       ctx.globalAlpha = 1;
 
-      // ── Cat ──
+      // ── Cat ── (drawn within the vOff transform like the rest of the world)
       // animation timers
       player.blink = (player.blink + 1) % 200;
       if (player.earTwitch > 0) player.earTwitch -= 1;
@@ -1019,6 +1067,10 @@ function Game({
       ) {
         drawCat(ctx, player, cameraX, t);
       }
+
+      // Done drawing the world; drop the vertical anchor transform so overlays
+      // (CRT scanlines, vignette) cover the entire physical canvas.
+      ctx.restore();
 
       // ── CRT overlay ──
       if (crtRef.current) {
