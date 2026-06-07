@@ -14,10 +14,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";
-import { Power, CheckCircle2, Loader2, Flame, TriangleAlert } from "lucide-react";
+import { Power, CheckCircle2, Loader2, Flame, TriangleAlert, MonitorSmartphone } from "lucide-react";
 
 interface BootSequenceProps {
   onComplete: () => void;
+  isMobile?: boolean;
 }
 
 type Phase = "gate" | "sequencing";
@@ -42,7 +43,7 @@ const BOOT_STEPS: BootStep[] = [
 
 const TOTAL_BOOT_MS = BOOT_STEPS.reduce((acc, s) => acc + s.duration, 0);
 
-export default function BootSequence({ onComplete }: BootSequenceProps) {
+export default function BootSequence({ onComplete, isMobile = false }: BootSequenceProps) {
   const { setOverdrive } = useOverdrive();
   const [phase, setPhase] = useState<Phase>("gate");
   const [audioArmed, setAudioArmed] = useState(true);
@@ -194,7 +195,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
       <div className="absolute inset-0 border border-cyan-500/20 m-3 pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-cyan-500/10 pointer-events-none animate-scan-beam" />
 
-      {phase === "gate" ? <GateView onBoot={beginBoot} /> : (
+      {phase === "gate" ? <GateView onBoot={beginBoot} isMobile={isMobile} /> : (
         <SequenceView
           activeStep={activeStep}
           stepProgress={stepProgress}
@@ -203,13 +204,14 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
           chatter={chatter}
           audioArmed={audioArmed}
           overdriveBoot={overdriveBoot}
+          isMobile={isMobile}
         />
       )}
     </div>
   );
 }
 
-function GateView({ onBoot }: { onBoot: (withAudio: boolean, overdrive?: boolean) => void }) {
+function GateView({ onBoot, isMobile = false }: { onBoot: (withAudio: boolean, overdrive?: boolean) => void; isMobile?: boolean }) {
   return (
     <div className="relative max-w-xl w-[92%] text-center p-8 border border-cyan-500/30 bg-[#05050b]/80 rounded shadow-[0_0_40px_rgba(0,243,255,0.08)]">
       <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
@@ -226,6 +228,16 @@ function GateView({ onBoot }: { onBoot: (withAudio: boolean, overdrive?: boolean
       <p className="font-mono text-[10px] text-fuchsia-400/90 uppercase tracking-widest mb-6">
         Quantum Terminal Portfolio &bull; SDE2 // AI Platforms // Warner Bros. Discovery
       </p>
+
+      {isMobile && (
+        <div className="mb-6 flex items-start gap-2.5 rounded border border-amber-500/40 bg-amber-950/25 px-3.5 py-3 text-left">
+          <MonitorSmartphone className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <p className="font-mono text-[10px] leading-relaxed text-amber-200/90 tracking-wide">
+            <span className="font-black text-amber-300 uppercase tracking-widest">Mobile Lite Build.</span>{" "}
+            The full AEGIS terminal is built for desktop / PC. On phones the WebGL shader core is disabled for stability, so you are running a lighter version. For the complete experience, open this on a computer.
+          </p>
+        </div>
+      )}
 
       <p className="font-mono text-[11px] text-cyan-300/85 leading-relaxed mb-8 max-w-md mx-auto">
         The system is locked behind a single handshake. Press to initiate the boot sequence; doing so unlocks the audio core and hands you the bridge.
@@ -289,6 +301,7 @@ function SequenceView({
   chatter,
   audioArmed,
   overdriveBoot,
+  isMobile = false,
 }: {
   activeStep: number;
   stepProgress: number;
@@ -297,6 +310,7 @@ function SequenceView({
   chatter: string[];
   audioArmed: boolean;
   overdriveBoot: boolean;
+  isMobile?: boolean;
 }) {
   return (
     <div className="relative w-[94%] max-w-3xl border border-cyan-500/35 bg-[#05050b]/85 rounded shadow-[0_0_40px_rgba(0,243,255,0.12)] overflow-hidden">
@@ -319,6 +333,12 @@ function SequenceView({
             <span className="font-mono text-[9px] text-fuchsia-300 uppercase tracking-widest font-black flex items-center gap-1 px-1.5 py-0.5 border border-fuchsia-500/60 bg-fuchsia-950/40 rounded animate-pulse">
               <Flame className="w-2.5 h-2.5 shrink-0" />
               OVERDRIVE
+            </span>
+          )}
+          {isMobile && (
+            <span className="font-mono text-[9px] text-amber-300 uppercase tracking-widest font-black flex items-center gap-1 px-1.5 py-0.5 border border-amber-500/60 bg-amber-950/40 rounded">
+              <MonitorSmartphone className="w-2.5 h-2.5 shrink-0" />
+              MOBILE LITE
             </span>
           )}
           <span className="font-mono text-[9px] text-fuchsia-400/80 uppercase tracking-widest animate-pulse">
@@ -438,7 +458,9 @@ function SequenceView({
         </div>
         <div className="mt-1.5 font-mono text-[8px] text-cyan-500/45 uppercase tracking-widest flex justify-between">
           <span>BUS: SECURE</span>
-          <span>SHADER: BAYER_4x4</span>
+          <span className={isMobile ? "text-amber-400/70" : undefined}>
+            {isMobile ? "SHADER: BYPASSED" : "SHADER: BAYER_4x4"}
+          </span>
           <span>SYNTH: DUAL_OSC_LP</span>
           <span>STATE: HANDOFF_PENDING</span>
         </div>

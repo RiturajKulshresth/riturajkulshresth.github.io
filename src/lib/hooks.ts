@@ -1,7 +1,31 @@
 /**
  * Shared React hooks used across render modes (scroll locking, etc.).
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+/**
+ * Reports whether the current device is a phone-class device. Used to drop the
+ * heaviest GPU work (e.g. the terminal's WebGL shader) on mobile, where it can
+ * exhaust memory and crash the tab. Treats both a narrow viewport and a coarse
+ * pointer (touch) as mobile so phones are caught in either orientation.
+ *
+ * SSR-safe: returns `false` until mounted, then resolves from `matchMedia` and
+ * stays in sync with viewport / orientation changes.
+ */
+export function useIsMobile(query = "(max-width: 768px), (pointer: coarse)") {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia(query);
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, [query]);
+
+  return isMobile;
+}
 
 type LockOptions = {
   /**

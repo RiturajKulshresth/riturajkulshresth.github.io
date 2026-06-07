@@ -27,6 +27,7 @@ const ArcadeTerminal = lazy(() => import("./components/ArcadeTerminal"));
 import { synth } from "./audio";
 import { SystemLog } from "./types";
 import { OverdriveProvider, useOverdrive, useStamina } from "./contexts/OverdriveContext";
+import { useIsMobile } from "@/lib/hooks";
 import {
   Terminal,
   Activity,
@@ -215,6 +216,10 @@ const APP_THEME = {
 function AppShell() {
   const { overdrive, toggleOverdrive, depleted } = useOverdrive();
   const stamina = useStamina();
+  // On phones the WebGL shader background can exhaust GPU memory and crash the
+  // tab, so the mobile build runs a lighter version with it disabled. Audio and
+  // every other panel still run.
+  const isMobile = useIsMobile();
   const [colorPreset, setColorPreset] = useState<"GREEN" | "AMBER" | "COSMIC">("COSMIC");
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [hasBooted, setHasBooted] = useState(false);
@@ -363,7 +368,7 @@ function AppShell() {
     <div className={`min-h-screen bg-[#05050b] ${themeCtx.text} font-mono relative overflow-x-hidden selection:bg-[#ff00ff] selection:text-black`}>
 
       {/* Boot Sequence: gate to satisfy the autoplay gesture requirement, then animated handoff */}
-      {!hasBooted && <BootSequence onComplete={handleBootComplete} />}
+      {!hasBooted && <BootSequence onComplete={handleBootComplete} isMobile={isMobile} />}
       
       {/* Immersive Conic and Radial Dithering Pattern */}
       <div className="dither-bg absolute inset-0 pointer-events-none z-0" />
@@ -377,10 +382,14 @@ function AppShell() {
       <div className="hud-bracket bracket-bl" />
       <div className="hud-bracket bracket-br" />
 
-      {/* Immersive WebGL Shader Background simulating warp coordinate field with Bayer Dithering */}
-      <Suspense fallback={null}>
-        <ShaderCanvas colorPreset={colorPreset} />
-      </Suspense>
+      {/* Immersive WebGL Shader Background simulating warp coordinate field with
+          Bayer Dithering. Skipped on mobile (the CSS dither-bg above stands in)
+          to avoid the WebGL context crashing phone browsers. */}
+      {!isMobile && (
+        <Suspense fallback={null}>
+          <ShaderCanvas colorPreset={colorPreset} />
+        </Suspense>
+      )}
 
       {/* Cyber Space Scanner Frame Overlay */}
       <div className={`absolute inset-0 border ${themeCtx.hudOverlay} m-2.5 pointer-events-none z-10 hidden md:block`} />
