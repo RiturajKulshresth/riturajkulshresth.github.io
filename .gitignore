@@ -8,6 +8,9 @@
 /.next/
 /out/
 
+# typescript
+*.tsbuildinfo
+
 # production
 /build
 

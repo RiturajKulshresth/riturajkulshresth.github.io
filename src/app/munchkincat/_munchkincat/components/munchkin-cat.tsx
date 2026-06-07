@@ -474,8 +474,14 @@ function Game({
       fall1: mk("cat/fall_1"),
       fall2: mk("cat/fall_2"),
       land1: mk("cat/land_1"),
-      ball: [1, 2, 3, 4, 5, 6, 7].map((n) => mk(`items/ball_${n}`)),
+      land2: mk("cat/land_2"),
+      // Yarn ball arrives as two 2x2 grid sheets (frames 1-4 and 5-8); we blit
+      // the right quadrant per frame instead of pre-cutting the files.
+      ballSheets: [mk("items/ball_sheet_1"), mk("items/ball_sheet_2")],
       door: mk("objects/front_door"),
+      window: mk("objects/window"),
+      rug: mk("objects/rug"),
+      shelf: mk("objects/shelf"),
     };
     const furnImg: Record<StationKind, HTMLImageElement> = {
       desk: mk("objects/desk_lamp"),
@@ -484,33 +490,122 @@ function Game({
       toolbox: mk("objects/toolbox"),
       mailbox: mk("objects/mailbox"),
     };
+    const wallTile = mk("layers/wall_tile");
+    const floorTile = mk("layers/floor_tile");
+    const pics = [1, 2, 3, 4, 5, 6].map((n) => mk(`pictures/pic_${n}`));
     const ready = (img?: HTMLImageElement) =>
       !!img && img.complete && img.naturalWidth > 0;
-    // Draw a sprite anchored at (cx, bottomY), centred horizontally, with an
-    // optional horizontal flip and per-axis squash/stretch.
-    const blit = (
+
+    // ── Content bounding box (run once per image, cached) ─────────────────
+    // The generated PNGs carry transparent padding around the subject, which
+    // would otherwise make sprites float off the floor. We scan the alpha
+    // channel once to find the real content box and anchor by that instead of
+    // the raw canvas edges. Same-origin assets, so getImageData won't taint.
+    type Box = { x: number; y: number; w: number; h: number };
+    // footY is the lowest opaque row inside the central band of the sprite,
+    // i.e. the feet/base, deliberately ignoring a tail or limb that sticks out
+    // to the side. Anchoring the cat by footY (not the raw bbox bottom) keeps it
+    // planted on the floor even when the tail dips lower than the paws.
+    type Meta = { box: Box; footY: number };
+    const bboxCanvas = document.createElement("canvas");
+    const bboxCtx = bboxCanvas.getContext("2d", { willReadFrequently: true });
+    const metaCache = new Map<HTMLImageElement, Meta | null>();
+    const spriteMeta = (img?: HTMLImageElement): Meta | null => {
+      if (!ready(img) || !bboxCtx) return null;
+      const cached = metaCache.get(img!);
+      if (cached !== undefined) return cached;
+      const w = img!.naturalWidth;
+      const h = img!.naturalHeight;
+      bboxCanvas.width = w;
+      bboxCanvas.height = h;
+      bboxCtx.clearRect(0, 0, w, h);
+      bboxCtx.drawImage(img!, 0, 0);
+      let data: Uint8ClampedArray;
+      try {
+        data = bboxCtx.getImageData(0, 0, w, h).data;
+      } catch {
+        metaCache.set(img!, null);
+        return null;
+      }
+      let minX = w, minY = h, maxX = -1, maxY = -1;
+      const colMax = new Int32Array(w).fill(-1); // lowest opaque row per column
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (data[(y * w + x) * 4 + 3] > 16) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            if (y > colMax[x]) colMax[x] = y;
+          }
+        }
+      }
+      let meta: Meta;
+      if (maxX < 0) {
+        meta = { box: { x: 0, y: 0, w, h }, footY: h };
+      } else {
+        const box: Box = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+        // Foot line: lowest pixel across the central band (skips a side tail).
+        const bandL = minX + Math.floor((maxX - minX) * 0.35);
+        let footY = -1;
+        for (let x = bandL; x <= maxX; x++) if (colMax[x] > footY) footY = colMax[x];
+        meta = { box, footY: footY < 0 ? maxY : footY };
+      }
+      metaCache.set(img!, meta);
+      return meta;
+    };
+    const contentBox = (img?: HTMLImageElement): Box | null => spriteMeta(img)?.box ?? null;
+
+    // Draw an image's content box scaled by `scale`, centred on cx, anchored at
+    // its bottom (default), centre, or detected foot line. Optional flip +
+    // per-axis squash/stretch.
+    const drawContent = (
       img: HTMLImageElement | undefined,
       cx: number,
-      bottomY: number,
+      anchorY: number,
       scale: number,
-      flip = false,
-      sxz = 1,
-      syz = 1
+      opts?: { anchor?: "bottom" | "center" | "foot"; flip?: boolean; sxz?: number; syz?: number }
     ) => {
-      if (!ready(img)) return false;
-      const w = img!.naturalWidth * scale * sxz;
-      const h = img!.naturalHeight * scale * syz;
+      const meta = spriteMeta(img);
+      if (!meta || scale <= 0) return false;
+      const bb = meta.box;
+      const sxz = opts?.sxz ?? 1;
+      const syz = opts?.syz ?? 1;
+      const w = bb.w * scale * sxz;
+      const h = bb.h * scale * syz;
       ctx.save();
-      ctx.translate(cx, bottomY);
-      ctx.scale(flip ? -1 : 1, 1);
-      ctx.drawImage(img!, -w / 2, -h, w, h);
+      ctx.translate(cx, anchorY);
+      ctx.scale(opts?.flip ? -1 : 1, 1);
+      let dy: number;
+      if (opts?.anchor === "center") dy = -h / 2;
+      else if (opts?.anchor === "foot") dy = -(meta.footY - bb.y) * scale * syz;
+      else dy = -h;
+      ctx.drawImage(img!, bb.x, bb.y, bb.w, bb.h, -w / 2, dy, w, h);
       ctx.restore();
       return true;
     };
-    const CAT_SCALE = 1.3;
-    const FURN_SCALE = 1.25;
-    const DOOR_SCALE = 1.7;
-    const BALL_SCALE = 1.4;
+    // Scale factor that renders an image's content at `targetH` world pixels.
+    const scaleForH = (img: HTMLImageElement | undefined, targetH: number) => {
+      const bb = contentBox(img);
+      return bb ? targetH / bb.h : 0;
+    };
+
+    // On-screen target heights (world px). High-res sources are sized to these
+    // so source resolution never changes the in-game scale. Tune freely.
+    const CAT_TARGET_H = 38;
+    // Per-station furniture heights so wide pieces (toolbox) don't dwarf the cat.
+    const FURN_H: Record<StationKind, number> = {
+      desk: 150,
+      shelf: 182,
+      pc: 78,
+      toolbox: 60,
+      mailbox: 96,
+    };
+    const DOOR_TARGET_H = 220;
+    const WIN_TARGET_H = 110;
+    const RUG_WIDTH = 240;
+    const PIC_TARGET_H = 62;
+    const BALL_TARGET_H = 26;
 
     const resize = () => {
       const parent = canvas.parentElement;
@@ -597,32 +692,26 @@ function Game({
       }
     };
 
-    // Floor + furniture platforms.
+    // Floor + floating wall shelves. Shelves are kept above the furniture tops
+    // and clear of the station x-positions (360/980/1620/2240/2760) so they
+    // don't visually collide with the floor furniture.
     const platforms = [
       { x: 0, y: GROUND_Y, w: WORLD_WIDTH, h: 80 },
-      { x: 250, y: 280, w: 120, h: 12 },
-      { x: 540, y: 235, w: 120, h: 12 },
-      { x: 820, y: 265, w: 150, h: 12 },
-      { x: 1120, y: 215, w: 130, h: 12 },
-      { x: 1400, y: 260, w: 120, h: 12 },
-      { x: 1720, y: 220, w: 150, h: 12 },
-      { x: 2020, y: 255, w: 140, h: 12 },
-      { x: 2320, y: 210, w: 150, h: 12 },
-      { x: 2580, y: 255, w: 130, h: 12 },
+      { x: 150, y: 245, w: 110, h: 12 },
+      { x: 560, y: 220, w: 120, h: 12 },
+      { x: 780, y: 244, w: 120, h: 12 },
+      { x: 1180, y: 210, w: 120, h: 12 },
+      { x: 1420, y: 240, w: 110, h: 12 },
+      { x: 1800, y: 214, w: 120, h: 12 },
+      { x: 2000, y: 244, w: 120, h: 12 },
+      { x: 2440, y: 210, w: 120, h: 12 },
+      { x: 2560, y: 242, w: 100, h: 12 },
     ];
 
     // Yarn balls to collect.
     const yarns = [
       230, 320, 560, 850, 1000, 1150, 1430, 1740, 1900, 2050, 2340, 2440, 2600,
     ].map((x, i) => ({ x, y: i % 2 === 0 ? 230 : 305, collected: false }));
-
-    // Framed pictures on the wall (parallax mid layer).
-    const frames = Array.from({ length: 8 }, (_, i) => ({
-      x: 180 + i * 360,
-      y: 90 + (i % 2) * 30,
-      w: 54,
-      h: 42,
-    }));
 
     const player = {
       x: 90,
@@ -736,7 +825,9 @@ function Game({
       // transformed, so collisions, pickups, and the goal are unaffected.
       const FLOOR_H = 80;
       const WORLD_H = GROUND_Y + FLOOR_H;
-      const scale = Math.min(Math.max(H / WORLD_H, 1), 1.6);
+      // Pull the camera back a touch so more of the room is visible at once.
+      const ZOOM = 0.82;
+      const scale = Math.min(Math.max(H / WORLD_H, 1), 1.6) * ZOOM;
       const drawnH = WORLD_H * scale;
       const anchorY = H - drawnH; // negative only on short canvases (top sky clipped)
       const viewW = W / scale; // width of world visible after scaling
@@ -745,107 +836,97 @@ function Game({
       // Keep pixel art crisp (canvas resize resets this, so set it each frame).
       ctx.imageSmoothingEnabled = false;
 
-      // Prefill the full canvas with the wall's top colour so any band above the
-      // scaled room (the ceiling on very tall canvases) is always painted. This
-      // also clears the frame since the loop does not otherwise wipe the canvas.
-      ctx.fillStyle = "#3a2a3f";
+      // Prefill the full canvas with a wall-cream so any band above the scaled
+      // room (the ceiling on very tall canvases) is always painted. This also
+      // clears the frame since the loop does not otherwise wipe the canvas.
+      ctx.fillStyle = "#e9e0cc";
       ctx.fillRect(0, 0, W, H);
       ctx.save();
       ctx.translate(0, anchorY);
       ctx.scale(scale, scale);
 
-      // ── Background: cozy room ──
-      const wall = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-      wall.addColorStop(0, "#3a2a3f");
-      wall.addColorStop(1, "#2e2031");
-      ctx.fillStyle = wall;
-      ctx.fillRect(0, 0, W, GROUND_Y);
+      // Visible world bounds after the anchor/scale transform.
+      const worldTop = -anchorY / scale;
+      const worldBottom = (H - anchorY) / scale;
 
-      // Wallpaper stripes (slow parallax)
-      ctx.save();
-      ctx.globalAlpha = 0.06;
-      ctx.fillStyle = "#f5e6c8";
-      const stripeOff = -((cameraX * 0.1) % 48);
-      for (let sx = stripeOff; sx < W; sx += 48) ctx.fillRect(sx, 0, 22, GROUND_Y);
-      ctx.restore();
+      // ── Background: tiled wallpaper ──
+      if (ready(wallTile)) {
+        const wt = 176; // display tile size (world px), tiles seamlessly
+        const offX = -(cameraX % wt) - wt; // wall fixed to world (no drift)
+        const startY = Math.floor(worldTop / wt) * wt;
+        for (let yy = startY; yy < GROUND_Y; yy += wt) {
+          for (let xx = offX; xx < viewW; xx += wt) {
+            ctx.drawImage(wallTile, xx, yy, wt, wt);
+          }
+        }
+      } else {
+        const wall = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+        wall.addColorStop(0, "#3a2a3f");
+        wall.addColorStop(1, "#2e2031");
+        ctx.fillStyle = wall;
+        ctx.fillRect(0, worldTop, viewW, GROUND_Y - worldTop);
+      }
 
-      // Big sunny window
-      const winX = 720 - cameraX * 0.25;
-      const winY = 70;
-      const winW = 220;
-      const winH = 150;
-      const sky = ctx.createLinearGradient(winX, winY, winX, winY + winH);
-      sky.addColorStop(0, "#9fd3ff");
-      sky.addColorStop(1, "#d8f0ff");
-      ctx.fillStyle = sky;
-      ctx.fillRect(winX, winY, winW, winH);
-      // sun + hills
-      ctx.fillStyle = "#fde68a";
-      ctx.beginPath();
-      ctx.arc(winX + winW - 50, winY + 44, 18, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#86c98a";
-      ctx.beginPath();
-      ctx.moveTo(winX, winY + winH);
-      ctx.quadraticCurveTo(winX + winW * 0.4, winY + winH - 46, winX + winW * 0.8, winY + winH - 8);
-      ctx.lineTo(winX + winW, winY + winH);
-      ctx.closePath();
-      ctx.fill();
-      // window frame
-      ctx.strokeStyle = "#e7d3b3";
-      ctx.lineWidth = 8;
-      ctx.strokeRect(winX, winY, winW, winH);
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(winX + winW / 2, winY);
-      ctx.lineTo(winX + winW / 2, winY + winH);
-      ctx.moveTo(winX, winY + winH / 2);
-      ctx.lineTo(winX + winW, winY + winH / 2);
-      ctx.stroke();
+      // Wall decorations are fixed to world positions (same as the wallpaper),
+      // so they don't drift across the room or collide with the door, and there
+      // is no relative slide between a frame and the wall behind it.
+      const WIN_X = 760; // window's fixed spot on the wall
+      // Framed pictures along the wall, cycling the six images. Skip any picture
+      // that would land on top of the window.
+      const picGap = 470;
+      for (let i = 0; i * picGap < WORLD_WIDTH; i++) {
+        const worldX = 240 + i * picGap;
+        if (Math.abs(worldX - WIN_X) < 120) continue; // don't overlap the window
+        const fx = worldX - cameraX;
+        if (fx < -140 || fx > viewW + 140) continue;
+        const img = pics[i % pics.length];
+        const pscale = scaleForH(img, PIC_TARGET_H);
+        const pbb = contentBox(img);
+        if (pbb && pscale > 0) {
+          // Opaque backing so the wallpaper doesn't show through transparent
+          // parts of the picture PNG.
+          const pw = pbb.w * pscale;
+          ctx.fillStyle = "#f7f3ea";
+          ctx.fillRect(fx - pw / 2, 92 - PIC_TARGET_H / 2, pw, PIC_TARGET_H);
+        }
+        drawContent(img, fx, 92, pscale, { anchor: "center" });
+      }
 
-      // Framed pictures
-      frames.forEach((f) => {
-        const fx = f.x - cameraX * 0.4;
-        if (fx < -80 || fx > W + 80) return;
-        ctx.fillStyle = "#8a6d3b";
-        ctx.fillRect(fx - 3, f.y - 3, f.w + 6, f.h + 6);
-        ctx.fillStyle = "#fcefd6";
-        ctx.fillRect(fx, f.y, f.w, f.h);
-        ctx.fillStyle = "#c08552";
-        ctx.fillRect(fx + 6, f.y + f.h - 14, f.w - 12, 10);
-        ctx.fillStyle = "#e0a96d";
-        ctx.beginPath();
-        ctx.arc(fx + f.w - 14, f.y + 12, 5, 0, Math.PI * 2);
-        ctx.fill();
+      // Big sunny window on the wall (fixed world position).
+      drawContent(S.window, WIN_X - cameraX, 150, scaleForH(S.window, WIN_TARGET_H), {
+        anchor: "center",
       });
 
-      // ── Floor (wood planks) + rug ──
-      const floor = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 80);
-      floor.addColorStop(0, "#8a5a33");
-      floor.addColorStop(1, "#5e3c20");
-      ctx.fillStyle = floor;
-      ctx.fillRect(0, GROUND_Y, W, 80);
-      ctx.strokeStyle = "rgba(0,0,0,0.18)";
-      ctx.lineWidth = 1;
-      const plankOff = -((cameraX) % 90);
-      for (let px = plankOff; px < W; px += 90) {
-        ctx.beginPath();
-        ctx.moveTo(px, GROUND_Y);
-        ctx.lineTo(px, GROUND_Y + 80);
-        ctx.stroke();
+      // ── Floor ──
+      // Solid wood base covers everything below the ground line (down to the
+      // bottom of the canvas, since the room is bottom-anchored).
+      const floorBase = ctx.createLinearGradient(0, GROUND_Y, 0, worldBottom);
+      floorBase.addColorStop(0, "#6b4423");
+      floorBase.addColorStop(1, "#4a2f17");
+      ctx.fillStyle = floorBase;
+      ctx.fillRect(0, GROUND_Y, viewW, Math.max(0, worldBottom - GROUND_Y));
+      // Detailed plank strip along the walking line (scrolls at world speed).
+      if (ready(floorTile)) {
+        const ft = 150; // display tile size (world px), tiles seamlessly left-right
+        const offX = -(cameraX % ft) - ft;
+        for (let xx = offX; xx < viewW; xx += ft) {
+          ctx.drawImage(floorTile, xx, GROUND_Y, ft, ft);
+        }
+      } else {
+        ctx.fillStyle = "#8a5a33";
+        ctx.fillRect(0, GROUND_Y, viewW, 80);
       }
-      ctx.fillStyle = "rgba(255,255,255,0.06)";
-      ctx.fillRect(0, GROUND_Y, W, 3);
-      // rug under the start area
-      const rugX = 120 - cameraX;
-      ctx.fillStyle = "#7f1d3a";
-      ctx.beginPath();
-      ctx.ellipse(rugX + 220, GROUND_Y + 30, 240, 22, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#a83a5b";
-      ctx.beginPath();
-      ctx.ellipse(rugX + 220, GROUND_Y + 28, 180, 15, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // Floor rug near the start: a wide, flattened ellipse lying on the boards
+      // (heavy vertical squash gives the side-view "lying flat" perspective).
+      {
+        const rb = contentBox(S.rug);
+        if (rb) {
+          drawContent(S.rug, 200 - cameraX, GROUND_Y + 6, RUG_WIDTH / rb.w, {
+            anchor: "center",
+            syz: 0.2,
+          });
+        }
+      }
 
       // ── Input ──
       // Holding both directions cancels out instead of letting "right" win.
@@ -908,22 +989,30 @@ function Game({
         }
       }
 
-      // ── Furniture platforms (shelves) ──
+      // ── Furniture platforms drawn as wooden shelves ──
       platforms.slice(1).forEach((p) => {
         const px = p.x - cameraX;
-        ctx.fillStyle = "#6b4423";
-        ctx.fillRect(px, p.y, p.w, p.h);
-        ctx.fillStyle = "#8a5a33";
-        ctx.fillRect(px, p.y, p.w, 3);
-        ctx.fillStyle = "rgba(0,0,0,0.25)";
-        ctx.fillRect(px, p.y + p.h, p.w, 4);
-        // little brackets
-        ctx.fillStyle = "#4a2f17";
-        ctx.fillRect(px + 6, p.y + p.h, 4, 10);
-        ctx.fillRect(px + p.w - 10, p.y + p.h, 4, 10);
+        if (px > viewW + 60 || px + p.w < -60) return;
+        const bb = contentBox(S.shelf);
+        if (bb && ready(S.shelf)) {
+          // Stretch the shelf sprite to the platform width with a little
+          // overhang, but cap the height so it reads as a thin wall ledge
+          // instead of a chunky block.
+          const over = 8;
+          const dw = p.w + over * 2;
+          const dh = Math.min(bb.h * (dw / bb.w), 26);
+          ctx.drawImage(S.shelf, bb.x, bb.y, bb.w, bb.h, px - over, p.y - 5, dw, dh);
+        } else {
+          ctx.fillStyle = "#6b4423";
+          ctx.fillRect(px, p.y, p.w, p.h);
+          ctx.fillStyle = "#8a5a33";
+          ctx.fillRect(px, p.y, p.w, 3);
+          ctx.fillStyle = "rgba(0,0,0,0.25)";
+          ctx.fillRect(px, p.y + p.h, p.w, 4);
+        }
       });
 
-      // ── Yarn balls ──
+      // Yarn-ball collection (rendered later, in the foreground layer).
       yarns.forEach((c) => {
         if (c.collected) return;
         if (Math.abs(player.x + 13 - c.x) < 22 && Math.abs(player.y + 12 - c.y) < 24) {
@@ -931,24 +1020,6 @@ function Game({
           onScore(150);
           playSound("coin");
           addParticles(c.x, c.y, 10, ["#f472b6", "#f9a8d4", "#fbcfe8"], 4, 26);
-          return;
-        }
-        const cx = c.x - cameraX;
-        const fy = Math.sin(t * 2.5 + c.x) * 4;
-        // rolling yarn-ball animation (per-ball phase offset)
-        const bframe = S.ball[Math.floor(t * 9 + c.x * 0.05) % 7];
-        if (!blit(bframe, cx, c.y + fy + 10, BALL_SCALE)) {
-          ctx.fillStyle = "#ec4899";
-          ctx.beginPath();
-          ctx.arc(cx, c.y + fy, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = "rgba(255,255,255,0.5)";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(cx, c.y + fy, 8, 0.3, 2.4);
-          ctx.moveTo(cx - 6, c.y - 3 + fy);
-          ctx.arc(cx, c.y + fy, 5, 1.2, 3.6);
-          ctx.stroke();
         }
       });
 
@@ -973,25 +1044,30 @@ function Game({
         ctx.ellipse(sx, GROUND_Y, 48, 11, 0, 0, Math.PI * 2);
         ctx.fill();
         // furniture sprite (vector art fallback while it decodes)
-        if (!blit(furnImg[st.kind], sx, GROUND_Y + 2, FURN_SCALE)) {
+        if (
+          !drawContent(furnImg[st.kind], sx, GROUND_Y + 2, scaleForH(furnImg[st.kind], FURN_H[st.kind]), {
+            anchor: "bottom",
+          })
+        ) {
           drawFurniture(ctx, st.kind, sx, near, st.accent, t);
         }
         // label when near
         if (near) {
           const bob = Math.sin(t * 4) * 2;
+          const top = GROUND_Y - FURN_H[st.kind];
           ctx.fillStyle = "#ffffff";
           ctx.font = "bold 10px monospace";
           ctx.textAlign = "center";
-          ctx.fillText(st.label, sx, GROUND_Y - 104 + bob);
+          ctx.fillText(st.label, sx, top - 14 + bob);
           ctx.fillStyle = st.accent;
           ctx.font = "9px monospace";
-          ctx.fillText("[E] inspect", sx, GROUND_Y - 92 + bob);
+          ctx.fillText("[E] inspect", sx, top - 3 + bob);
         }
       });
 
       // ── Goal: front door ──
       const gx = GOAL_X - cameraX;
-      if (!blit(S.door, gx + 26, GROUND_Y + 2, DOOR_SCALE)) {
+      if (!drawContent(S.door, gx + 26, GROUND_Y + 2, scaleForH(S.door, DOOR_TARGET_H), { anchor: "bottom" })) {
         const dy = GROUND_Y - 130;
         ctx.fillStyle = "#5b3920";
         ctx.fillRect(gx - 6, dy - 6, 64, 136);
@@ -1015,6 +1091,31 @@ function Game({
         playSound("victory");
         onVictory();
       }
+
+      // ── Yarn balls (foreground: in front of wall, window, furniture, door) ──
+      yarns.forEach((c) => {
+        if (c.collected) return;
+        const cx = c.x - cameraX;
+        if (cx < -40 || cx > viewW + 40) return;
+        const fy = Math.sin(t * 2.5 + c.x) * 4;
+        // Rolling animation: 8 frames spread across the two 2x2 grid sheets.
+        // Each sheet quadrant is one frame; we blit the right quadrant directly.
+        const frame = Math.floor(t * 9 + c.x * 0.05) % 8;
+        const sheet = S.ballSheets[frame < 4 ? 0 : 1];
+        const q = frame % 4; // 0=TL 1=TR 2=BL 3=BR
+        if (ready(sheet)) {
+          const half = sheet.naturalWidth / 2;
+          const sxq = (q % 2) * half;
+          const syq = (q < 2 ? 0 : 1) * half;
+          const bs = BALL_TARGET_H;
+          ctx.drawImage(sheet, sxq, syq, half, half, cx - bs / 2, c.y + fy - bs / 2, bs, bs);
+        } else {
+          ctx.fillStyle = "#ec4899";
+          ctx.beginPath();
+          ctx.arc(cx, c.y + fy, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
 
       // ── Particles ──
       particles = particles.filter((p) => p.life > 0);
@@ -1047,8 +1148,10 @@ function Game({
         else if (player.vy <= 1) catImg = S.jump2; // rising / apex
         else if (player.vy <= 7) catImg = S.fall1; // start of fall
         else catImg = S.fall2; // fast fall (stretched)
-      } else if (player.land > 0.25) {
+      } else if (player.land > 0.45) {
         catImg = S.land1; // landing impact (brief)
+      } else if (player.land > 0.12) {
+        catImg = S.land2; // recovering from the squash
       } else if (moving) {
         catImg = S.walk[Math.floor(player.anim * 0.5) % 8];
       } else {
@@ -1062,8 +1165,16 @@ function Game({
       }
       const feetX = player.x + player.w / 2 - cameraX;
       const catBob = player.grounded && player.idle > 0 ? Math.sin(t * 3) * 1.2 : 0;
+      // One fixed scale (from the idle frame) for every cat frame, so squash /
+      // stretch frames keep their relative size instead of being normalised.
+      const catScale = scaleForH(S.idle[0], CAT_TARGET_H);
       if (
-        !blit(catImg, feetX, player.y + player.h + catBob, CAT_SCALE, player.facing === -1, csx, csy)
+        !drawContent(catImg, feetX, player.y + player.h + catBob, catScale, {
+          anchor: "foot",
+          flip: player.facing === -1,
+          sxz: csx,
+          syz: csy,
+        })
       ) {
         drawCat(ctx, player, cameraX, t);
       }

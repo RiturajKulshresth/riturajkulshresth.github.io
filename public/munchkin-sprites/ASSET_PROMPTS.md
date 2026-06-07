@@ -7,7 +7,8 @@ these filenames).
 
 Shared conventions baked into every prompt:
 
-- Output 256x256 PNG, transparent background.
+- Output 256x256 PNG, transparent background, UNLESS a block states a different
+  size (the shelf is 256x96; the two yarn-ball grid sheets are 512x512).
 - Pixel art authored on a small grid (about 48 to 64 logical pixels), exported
   upscaled with NEAREST-NEIGHBOR and NO anti-aliasing, so pixels stay crisp.
 - Light source upper-left, soft flat shading, no baked-in drop shadow.
@@ -18,6 +19,14 @@ Shared conventions baked into every prompt:
 - Floor-standing objects: base flush to the BOTTOM edge, centered horizontally.
 - Wall items: centered with even transparent margin.
 - Animation frames: same canvas, same baseline, same center, facing RIGHT.
+- For multi-frame sets (the cat, the yarn) and the picture series, a reference
+  image of the established style will be provided. Match its proportions,
+  palette, and framing closely so every asset stays consistent.
+- The cat animation frames are delivered as SEPARATE files, one frame per
+  256x256 PNG (idle = 4 files, walk = 8 files, jump/fall/land = 2 files each).
+- EXCEPTION: the yarn ball is delivered as 2 grid images (a 2x2 grid of 4
+  frames each, 8 frames total) to save generations. The engine slices each grid
+  into its 4 frames automatically, so do NOT split them yourself.
 
 ---
 
@@ -50,22 +59,22 @@ Cozy 16-bit pixel-art wooden front door seen straight on, 256x256 transparent PN
 ## Batch 3: Wall pictures (one file each, same frame style across all six)
 
 ### 7. pictures/pic_1.png
-Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6); inside, a sleeping curled-up orange cat. Centered with transparent margin, hung flat on the wall.
+Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6), hung flat on the wall, centered with transparent margin. I will provide a reference image for the overall frame style; match its frame, mat, and proportions. Inside: a sleeping curled-up orange cat.
 
 ### 8. pictures/pic_2.png
-Same framed wall picture style as pic_1 (256x256 transparent PNG, pixel art, wooden #8a6d3b frame, cream #fcefd6 mat). Inside: a potted green plant.
+Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6), hung flat on the wall, centered with transparent margin. I will provide a reference image of the frame style; match its frame, mat, and proportions. Inside: a potted green plant.
 
 ### 9. pictures/pic_3.png
-Same framed wall picture style as pic_1 (256x256 transparent PNG, pixel art, wooden #8a6d3b frame, cream #fcefd6 mat). Inside: a ball of pink yarn (#ec4899).
+Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6), hung flat on the wall, centered with transparent margin. I will provide a reference image of the frame style; match its frame, mat, and proportions. Inside: a ball of pink yarn (#ec4899).
 
 ### 10. pictures/pic_4.png
-Same framed wall picture style as pic_1 (256x256 transparent PNG, pixel art, wooden #8a6d3b frame, cream #fcefd6 mat). Inside: a sunny landscape with green hills and a soft sun.
+Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6), hung flat on the wall, centered with transparent margin. I will provide a reference image of the frame style; match its frame, mat, and proportions. Inside: a sunny landscape with green hills and a soft sun.
 
 ### 11. pictures/pic_5.png
-Same framed wall picture style as pic_1 (256x256 transparent PNG, pixel art, wooden #8a6d3b frame, cream #fcefd6 mat). Inside: a round goldfish bowl.
+Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6), hung flat on the wall, centered with transparent margin. I will provide a reference image of the frame style; match its frame, mat, and proportions. Inside: a round goldfish bowl.
 
 ### 12. pictures/pic_6.png
-Same framed wall picture style as pic_1 (256x256 transparent PNG, pixel art, wooden #8a6d3b frame, cream #fcefd6 mat). Inside: a tidy paw-print pattern.
+Cozy 16-bit pixel-art framed wall picture, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Simple wooden frame (#8a6d3b) around a cream mat (#fcefd6), hung flat on the wall, centered with transparent margin. I will provide a reference image of the frame style; match its frame, mat, and proportions. Inside: a tidy paw-print pattern.
 
 ---
 
@@ -88,32 +97,82 @@ Cozy 16-bit pixel-art classic rounded-top mailbox on a post with a raised red fl
 
 ---
 
-## Batch 5: The cat (orange short-legged munchkin tabby, cream belly, pink nose, big eyes; facing right; feet on bottom edge; identical alignment across frames)
+## Batch 5: The cat (one separate 256x256 file per frame)
 
-### 18. cat/idle_1.png ... cat/idle_4.png (4 frames)
-Cozy 16-bit pixel-art orange munchkin tabby cat (short legs, long low body, cream belly, pink nose, big friendly eyes), facing right, 256x256 transparent PNG each, nearest-neighbor crisp pixels, no anti-aliasing. A 4-frame gentle idle: subtle breathing and tail sway, with a blink on one frame. Feet flush to the bottom edge, body centered, identical alignment across all 4 frames.
+Every block below is its own image. The cat is the same character throughout:
+an orange short-legged munchkin tabby with stubby legs, a long low body, cream
+belly and chest, pink nose, big friendly eyes, and a striped tail, drawn in
+profile facing RIGHT. In every frame the supporting paws rest exactly on the
+bottom edge of the canvas and the body sits centered, so the frames line up when
+swapped. I will provide a reference image of the cat; match its colors,
+proportions, and shading in each one.
 
-### 19. cat/walk_1.png ... cat/walk_8.png (8 frames)
-Same orange munchkin tabby, facing right, 256x256 transparent PNG each, pixel art, nearest-neighbor, no anti-aliasing. A smooth 8-frame walk cycle: short legs stepping, tail and body bob. Consistent baseline and center so the frames align when played in sequence.
+### 18. cat/idle_1.png (idle, frame 1 of 4)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: relaxed neutral stand, all four feet planted, eyes open, ears upright, tail resting low and curved gently behind. This is the rest pose of a gentle idle loop.
 
-### 20. cat/jump_1.png, cat/jump_2.png (2 frames)
-Same orange munchkin tabby, facing right, 256x256 transparent PNG each, pixel art, nearest-neighbor, no anti-aliasing. Frame 1: launch crouch (legs compressed, pushing off). Frame 2: rising / apex (body stretched slightly upward, legs tucked). Same feet baseline as the other sets.
+### 19. cat/idle_2.png (idle, frame 2 of 4)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: same neutral stand but breathing IN, chest and back lifted about 2 pixels higher, eyes open, tail swaying slightly to the left (toward the tail side). A small step in the idle loop.
 
-### 21. cat/fall_1.png, cat/fall_2.png (2 frames)
-Same orange munchkin tabby, facing right, 256x256 transparent PNG each, pixel art, nearest-neighbor, no anti-aliasing. Frame 1: beginning to fall (ears up, legs reaching). Frame 2: fast fall (body stretched vertically, braced for landing).
+### 20. cat/idle_3.png (idle, frame 3 of 4)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: neutral stand, eyes BLINKING (closed, drawn as two short curved lashes), body at rest height, tail centered. The blink frame of the idle loop.
 
-### 22. cat/land_1.png, cat/land_2.png (2 frames)
-Same orange munchkin tabby, facing right, 256x256 transparent PNG each, pixel art, nearest-neighbor, no anti-aliasing. Frame 1: maximum landing squash (body flattened wide on impact). Frame 2: recovering toward a neutral standing pose.
+### 21. cat/idle_4.png (idle, frame 4 of 4)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: neutral stand but breathing OUT, chest settled about 2 pixels lower than frame 1, eyes open, tail swaying slightly to the right. Closes the idle loop back toward frame 1.
+
+### 22. cat/walk_1.png (walk, frame 1 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle CONTACT pose: front-right leg reaching forward and planted, rear-left leg extended back, body at mid height, tail out behind for balance.
+
+### 23. cat/walk_2.png (walk, frame 2 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle DOWN/recoil pose: weight settling onto the front leg, body dipped about 2 pixels lower, rear leg beginning to lift and swing forward.
+
+### 24. cat/walk_3.png (walk, frame 3 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle PASSING pose: legs gathered under the body, the swinging rear leg passing beneath, body rising back to mid height, tail mid-sway.
+
+### 25. cat/walk_4.png (walk, frame 4 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle HIGH point: body lifted about 2 pixels at its tallest, the forward-swinging leg reaching ahead, ready to plant for the next contact.
+
+### 26. cat/walk_5.png (walk, frame 5 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle CONTACT pose, mirrored stride: the OTHER front leg now reaching forward and planted, opposite rear leg extended back, body at mid height.
+
+### 27. cat/walk_6.png (walk, frame 6 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle DOWN/recoil pose of the mirrored stride: body dipped about 2 pixels lower, weight on the front leg, opposite rear leg lifting.
+
+### 28. cat/walk_7.png (walk, frame 7 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle PASSING pose of the mirrored stride: legs gathered under the body, body rising back to mid height, tail mid-sway the other way.
+
+### 29. cat/walk_8.png (walk, frame 8 of 8)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Walk-cycle HIGH point of the mirrored stride: body at its tallest, the forward leg reaching ahead, ready to loop back to frame 1 (walk_1).
+
+### 30. cat/jump_1.png (jump, launch)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: LAUNCH crouch, legs compressed and coiled, body squashed low and tense, ears up, tail curling, about to spring upward.
+
+### 31. cat/jump_2.png (jump, apex)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, lowest paw on the bottom edge, body centered (keep the same foot baseline as every other frame). Pose: RISING / apex, body stretched slightly taller, front legs tucked up, rear legs trailing down to the bottom edge, tail streaming down behind, ears back from the upward motion.
+
+### 32. cat/fall_1.png (fall, start)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, lowest paw on the bottom edge, body centered (keep the same foot baseline as every other frame). Pose: BEGINNING to fall, body near neutral length, ears up, front legs reaching down to the bottom edge to feel for the ground, tail raised for balance.
+
+### 33. cat/fall_2.png (fall, fast)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, lowest paw on the bottom edge, body centered (keep the same foot baseline as every other frame). Pose: FAST fall, body stretched vertically (taller than neutral but feet still on the bottom edge), all four legs braced downward for impact, ears pinned back, tail streaming up. Reads as dropping quickly.
+
+### 34. cat/land_1.png (land, impact)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: maximum landing SQUASH, body flattened wide and low on impact, legs splayed outward absorbing the hit, ears down, eyes scrunched.
+
+### 35. cat/land_2.png (land, recover)
+Cozy 16-bit pixel-art orange munchkin tabby cat (short stubby legs, long low body, cream belly, pink nose, big eyes, striped tail), profile facing right, 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing, paws on the bottom edge, body centered. Pose: RECOVERING from the squash, body springing partway back up toward neutral, legs gathering under the body, ears lifting. Bridges the landing back to the idle/walk height.
 
 ---
 
 ## Batch 6: Items and FX
 
-### 23. items/ball_1.png ... items/ball_7.png (7 frames)
-Cozy 16-bit pixel-art round ball of pink/magenta yarn (#ec4899 with #f9a8d4 highlights and visible wound strands), 256x256 transparent PNG each, nearest-neighbor crisp pixels, no anti-aliasing. A 7-frame rolling animation where the strand pattern rotates so it reads as rolling. Centered, identical size each frame.
+### 36. items/ball_sheet_1.png (one image, 2x2 grid = frames 1 to 4)
+Cozy 16-bit pixel-art yarn-ball rolling animation, frames 1 to 4 of 8, arranged in a 2x2 grid on a single 512x512 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Each of the 4 cells holds one round ball of pink/magenta yarn (#ec4899 with #f9a8d4 highlights and visible wound strands), identical size and centered within its cell. The wound-strand pattern rotates clockwise across the frames so it reads as a smooth roll: top-left = 0 degrees, top-right = 45 degrees, bottom-left = 90 degrees, bottom-right = 135 degrees. Even gutter between cells, no grid lines or labels. I will provide a reference image of the yarn ball; match its color and winding style.
 
-### 24. particles/sparkle.png
+### 37. items/ball_sheet_2.png (one image, 2x2 grid = frames 5 to 8)
+Cozy 16-bit pixel-art yarn-ball rolling animation, frames 5 to 8 of 8 (continuing the clockwise roll from sheet 1), arranged in a 2x2 grid on a single 512x512 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Each of the 4 cells holds one round ball of pink/magenta yarn (#ec4899 with #f9a8d4 highlights and visible wound strands), identical size and centered within its cell. The wound-strand pattern continues rotating clockwise: top-left = 180 degrees, top-right = 225 degrees, bottom-left = 270 degrees, bottom-right = 315 degrees. Even gutter between cells, no grid lines or labels. I will provide the same yarn-ball reference image used for sheet 1; match its color and winding style so both sheets are identical.
+
+### 38. particles/sparkle.png
 Cozy 16-bit pixel-art four-point sparkle / star twinkle in warm yellow-pink (#fcd34d, #f9a8d4), 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Centered, used for collect bursts.
 
-### 25. particles/smoke.png
+### 39. particles/smoke.png
 Cozy 16-bit pixel-art soft dust / smoke puff in pale cream (#d6c7a1, #efe3c4), 256x256 transparent PNG, nearest-neighbor crisp pixels, no anti-aliasing. Centered, used for jump and landing kicks.
