@@ -1,45 +1,39 @@
 /**
  * Game engine factory registry for ArcadeTerminal.
  * Maps each GameID string to a fresh GameEngine instance when a cabinet is selected.
+ *
+ * Each engine is fetched via dynamic import() so the ~190 KB arcade isn't shipped
+ * in the initial /terminal chunk. Only the selected game's code is downloaded,
+ * and only when a cabinet is launched.
  */
 import { GameEngine } from "./types";
-import { SnakeGame } from "./SnakeGame";
-import { BreakoutGame } from "./BreakoutGame";
-import { ShooterGame } from "./ShooterGame";
-import { PongGame } from "./PongGame";
-import { AsteroidsGame } from "./AsteroidsGame";
-import { FlappyGame } from "./FlappyGame";
-import { FroggerGame } from "./FroggerGame";
-import { PacmanGame } from "./PacmanGame";
-import { HighwayGame } from "./HighwayGame";
-import { DinoGame } from "./DinoGame";
 
 export type GameID = "SNAKE" | "BREAKOUT" | "SHOOTER" | "PONG" | "ASTEROIDS" | "FLAPPY" | "FROGGER" | "PACMAN" | "HIGHWAY" | "DINO";
 
-export function getGameEngine(id: GameID): GameEngine {
+export async function getGameEngine(id: GameID): Promise<GameEngine> {
   switch (id) {
     case "SNAKE":
-      return new SnakeGame();
+      return new (await import("./SnakeGame")).SnakeGame();
     case "BREAKOUT":
-      return new BreakoutGame();
+      return new (await import("./BreakoutGame")).BreakoutGame();
     case "SHOOTER":
-      return new ShooterGame();
+      return new (await import("./ShooterGame")).ShooterGame();
     case "PONG":
-      return new PongGame();
+      return new (await import("./PongGame")).PongGame();
     case "ASTEROIDS":
-      return new AsteroidsGame();
+      return new (await import("./AsteroidsGame")).AsteroidsGame();
     case "FLAPPY":
-      return new FlappyGame();
+      return new (await import("./FlappyGame")).FlappyGame();
     case "FROGGER":
-      return new FroggerGame();
+      return new (await import("./FroggerGame")).FroggerGame();
     case "PACMAN":
-      return new PacmanGame();
+      return new (await import("./PacmanGame")).PacmanGame();
     case "HIGHWAY":
-      return new HighwayGame();
+      return new (await import("./HighwayGame")).HighwayGame();
     case "DINO":
-      return new DinoGame();
+      return new (await import("./DinoGame")).DinoGame();
     default:
-      return new SnakeGame();
+      return new (await import("./SnakeGame")).SnakeGame();
   }
 }
 export * from "./types";

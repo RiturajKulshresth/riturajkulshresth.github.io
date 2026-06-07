@@ -10,21 +10,47 @@ import { ArrowUpRight } from "./icons";
 
 export default function ProjectCard({ project }: { project: Project }) {
   const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [inView, setInView] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const cardRef = useRef<HTMLAnchorElement | null>(null);
+
+  // The preview GIFs are heavy (up to ~1.5 MB each), so we only fetch them once
+  // the card scrolls near the viewport. An IntersectionObserver with a generous
+  // rootMargin flips `inView`, which is what actually sets the image `src`.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || inView) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [inView]);
 
   // SVGs and cached GIFs can finish loading before React attaches `onLoad`,
-  // which would leave the image stuck at opacity-0. After mount, we check the
-  // ref's `complete` flag to recover that case.
+  // which would leave the image stuck at opacity-0. After the src is set, we
+  // check the ref's `complete` flag to recover that case.
   useEffect(() => {
     if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
       setPreviewLoaded(true);
     }
-  }, []);
+  }, [inView]);
 
   const isExternalLink = Boolean(project.link);
 
   return (
     <a
+      ref={cardRef}
       href={project.link ?? undefined}
       target={isExternalLink ? "_blank" : undefined}
       rel={isExternalLink ? "noopener noreferrer" : undefined}
@@ -33,14 +59,16 @@ export default function ProjectCard({ project }: { project: Project }) {
       className="card group flex h-full flex-col overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/30"
     >
       <div className="relative aspect-[16/10] overflow-hidden">
-        {/* Always-playing preview (GIF or static). Mounted eagerly so the
-            animation runs as soon as the card is in view. */}
+        {/* Always-playing preview (GIF or static). The `src` is withheld until
+            the card nears the viewport so the heavy GIF isn't fetched on load. */}
         {project.preview && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             ref={imgRef}
-            src={project.preview}
+            src={inView ? project.preview : undefined}
             alt=""
+            loading="lazy"
+            decoding="async"
             onLoad={() => setPreviewLoaded(true)}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
               previewLoaded ? "opacity-100" : "opacity-0"

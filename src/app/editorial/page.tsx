@@ -97,7 +97,10 @@ export default function EditorialSwiss() {
               key={proj.title}
               className="absolute inset-0 bg-cover bg-center transition-opacity duration-500 ease-in-out"
               style={{
-                backgroundImage: `url(${proj.preview})`,
+                // Only the hovered project's GIF gets a `url(...)`, so the heavy
+                // previews are fetched on first hover instead of on page load.
+                backgroundImage:
+                  hoveredProjectIdx === idx ? `url(${proj.preview})` : undefined,
                 opacity: hoveredProjectIdx === idx ? 0.085 : 0,
                 filter: "grayscale(100%)",
                 mixBlendMode: "multiply"
@@ -326,6 +329,8 @@ export default function EditorialSwiss() {
                     <img
                       src={proj.preview}
                       alt={proj.title}
+                      loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";

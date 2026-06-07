@@ -5,19 +5,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from "react";
-import ShaderCanvas from "./components/ShaderCanvas";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import BackgroundLogStream from "./components/BackgroundLogStream";
-import ProjectGrid from "./components/ProjectGrid";
-import SkillMatrix from "./components/SkillMatrix";
-import ResumeTimeline from "./components/ResumeTimeline";
-import AiCore from "./components/AiCore";
 import BootSequence from "./components/BootSequence";
-import CoreVisualizer from "./components/CoreVisualizer";
-import SpectralAnalyzer from "./components/SpectralAnalyzer";
-import TelemetrySparkGrid from "./components/TelemetrySparkGrid";
-import EntropyMeter from "./components/EntropyMeter";
-import ArcadeTerminal from "./components/ArcadeTerminal";
+
+// The boot screen and the lightweight ambient log wall load eagerly so the
+// terminal paints instantly. Every heavy visualizer (WebGL shader, FFT analyzer,
+// the project/skill/resume panels, and the arcade) is code-split with React.lazy
+// so its chunk only downloads once it actually mounts, keeping the initial
+// /terminal payload small. Each is wrapped in its own <Suspense fallback={null}>.
+const ShaderCanvas = lazy(() => import("./components/ShaderCanvas"));
+const ProjectGrid = lazy(() => import("./components/ProjectGrid"));
+const SkillMatrix = lazy(() => import("./components/SkillMatrix"));
+const ResumeTimeline = lazy(() => import("./components/ResumeTimeline"));
+const AiCore = lazy(() => import("./components/AiCore"));
+const CoreVisualizer = lazy(() => import("./components/CoreVisualizer"));
+const SpectralAnalyzer = lazy(() => import("./components/SpectralAnalyzer"));
+const TelemetrySparkGrid = lazy(() => import("./components/TelemetrySparkGrid"));
+const EntropyMeter = lazy(() => import("./components/EntropyMeter"));
+const ArcadeTerminal = lazy(() => import("./components/ArcadeTerminal"));
 import { synth } from "./audio";
 import { SystemLog } from "./types";
 import { OverdriveProvider, useOverdrive, useStamina } from "./contexts/OverdriveContext";
@@ -372,7 +378,9 @@ function AppShell() {
       <div className="hud-bracket bracket-br" />
 
       {/* Immersive WebGL Shader Background simulating warp coordinate field with Bayer Dithering */}
-      <ShaderCanvas colorPreset={colorPreset} />
+      <Suspense fallback={null}>
+        <ShaderCanvas colorPreset={colorPreset} />
+      </Suspense>
 
       {/* Cyber Space Scanner Frame Overlay */}
       <div className={`absolute inset-0 border ${themeCtx.hudOverlay} m-2.5 pointer-events-none z-10 hidden md:block`} />
@@ -527,7 +535,9 @@ function AppShell() {
           <section className="lg:col-span-4 flex flex-col gap-4 h-full min-h-0">
             
             {/* Interactive 3D Core Visualizer node attractor */}
-            <CoreVisualizer colorPreset={colorPreset} />
+            <Suspense fallback={null}>
+              <CoreVisualizer colorPreset={colorPreset} />
+            </Suspense>
 
             {/* System Status Metrics Card */}
             <div className="quantum-card border border-cyan-500/20 p-4 rounded relative overflow-hidden backdrop-blur-md">
@@ -576,13 +586,19 @@ function AppShell() {
             </div>
 
             {/* Dynamic Real-Time Waveform Fourier and Lorenz Attractor */}
-            <SpectralAnalyzer colorPreset={colorPreset} />
+            <Suspense fallback={null}>
+              <SpectralAnalyzer colorPreset={colorPreset} />
+            </Suspense>
 
             {/* Sub-system sparklines: HEAP / GPU / NET / IO mini-charts */}
-            <TelemetrySparkGrid colorPreset={colorPreset} />
+            <Suspense fallback={null}>
+              <TelemetrySparkGrid colorPreset={colorPreset} />
+            </Suspense>
 
             {/* Dual radial gauges for entropy + stability tracking */}
-            <EntropyMeter colorPreset={colorPreset} />
+            <Suspense fallback={null}>
+              <EntropyMeter colorPreset={colorPreset} />
+            </Suspense>
 
             {/* Live Ticker Logs Terminal. On lg+ it fills the remaining
                 column height via flex-1; below lg the column collapses to a
@@ -633,7 +649,9 @@ function AppShell() {
           <section className="lg:col-span-8 space-y-4">
             
             {/* Career Resume Timeline Card */}
-            <ResumeTimeline colorPreset={colorPreset} />
+            <Suspense fallback={null}>
+              <ResumeTimeline colorPreset={colorPreset} />
+            </Suspense>
 
             {/* Projects Section Card */}
             <div className={`border ${themeCtx.border} p-5 rounded relative overflow-hidden backdrop-blur-md bg-[#05050b]/60 ${themeCtx.glow} selection:bg-fuchsia-500 selection:text-black`}>
@@ -649,7 +667,9 @@ function AppShell() {
               </div>
               
               {/* Projects List Grid */}
-              <ProjectGrid colorPreset={colorPreset} />
+              <Suspense fallback={null}>
+                <ProjectGrid colorPreset={colorPreset} />
+              </Suspense>
             </div>
 
             {/* Core Competencies Skill Matrix Card */}
@@ -665,7 +685,9 @@ function AppShell() {
               </div>
 
               {/* Skills Interactive Matrix Component */}
-              <SkillMatrix colorPreset={colorPreset} />
+              <Suspense fallback={null}>
+                <SkillMatrix colorPreset={colorPreset} />
+              </Suspense>
             </div>
 
           </section>
@@ -674,7 +696,9 @@ function AppShell() {
 
         {/* Retro Arcade Sub-system (Full-Width) */}
         <section className="mt-4">
-          <ArcadeTerminal colorPreset={colorPreset} />
+          <Suspense fallback={null}>
+            <ArcadeTerminal colorPreset={colorPreset} />
+          </Suspense>
         </section>
 
         {/* --- ASSISTANT AI CONSOLE: Cognitive Oracle AEGIS --- */}
@@ -684,7 +708,9 @@ function AppShell() {
               &gt;&gt; STICKY SECURE COGNITION CHANNEL INTERFACE &lt;&lt;
             </span>
           </div>
-          <AiCore />
+          <Suspense fallback={null}>
+            <AiCore />
+          </Suspense>
         </section>
 
         {/* --- SYSTEM FOOTER METRICS --- */}

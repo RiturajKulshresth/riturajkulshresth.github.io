@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";
-import { getGameEngine, GameID as ActiveGame, GameContext, GameInput } from "./games";
+import { getGameEngine, GameID as ActiveGame, GameContext, GameInput, GameEngine } from "./games";
 import { 
   Gamepad2, 
   Play, 
@@ -231,8 +231,11 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
     canvas.addEventListener("touchend", handleTouchEnd);
     canvas.addEventListener("touchcancel", handleTouchEnd);
 
-    // Instantiate and initialize the dedicated game module
-    const gameEngine = getGameEngine(activeGame);
+    // The selected game module is fetched lazily (dynamic import), so the engine
+    // arrives asynchronously. `cancelled` guards against the effect being torn
+    // down before the import resolves; the RAF loop only starts once it does.
+    let gameEngine: GameEngine | null = null;
+    let cancelled = false;
 
     const gameContext: GameContext = {
       canvas,
@@ -253,8 +256,6 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       },
       checkAndSaveHighScore,
     };
-
-    gameEngine.init(gameContext);
 
     // ============================================
     // MASTER RENDERING FRAME STEP
@@ -286,7 +287,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       gameContext.speedFactor = speedMulRef.current;
 
       // UPDATE/DRAW IF PLAYING
-      if (localGameState === "PLAYING") {
+      if (localGameState === "PLAYING" && gameEngine) {
         const inputState: GameInput = {
           keysPressed,
           mouseX,
@@ -297,7 +298,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       }
 
       // Render the game visuals
-      gameEngine.draw(gameContext);
+      if (gameEngine) gameEngine.draw(gameContext);
 
       // ============================================
       // IDLE OVERLAY DRAW
@@ -385,11 +386,18 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       requestRef.current = requestAnimationFrame(step);
     };
 
-    // BEGIN LOOP ANIMATION
-    requestRef.current = requestAnimationFrame(step);
+    // Fetch the engine, then initialize and BEGIN LOOP ANIMATION. If the effect
+    // was already cleaned up while the import was in flight, bail out.
+    getGameEngine(activeGame).then((engine) => {
+      if (cancelled) return;
+      gameEngine = engine;
+      gameEngine.init(gameContext);
+      requestRef.current = requestAnimationFrame(step);
+    });
 
     // CLEANUP ACCUMULATOR
     return () => {
+      cancelled = true;
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
