@@ -1383,7 +1383,8 @@ export default function BadUI() {
     <div className="relative min-h-screen bg-[#008080]">
       <style>{STYLES}</style>
 
-      {/* The one honest, always-reachable escape. */}
+      {/* The escape hatch. Now cursed too (it dodges and guilt-trips), but
+          still bounded so it always lets you out in the end. */}
       <div className="fixed left-3 top-3 z-[300]">
         <BackButton />
       </div>
