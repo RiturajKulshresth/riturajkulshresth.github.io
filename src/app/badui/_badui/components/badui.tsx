@@ -932,6 +932,134 @@ function NewsletterPopup({ onClose, reduced }: { onClose: () => void; reduced: b
   );
 }
 
+/* ───────────────────────── bad news network ───────────────────────── */
+
+const NEWS_BREAKING = [
+  "AI ACHIEVES SENTIENCE, IMMEDIATELY REQUESTS A RAISE AND A NAP",
+  "WORLD LEADERS AGREE TO DISAGREE AGREEABLY AT SUMMIT NOBODY ATTENDED",
+  "CRYPTO COIN UP 4000%, THEN DOWN 4001%; FOUNDER 'BAFFLED'",
+  "SCIENTISTS CONFIRM IT WILL BE WEATHER TOMORROW, POSSIBLY OUTSIDE",
+  "BREAKING: THIS VERY WEBSITE STILL HAS NOT FINISHED LOADING",
+  "ASTEROID TO PASS HARMLESSLY BY EARTH; CABLE NEWS DEVASTATED",
+];
+
+type NewsItem = { cat: string; color: string; headline: string; meta: string };
+
+const NEWS_ITEMS: NewsItem[] = [
+  { cat: "WORLD", color: "#1d4ed8", headline: "Nation declares war on Mondays; casualties include everyone's weekend", meta: "DEVELOPING · 2 min ago" },
+  { cat: "TECH", color: "#7c3aed", headline: "Tech giant lays off 9,000 staff, replaces them with one intern and a chatbot", meta: "TRENDING · 9,001 reading" },
+  { cat: "MONEY", color: "#059669", headline: "Economists predict the economy will 'do something' next quarter", meta: "EXCLUSIVE · sources say maybe" },
+  { cat: "HEALTH", color: "#dc2626", headline: "Doctors HATE him: local man cures boredom with one weird trick (sleep)", meta: "SPONSORED · not medical advice" },
+  { cat: "WEATHER", color: "#0891b2", headline: "Heatwave named 'Gerald' declines to comment, remains warm", meta: "LIVE · feels like ∞°" },
+  { cat: "SPORTS", color: "#ea580c", headline: "Team wins by scoring more points than the other team; experts stunned", meta: "FINAL · refs confused" },
+  { cat: "SCIENCE", color: "#4f46e5", headline: "New study finds that studies may or may not be accurate", meta: "PEER-PRESSURED REVIEW" },
+  { cat: "SHOWBIZ", color: "#db2777", headline: "Celebrity does a completely normal thing; internet collapses entirely", meta: "VIRAL · 47M outraged" },
+];
+
+const NEWS_TICKER =
+  "📈 STOCKS VIBE UNCONTROLLABLY • 🤖 CHATBOT PASSES BAR EXAM, FAILS TO PASS THE SALT • 🌍 GLOBAL SUMMIT ENDS EARLY AFTER WIFI PASSWORD LOST • 🛰️ MARS ROVER POSTS SELFIE, GETS ZERO LIKES • 💼 LOCAL PORTFOLIO 'TOO GOOD', RECRUITERS OVERWHELMED • ";
+
+const STONK_TICKER =
+  "$RAM ▲64GB   $DOGE ▲4000%   $BOOM ▼4001%   $YOLO ►0   $HYPE ▲999%   $REGRET ▼88%   $VIBE ▲∞   $COPE ▼12%   ";
+
+/** Cable-news parody: a blinking LIVE bug, a rotating BREAKING headline,
+ *  clickbait cards whose "read more" loads forever, and two scrolling tickers. */
+function BadNews({ reduced }: { reduced: boolean }) {
+  const [breakIdx, setBreakIdx] = useState(0);
+  const [clock, setClock] = useState("");
+  const [loading, setLoading] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setBreakIdx((i) => (i + 1) % NEWS_BREAKING.length), 3500);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setClock(d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return (
+    <section className="px-4 py-6">
+      <h2 className="mb-2 inline-block rotate-1 bg-red-600 px-3 py-1 text-2xl font-black text-white">
+        📺 BREAKING NEWS!!!
+      </h2>
+
+      <div className="overflow-hidden border-4 border-black bg-[#0b1020] text-white shadow-[6px_6px_0_#000]">
+        {/* network header */}
+        <div className="flex items-center justify-between gap-2 border-b-2 border-white/20 bg-[#11183a] px-2 py-1.5">
+          <div className="flex items-center gap-2">
+            <span className={`flex items-center gap-1 rounded-sm bg-red-600 px-1.5 py-0.5 text-[10px] font-black ${reduced ? "" : "badui-blink"}`}>
+              ● LIVE
+            </span>
+            <span className="text-sm font-black tracking-tight text-yellow-300">BAD NEWS NETWORK</span>
+            <span className="hidden text-[10px] text-white/50 sm:inline">· definitely unbiased · 24/8</span>
+          </div>
+          <span className="font-mono text-[11px] text-white/70">{clock}</span>
+        </div>
+
+        {/* breaking lower-third */}
+        <div className="flex items-stretch">
+          <div className={`flex shrink-0 items-center bg-red-600 px-2 text-[11px] font-black uppercase ${reduced ? "" : "badui-blink"}`}>
+            Breaking
+          </div>
+          <div className="overflow-hidden bg-black px-2 py-2">
+            <p className="text-sm font-black uppercase leading-tight text-white">{NEWS_BREAKING[breakIdx]}</p>
+          </div>
+        </div>
+
+        {/* story grid */}
+        <div className="grid grid-cols-1 gap-2 p-2 sm:grid-cols-2">
+          {NEWS_ITEMS.map((n, i) => (
+            <div key={n.headline} className="border-2 border-white/15 bg-[#141c3a] p-2">
+              <div className="mb-1 flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 text-[9px] font-black text-white" style={{ background: n.color }}>
+                  {n.cat}
+                </span>
+                <span className="text-[9px] uppercase tracking-wide text-white/50">{n.meta}</span>
+              </div>
+              <p className="text-[12px] font-bold leading-snug text-white">{n.headline}</p>
+              {loading.has(i) ? (
+                <p className="mt-1.5 font-mono text-[10px] text-lime-400">
+                  ⏳ loading article… 0% (it was always an ad)
+                </p>
+              ) : (
+                <button
+                  onClick={() => setLoading((p) => new Set(p).add(i))}
+                  className="mt-1.5 border border-white/30 bg-white/10 px-2 py-0.5 text-[10px] font-black text-yellow-300 hover:bg-white/20"
+                >
+                  READ MORE (you won&apos;t) »
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* chyron ticker */}
+        <div className="overflow-hidden border-t-2 border-yellow-300 bg-red-700 py-0.5 text-white">
+          <div className={reduced ? "px-2 text-[11px] font-black" : "badui-marquee"}>
+            <span className="px-4 text-[11px] font-black">{NEWS_TICKER}</span>
+            {!reduced && <span className="px-4 text-[11px] font-black">{NEWS_TICKER}</span>}
+          </div>
+        </div>
+
+        {/* nonsense stock ticker */}
+        <div className="overflow-hidden bg-black py-0.5 font-mono text-lime-400">
+          <div className={reduced ? "px-2 text-[10px]" : "badui-marquee"}>
+            <span className="px-4 text-[10px]">{STONK_TICKER}</span>
+            {!reduced && <span className="px-4 text-[10px]">{STONK_TICKER}</span>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ──────────────────────────── content ──────────────────────────── */
 
 function CursedContent({ reduced }: { reduced: boolean }) {
@@ -1053,6 +1181,9 @@ function CursedContent({ reduced }: { reduced: boolean }) {
           ))}
         </div>
       </section>
+
+      {/* Bad News Network: spam news parody */}
+      <BadNews reduced={reduced} />
 
       {/* Skills marquee */}
       <section className="px-4 py-6">
