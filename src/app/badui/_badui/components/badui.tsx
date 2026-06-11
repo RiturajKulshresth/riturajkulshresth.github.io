@@ -76,6 +76,18 @@ function useReducedMotion() {
 
 const rand = (min: number, max: number) => Math.random() * (max - min) + min;
 
+/** Ticks down to zero, one second at a time. Returns [secondsLeft, setLeft]
+ *  so a caller can cruelly reset the countdown mid-wait. */
+function useCountdown(seconds: number): [number, React.Dispatch<React.SetStateAction<number>>] {
+  const [left, setLeft] = useState(seconds);
+  useEffect(() => {
+    if (left <= 0) return;
+    const id = window.setTimeout(() => setLeft((l) => Math.max(0, l - 1)), 1000);
+    return () => window.clearTimeout(id);
+  }, [left]);
+  return [left, setLeft];
+}
+
 /**
  * A button that flees the cursor a few times before grudgingly letting you
  * click it. After `maxDodges` it surrenders, so this can never become a trap.
@@ -113,6 +125,66 @@ function DodgyButton({
     >
       {children}
     </button>
+  );
+}
+
+const SKIP_PROMPTS = [
+  "Are you sure? Skipping is for quitters.",
+  "Really, really sure? You will miss SO much.",
+  "Hmm. Think about everything you are giving up.",
+  "Last chance to reconsider your entire personality.",
+  "Fine. Be that way. Click ONE more time to abandon us.",
+];
+
+/**
+ * The only way past a gate other than the intended (annoying) path. It is
+ * deliberately painful but always bounded: first you wait out a countdown
+ * (which the gate may reset once), then you must click through an escalating
+ * chain of guilt-trip confirmations, and the link dodges your cursor a few
+ * times for good measure. After the last prompt it really does skip.
+ */
+function SkipLink({
+  label,
+  delay,
+  onSkip,
+  reduced,
+  className,
+}: {
+  label: string;
+  delay: number;
+  onSkip: () => void;
+  reduced: boolean;
+  className?: string;
+}) {
+  const [left] = useCountdown(delay);
+  const [step, setStep] = useState(0);
+
+  if (left > 0) {
+    return (
+      <span className={`text-[10px] text-gray-400 ${className ?? ""}`}>
+        you may skip in {left}s…
+      </span>
+    );
+  }
+
+  const text = step === 0 ? label : SKIP_PROMPTS[Math.min(step - 1, SKIP_PROMPTS.length - 1)];
+  const handle = () => {
+    if (step > SKIP_PROMPTS.length - 1) {
+      onSkip();
+      return;
+    }
+    setStep((s) => s + 1);
+  };
+
+  return (
+    <DodgyButton
+      reduced={reduced}
+      onClick={handle}
+      maxDodges={4}
+      className={`text-[10px] underline ${step === 0 ? "text-gray-400" : "text-red-500"} ${className ?? ""}`}
+    >
+      {text}
+    </DodgyButton>
   );
 }
 
@@ -158,56 +230,209 @@ const TOASTS = [
   { emoji: "🐌", text: "Loading is 14% slower since you started reading this." },
   { emoji: "🍪", text: "We updated our cookie policy again. Surprise!" },
   { emoji: "💸", text: "Hot single APIs in your area want to connect." },
+  { emoji: "🚨", text: "ALERT: 1 (one) hacker is currently looking at you." },
+  { emoji: "📦", text: "Your package is stuck. Pay ₹1 to un-stick it." },
+  { emoji: "🔋", text: "Your battery is emotionally drained. Upgrade now!" },
+  { emoji: "🧹", text: "Your registry is 4,096% too messy. Clean it!" },
+  { emoji: "🎰", text: "You're on a 0-day streak! Spin to win nothing!" },
+  { emoji: "💍", text: "A wild recruiter wants to 'just pick your brain'." },
+  { emoji: "🐉", text: "You have been chosen by a dragon. Reply within 3s." },
+  { emoji: "🧊", text: "Click to receive 0 free ice cubes (shipping ₹4,999)." },
+  { emoji: "📈", text: "Stonks you don't own are up. Panic accordingly." },
+  { emoji: "🛎️", text: "Ding! That's the sound of another notification." },
+  { emoji: "👀", text: "17 people are also ignoring this exact popup." },
 ];
 
-/** Toasts that pop into a random corner and pile up. Capped, and each has a
- *  working (if tiny) close. */
-function ToastSpawner({ active }: { active: boolean }) {
+const TOAST_CAP = 9;
+
+/** Toasts that pop into a random corner and pile up. Closing one tends to
+ *  summon a replacement (or two), because that is how spam works. Bounded by
+ *  TOAST_CAP so it can never run away. */
+function ToastSpawner({ active, reduced }: { active: boolean; reduced: boolean }) {
   const [items, setItems] = useState<{ id: number; emoji: string; text: string; corner: number }[]>([]);
   const nextId = useRef(0);
+
+  const make = () => {
+    const t = TOASTS[Math.floor(Math.random() * TOASTS.length)];
+    return { id: nextId.current++, emoji: t.emoji, text: t.text, corner: Math.floor(Math.random() * 4) };
+  };
 
   useEffect(() => {
     if (!active) return;
     const id = window.setInterval(() => {
-      setItems((prev) => {
-        if (prev.length >= 4) return prev;
-        const t = TOASTS[Math.floor(Math.random() * TOASTS.length)];
-        return [...prev, { id: nextId.current++, emoji: t.emoji, text: t.text, corner: Math.floor(Math.random() * 4) }];
-      });
-    }, 5200);
+      setItems((prev) => (prev.length >= TOAST_CAP ? prev : [...prev, make()]));
+    }, 1900);
     return () => window.clearInterval(id);
   }, [active]);
+
+  // Closing a toast removes it, then whack-a-moles one or two back in.
+  const close = (id: number) => {
+    setItems((prev) => {
+      const without = prev.filter((x) => x.id !== id);
+      const extra = Math.random() < 0.8 ? (Math.random() < 0.4 ? 2 : 1) : 0;
+      const additions = [];
+      for (let k = 0; k < extra && without.length + additions.length < TOAST_CAP; k++) additions.push(make());
+      return [...without, ...additions];
+    });
+  };
 
   if (!active) return null;
   const corners = [
     "top-16 left-3",
     "top-16 right-3",
-    "bottom-3 left-3",
-    "bottom-3 right-3",
+    "bottom-12 left-3",
+    "bottom-12 right-3",
   ];
+
+  // Per-corner stacking so multiple toasts in the same corner fan out.
+  const perCorner: Record<number, number> = {};
 
   return (
     <>
-      {items.map((it, i) => (
+      {items.map((it) => {
+        const stackIdx = perCorner[it.corner] ?? 0;
+        perCorner[it.corner] = stackIdx + 1;
+        const isTop = it.corner < 2;
+        const offset = `${stackIdx * 58}px`;
+        const style: React.CSSProperties = {
+          fontFamily: COMIC,
+          animation: "badui-toast-in 0.25s ease-out",
+          ...(isTop ? { marginTop: offset } : { marginBottom: offset }),
+        };
+        return (
+          <div
+            key={it.id}
+            className={`fixed z-[120] max-w-[230px] border-2 border-yellow-300 bg-[#000080] p-2 text-[11px] text-white shadow-[4px_4px_0_#ff00ff] ${corners[it.corner]} ${reduced ? "" : "badui-wiggle"}`}
+            style={style}
+          >
+            <div className="flex items-start gap-1.5">
+              <span className="text-base leading-none">{it.emoji}</span>
+              <span className="leading-tight">{it.text}</span>
+              <DodgyButton
+                reduced={reduced}
+                maxDodges={2}
+                onClick={() => close(it.id)}
+                className="ml-auto h-3 w-3 shrink-0 bg-red-600 text-[8px] leading-3 text-white hover:bg-red-500"
+              >
+                ×
+              </DodgyButton>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+type SpamAd = { tag: string; emoji: string; body: string; cta: string; bg: string; fg: string };
+
+const SPAM_ADS: SpamAd[] = [
+  { tag: "HOT DEAL", emoji: "🔥", body: "Download 64GB of FREE RAM. Today only (every day)!", cta: "DOWNLOAD RAM", bg: "#ff1744", fg: "#ffffff" },
+  { tag: "YOU WON", emoji: "🎁", body: "An iPhone 47 Pro Max has been reserved for YOU!", cta: "CLAIM PRIZE", bg: "#00c853", fg: "#000000" },
+  { tag: "SINGLES", emoji: "💖", body: "Hot recursive functions in your area want to connect!", cta: "MEET NOW", bg: "#ff4081", fg: "#ffffff" },
+  { tag: "VIRUS!!", emoji: "☣️", body: "WARNING: 9 viruses detected. Your RAM is leaking onto the floor.", cta: "SCAN & REMOVE", bg: "#000000", fg: "#39ff14" },
+  { tag: "MONEY", emoji: "💰", body: "Earn $9,999/day reversing linked lists from home!", cta: "START EARNING", bg: "#ffd600", fg: "#000000" },
+  { tag: "PRINCE", emoji: "👑", body: "A prince must store $14,000,000 in YOUR account. Trust him.", cta: "HELP THE PRINCE", bg: "#6a1b9a", fg: "#ffffff" },
+  { tag: "ONE TRICK", emoji: "🧠", body: "Recruiters HATE this one weird résumé trick!", cta: "REVEAL TRICK", bg: "#0091ea", fg: "#ffffff" },
+  { tag: "FREE GAME", emoji: "🕹️", body: "Play a totally real game while you definitely wait!", cta: "PLAY FREE", bg: "#1de9b6", fg: "#000000" },
+  { tag: "LAST CHANCE", emoji: "⏰", body: "This offer expires in 00:00:01. Hurry, slowpoke!", cta: "GRAB IT", bg: "#ff6d00", fg: "#000000" },
+  { tag: "CONGRATS", emoji: "🎊", body: "You are the 1,000,000th genius to view this ad!", cta: "COLLECT", bg: "#d500f9", fg: "#ffffff" },
+];
+
+const SPAM_CAP = 7;
+
+/** A swarm of fake pop-up "ad windows". They spawn on a timer, and because
+ *  this is spam, closing one (or clicking its offer) tends to summon more.
+ *  Hard-capped at SPAM_CAP so the swarm can never actually run away. */
+function SpamPopups({ active, reduced }: { active: boolean; reduced: boolean }) {
+  const [items, setItems] = useState<{ id: number; ad: SpamAd; x: number; y: number; rot: number }[]>([]);
+  const nextId = useRef(0);
+
+  const make = () => {
+    const ad = SPAM_ADS[Math.floor(Math.random() * SPAM_ADS.length)];
+    const w = typeof window !== "undefined" ? window.innerWidth : 1000;
+    const h = typeof window !== "undefined" ? window.innerHeight : 700;
+    return {
+      id: nextId.current++,
+      ad,
+      x: rand(8, Math.max(8, w - 248)),
+      y: rand(70, Math.max(80, h - 240)),
+      rot: rand(-5, 5),
+    };
+  };
+
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => {
+      setItems((prev) => (prev.length >= SPAM_CAP ? prev : [...prev, make()]));
+    }, 2300);
+    return () => window.clearInterval(id);
+  }, [active]);
+
+  const spawnMore = (n: number) =>
+    setItems((prev) => {
+      const additions: { id: number; ad: SpamAd; x: number; y: number; rot: number }[] = [];
+      for (let k = 0; k < n && prev.length + additions.length < SPAM_CAP; k++) additions.push(make());
+      return [...prev, ...additions];
+    });
+
+  const close = (id: number) => {
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    if (Math.random() < 0.7) window.setTimeout(() => spawnMore(Math.random() < 0.4 ? 2 : 1), 120);
+  };
+
+  if (!active) return null;
+
+  return (
+    <>
+      {items.map((it) => (
         <div
           key={it.id}
-          className={`fixed z-[120] max-w-[230px] border-2 border-yellow-300 bg-[#000080] p-2 text-[11px] text-white shadow-[4px_4px_0_#ff00ff] ${corners[it.corner]}`}
-          style={{ marginTop: `${(i % 2) * 64}px`, fontFamily: COMIC, animation: "badui-toast-in 0.25s ease-out" }}
+          className={`fixed z-[160] w-56 border-2 border-black text-[11px] shadow-[5px_5px_0_#000] ${reduced ? "" : "badui-blink"}`}
+          style={{ left: it.x, top: it.y, transform: `rotate(${it.rot}deg)`, background: it.ad.bg, color: it.ad.fg, fontFamily: COMIC }}
         >
-          <div className="flex items-start gap-1.5">
-            <span className="text-base leading-none">{it.emoji}</span>
-            <span className="leading-tight">{it.text}</span>
-            <button
-              onClick={() => setItems((p) => p.filter((x) => x.id !== it.id))}
-              className="ml-auto h-3 w-3 shrink-0 bg-red-600 text-[8px] leading-3 text-white hover:bg-red-500"
-              aria-label="Close (we doubt it)"
+          <div className="flex items-center justify-between border-b-2 border-black bg-[#000080] px-1.5 py-0.5 text-white">
+            <span className="truncate text-[10px] font-bold">{it.ad.emoji} {it.ad.tag} · sponsored</span>
+            <DodgyButton
+              reduced={reduced}
+              maxDodges={3}
+              onClick={() => close(it.id)}
+              className="ml-1 h-3.5 w-3.5 shrink-0 border border-white bg-red-600 text-[9px] leading-3 text-white"
             >
               ×
+            </DodgyButton>
+          </div>
+          <div className="p-2 text-center">
+            <p className="font-bold leading-tight">{it.ad.body}</p>
+            <button
+              onClick={() => spawnMore(2)}
+              className={`mt-2 w-full border-2 border-black bg-white py-1 text-[12px] font-black text-black ${reduced ? "" : "badui-wiggle"}`}
+            >
+              {it.ad.cta} »
             </button>
+            <p className="mt-1 text-[8px] opacity-70">*results not typical. cookie required. void where sane.</p>
           </div>
         </div>
       ))}
     </>
+  );
+}
+
+const SPAM_TICKER =
+  "💰 MAKE $$$ FROM HOME 💰 ⚠️ YOUR PC IS INFECTED ⚠️ 🎁 FREE iPHONE 🎁 💖 HOT SINGLES NEARBY 💖 🔥 DOWNLOAD MORE RAM 🔥 👑 TRUST THE PRINCE 👑 ";
+
+/** A blinking ad ticker glued to the bottom of the screen. */
+function SpamBanner({ reduced }: { reduced: boolean }) {
+  return (
+    <div
+      className="fixed inset-x-0 bottom-0 z-[115] overflow-hidden border-t-4 border-yellow-300 bg-red-600 py-1 text-white"
+      style={{ fontFamily: COMIC }}
+    >
+      <div className={reduced ? "px-2 text-xs font-black" : "badui-marquee"}>
+        <span className="px-4 text-xs font-black">{SPAM_TICKER}</span>
+        {!reduced && <span className="px-4 text-xs font-black">{SPAM_TICKER}</span>}
+      </div>
+    </div>
   );
 }
 
@@ -232,13 +457,13 @@ function EvilAssistant({ reduced }: { reduced: boolean }) {
   useEffect(() => {
     const id = window.setInterval(() => {
       setTip(ASSISTANT_TIPS[Math.floor(Math.random() * ASSISTANT_TIPS.length)]);
-    }, 6000);
+    }, 4200);
     return () => window.clearInterval(id);
   }, []);
 
   useEffect(() => {
     if (!hidden) return;
-    const id = window.setTimeout(() => setHidden(false), 4500);
+    const id = window.setTimeout(() => setHidden(false), 2500);
     return () => window.clearTimeout(id);
   }, [hidden]);
 
@@ -295,11 +520,42 @@ function EvilAssistant({ reduced }: { reduced: boolean }) {
 
 /* ───────────────────────────── gates ───────────────────────────── */
 
+const VENDORS = [
+  "AdNauseam", "TrackerCorp", "PixelLeech", "DataDredge", "CookieMonster Inc",
+  "SnoopWare", "MetricVultures", "ByteHoarders", "ProfilR", "ScrollSpy",
+  "ClickHarvest", "OmniLurk", "FingerprintFox", "RetargetRus", "PopupPals", "YourMomTech",
+];
+
 function CookieWall({ onDone, reduced }: { onDone: () => void; reduced: boolean }) {
   const [partners] = useState(() => Math.floor(rand(1180, 1480)));
+  const [left, setLeft] = useCountdown(6);
+  const resetUsed = useRef(false);
+  const [showVendors, setShowVendors] = useState(false);
+  // Every vendor defaults ON; "reject all" only sticks for a moment.
+  const [vendors, setVendors] = useState<boolean[]>(() => VENDORS.map(() => true));
+
+  // Cruel one-time reset: when the wait is almost over, send it back to the top.
+  useEffect(() => {
+    if (left === 2 && !resetUsed.current) {
+      resetUsed.current = true;
+      const id = window.setTimeout(() => setLeft(6), 400);
+      return () => window.clearTimeout(id);
+    }
+  }, [left, setLeft]);
+
+  const ready = left <= 0;
+
+  const rejectAll = () => {
+    setVendors(VENDORS.map(() => false));
+    // ...but a few "legitimate interest" vendors quietly switch themselves back on.
+    window.setTimeout(() => {
+      setVendors((prev) => prev.map((v, i) => (i % 5 === 0 ? true : v)));
+    }, 600);
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-lg border-4 border-[#000080] bg-white p-5 text-black shadow-[8px_8px_0_#000]" style={{ fontFamily: COMIC }}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto border-4 border-[#000080] bg-white p-5 text-black shadow-[8px_8px_0_#000]" style={{ fontFamily: COMIC }}>
         <h2 className="mb-2 text-xl font-black text-[#000080]">🍪 We Value Your Privacy (lol)</h2>
         <p className="text-[13px] leading-snug text-gray-700">
           This site and our {partners} carefully unvetted partners would like to store cookies, your soul, and your
@@ -314,39 +570,102 @@ function CookieWall({ onDone, reduced }: { onDone: () => void; reduced: boolean 
           <span>Never reject the absence of non-mandatory tracking (recommended).</span>
         </label>
 
+        {showVendors && (
+          <div className="mt-3 border-2 border-gray-300 bg-gray-50 p-2">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-gray-700">Our {VENDORS.length} closest friends:</span>
+              <button onClick={rejectAll} className="border border-gray-400 bg-white px-1.5 text-[9px] text-gray-500">
+                reject all (mostly)
+              </button>
+            </div>
+            <div className="badui-scroll grid max-h-28 grid-cols-2 gap-x-2 overflow-y-auto">
+              {VENDORS.map((name, i) => (
+                <label key={name} className="flex items-center gap-1 text-[10px] text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={vendors[i]}
+                    onChange={() => setVendors((p) => p.map((v, j) => (j === i ? !v : v)))}
+                  />
+                  <span className="truncate">{name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
-            onClick={onDone}
-            className={`rounded-md border-2 border-green-800 bg-green-500 px-8 py-3 text-lg font-black text-white shadow-[3px_3px_0_#064e3b] hover:bg-green-400 ${reduced ? "" : "badui-wiggle"}`}
+            onClick={ready ? onDone : undefined}
+            disabled={!ready}
+            className={`rounded-md border-2 px-8 py-3 text-lg font-black text-white shadow-[3px_3px_0_#064e3b] ${
+              ready
+                ? `border-green-800 bg-green-500 hover:bg-green-400 ${reduced ? "" : "badui-wiggle"}`
+                : "cursor-not-allowed border-gray-400 bg-gray-400 opacity-70"
+            }`}
           >
-            ACCEPT ALL (and more)
+            {ready ? "ACCEPT ALL (and more)" : `please wait ${left}s…`}
           </button>
           <DodgyButton
             reduced={reduced}
-            onClick={onDone}
+            onClick={() => setShowVendors((v) => !v)}
             className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-[8px] text-gray-400"
           >
-            manage 1,400 preferences individually
+            manage {partners} preferences individually
           </DodgyButton>
         </div>
-        <button onClick={onDone} className="mt-3 text-[10px] text-gray-300 underline hover:text-gray-400">
-          skip (forfeit cookie, keep dignity)
-        </button>
+        <div className="mt-3">
+          <SkipLink
+            reduced={reduced}
+            delay={9}
+            onSkip={onDone}
+            label="skip (forfeit cookie, keep dignity)"
+          />
+        </div>
       </div>
     </div>
   );
 }
 
 function AgeGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) {
-  // Inverted slider with a giant thumb and no labels: drag right for younger.
-  const [val, setVal] = useState(50);
+  // Inverted slider (drag right for younger) that you must park on an exact,
+  // randomly chosen target. To make that genuinely fiddly the value also
+  // jitters whenever you stop touching it.
+  const [target, setTarget] = useState(() => Math.floor(rand(23, 86)));
+  const [val, setVal] = useState(60);
   const [nag, setNag] = useState("");
+  const [passes, setPasses] = useState(0);
+  const lastMove = useRef(0);
   const age = 120 - val; // inverted, of course
+  const matched = age === target;
+
+  // Idle jitter: nudges the slider once it has been left alone for a moment.
+  useEffect(() => {
+    if (reduced) return;
+    const id = window.setInterval(() => {
+      if (performance.now() - lastMove.current < 550) return;
+      setVal((v) => Math.min(120, Math.max(0, v + Math.round(rand(-3, 3)))));
+    }, 700);
+    return () => window.clearInterval(id);
+  }, [reduced]);
+
+  const onSlide = (n: number) => {
+    lastMove.current = performance.now();
+    setVal(n);
+    setNag("");
+  };
 
   const submit = () => {
-    if (age < 18) {
-      setNag(`You appear to be ${age}. Bold of you. Click again to legally become 18.`);
-      setVal(0);
+    if (!matched) {
+      setNag(`Nope. You are showing ${age}, we asked for exactly ${target}. The slider is also slippery on purpose.`);
+      return;
+    }
+    if (passes === 0) {
+      // The forced redo: "we think you're lying."
+      setPasses(1);
+      const next = Math.floor(rand(23, 86));
+      setTarget(next);
+      setVal(60);
+      setNag("Hmm, that looked TOO easy. Suspicious. Verify ONE more time, new number.");
       return;
     }
     onDone();
@@ -357,7 +676,8 @@ function AgeGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) 
       <div className="w-full max-w-md border-4 border-black bg-[#c0c0c0] p-5 text-black shadow-[8px_8px_0_#000]" style={{ fontFamily: COMIC }}>
         <h2 className="mb-1 text-xl font-black text-[#000080]">🔞 Age Verification</h2>
         <p className="text-[13px] leading-snug">
-          Confirm your exact age using the precision slider below. Numbers would have been too easy.
+          Drag the precision slider to <span className="font-black text-red-600">exactly {target}</span>. Dropdowns
+          were too convenient, so enjoy this instead.
         </p>
         <div className="mt-5">
           <input
@@ -365,7 +685,8 @@ function AgeGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) 
             min={0}
             max={120}
             value={val}
-            onChange={(e) => { setVal(Number(e.target.value)); setNag(""); }}
+            onPointerDown={() => (lastMove.current = performance.now())}
+            onChange={(e) => onSlide(Number(e.target.value))}
             className="w-full accent-fuchsia-600"
             style={{ direction: "rtl" }}
             aria-label="Your age, somehow"
@@ -375,19 +696,29 @@ function AgeGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) 
             <span className="text-2xl">🎚️</span>
             <span>younger 👶</span>
           </div>
-          <p className="mt-2 text-center text-3xl font-black text-[#000080]">{age}</p>
-          <p className="text-center text-[10px] text-gray-600">(probably your age)</p>
+          <p className={`mt-2 text-center text-4xl font-black ${matched ? "text-green-600" : "text-[#000080]"}`}>{age}</p>
+          <p className="text-center text-[10px] text-gray-600">
+            {matched ? "✓ hold it right there and confirm, quick!" : `(needs to read ${target})`}
+          </p>
         </div>
         {nag && <p className="mt-2 rounded border border-red-500 bg-red-100 p-1.5 text-[11px] text-red-700">{nag}</p>}
         <button
           onClick={submit}
-          className={`mt-4 w-full rounded border-2 border-black bg-yellow-300 py-2.5 text-lg font-black ${reduced ? "" : "badui-blink"}`}
+          disabled={!matched}
+          className={`mt-4 w-full rounded border-2 border-black py-2.5 text-lg font-black ${
+            matched ? `bg-yellow-300 ${reduced ? "" : "badui-blink"}` : "cursor-not-allowed bg-gray-300 text-gray-500"
+          }`}
         >
-          I am exactly this old ▶
+          {passes === 0 ? "I am exactly this old ▶" : "Okay fine, verify AGAIN ▶"}
         </button>
-        <button onClick={onDone} className="mt-2 block text-[10px] text-gray-500 underline">
-          skip (I refuse to disclose my exact emotional age)
-        </button>
+        <div className="mt-2">
+          <SkipLink
+            reduced={reduced}
+            delay={8}
+            onSkip={onDone}
+            label="skip (I refuse to disclose my exact emotional age)"
+          />
+        </div>
       </div>
     </div>
   );
@@ -395,26 +726,50 @@ function AgeGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) 
 
 const CAPTCHA_TILES = ["🐛", "🍕", "☕", "🤖", "🦄", "🔥", "💾", "🐢", "🚦", "👨‍💻", "🧠", "🎩", "🥑", "📎", "👽", "🧦"];
 
+const CAPTCHA_PROMPTS = [
+  "a senior backend engineer",
+  "a traffic light that is also a crosswalk",
+  "the squares containing squares",
+  "all tiles that spark joy",
+];
+const REQUIRED_ATTEMPTS = 3;
+
 function CaptchaGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) {
   const [grid, setGrid] = useState<string[]>([]);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [attempts, setAttempts] = useState(0);
+  const [promptIdx, setPromptIdx] = useState(0);
   const [msg, setMsg] = useState("");
 
-  const shuffle = useCallback(() => {
-    const next = Array.from({ length: 9 }, () => CAPTCHA_TILES[Math.floor(Math.random() * CAPTCHA_TILES.length)]);
-    setGrid(next);
-    setPicked(new Set());
+  const reshuffle = useCallback((clear: boolean) => {
+    setGrid(Array.from({ length: 9 }, () => CAPTCHA_TILES[Math.floor(Math.random() * CAPTCHA_TILES.length)]));
+    if (clear) setPicked(new Set());
   }, []);
 
-  useEffect(() => { shuffle(); }, [shuffle]);
+  useEffect(() => { reshuffle(true); }, [reshuffle]);
+
+  // Tiles silently re-roll their faces every few seconds, so your selections
+  // (tracked by position) appear to wander onto different pictures.
+  useEffect(() => {
+    if (reduced) return;
+    const id = window.setInterval(() => reshuffle(false), 2600);
+    return () => window.clearInterval(id);
+  }, [reduced, reshuffle]);
 
   const verify = () => {
     const n = attempts + 1;
     setAttempts(n);
-    if (n >= 2) { onDone(); return; }
-    setMsg("Hmm, that's not quite right. The squares have rearranged out of spite. Try again.");
-    shuffle();
+    if (n >= REQUIRED_ATTEMPTS) {
+      onDone();
+      return;
+    }
+    setPromptIdx((p) => (p + 1) % CAPTCHA_PROMPTS.length);
+    setMsg(
+      n === 1
+        ? "Hmm, not quite. Now select all squares with the NEW thing."
+        : "So close. The squares rearranged out of spite. One more (for real this time)."
+    );
+    reshuffle(true);
   };
 
   return (
@@ -422,7 +777,7 @@ function CaptchaGate({ onDone, reduced }: { onDone: () => void; reduced: boolean
       <div className="w-full max-w-xs border border-gray-400 bg-white p-4 text-black shadow-2xl">
         <div className="mb-3 rounded bg-[#4285f4] p-3 text-white">
           <p className="text-[11px] uppercase tracking-wide opacity-80">Select all squares with</p>
-          <p className="text-lg font-bold">a senior backend engineer</p>
+          <p className="text-lg font-bold">{CAPTCHA_PROMPTS[promptIdx]}</p>
         </div>
         <div className="grid grid-cols-3 gap-1">
           {grid.map((emoji, i) => (
@@ -445,11 +800,17 @@ function CaptchaGate({ onDone, reduced }: { onDone: () => void; reduced: boolean
           ))}
         </div>
         {msg && <p className="mt-2 text-[11px] text-red-600">{msg}</p>}
-        <div className="mt-3 flex items-center justify-between">
-          <button onClick={onDone} className="text-[10px] text-gray-400 underline">I give up</button>
-          <button onClick={verify} className="rounded bg-[#4285f4] px-4 py-1.5 text-sm font-bold text-white hover:bg-blue-600">
+        <p className="mt-1 text-[9px] text-gray-400">verification {attempts}/{REQUIRED_ATTEMPTS} (each one fails, that is the point)</p>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <SkipLink reduced={reduced} delay={12} onSkip={onDone} label="I give up" />
+          <DodgyButton
+            reduced={reduced}
+            onClick={verify}
+            maxDodges={2}
+            className="rounded bg-[#4285f4] px-4 py-1.5 text-sm font-bold text-white hover:bg-blue-600"
+          >
             VERIFY
-          </button>
+          </DodgyButton>
         </div>
         <p className="mt-2 text-center text-[9px] text-gray-400">protected by reCURSEDptcha™ · not really</p>
       </div>
@@ -467,31 +828,41 @@ const LOAD_MSGS = [
   "Almost there (lie)...",
 ];
 
-function LoadingGate({ onDone }: { onDone: () => void }) {
+// Collapse points: the bar climbs near 99%, then drops back to these values,
+// once each, before it is finally allowed to finish.
+const RESET_FLOORS = [38, 64];
+
+function LoadingGate({ onDone, reduced }: { onDone: () => void; reduced: boolean }) {
   const [pct, setPct] = useState(3);
   const [msg, setMsg] = useState(LOAD_MSGS[0]);
-  const resetUsed = useRef(false);
+  const resets = useRef(0);
   const doneRef = useRef(false);
 
   useEffect(() => {
     const id = window.setInterval(() => {
       setPct((p) => {
         if (doneRef.current) return p;
-        // The cruel reset: hit 99%, then collapse back to 41% exactly once.
-        if (p >= 99 && !resetUsed.current) {
-          resetUsed.current = true;
-          setMsg("Oops! Something went wrong. Starting over (sorry not sorry)...");
-          return 41;
+        // Two cruel resets near the finish line before it gives up the ghost.
+        if (p >= 99 && resets.current < RESET_FLOORS.length) {
+          const floor = RESET_FLOORS[resets.current];
+          resets.current += 1;
+          setMsg(
+            resets.current === 1
+              ? "Oops! Something went wrong. Starting over (sorry not sorry)..."
+              : "Ugh, again? Recalibrating the recalibrator..."
+          );
+          return floor;
         }
         if (p >= 100) {
           doneRef.current = true;
-          window.setTimeout(onDone, 700);
+          window.setTimeout(onDone, 800);
           return 100;
         }
         if (Math.random() < 0.3) setMsg(LOAD_MSGS[Math.floor(Math.random() * LOAD_MSGS.length)]);
-        return Math.min(100, p + (p > 90 ? rand(0.4, 1.4) : rand(3, 13)));
+        // Crawl painfully slowly above 90% so the resets really sting.
+        return Math.min(100, p + (p > 90 ? rand(0.3, 0.9) : rand(2, 8)));
       });
-    }, 240);
+    }, 260);
     return () => window.clearInterval(id);
   }, [onDone]);
 
@@ -505,9 +876,14 @@ function LoadingGate({ onDone }: { onDone: () => void }) {
           <div className="h-full bg-gradient-to-r from-lime-400 via-fuchsia-500 to-cyan-400 transition-all" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-1 font-mono text-xs">{Math.floor(pct)}% complete</p>
-        <button onClick={onDone} className="mt-5 text-[11px] text-sky-200 underline hover:text-white">
-          skip this very important loading screen
-        </button>
+        <div className="mt-5">
+          <SkipLink
+            reduced={reduced}
+            delay={10}
+            onSkip={onDone}
+            label="skip this very important loading screen"
+          />
+        </div>
       </div>
     </div>
   );
@@ -522,7 +898,7 @@ function NewsletterPopup({ onClose, reduced }: { onClose: () => void; reduced: b
         <DodgyButton
           reduced={reduced}
           onClick={onClose}
-          maxDodges={3}
+          maxDodges={6}
           className="absolute right-2 top-2 h-6 w-6 border border-black bg-gray-200 text-sm"
         >
           ×
@@ -543,9 +919,14 @@ function NewsletterPopup({ onClose, reduced }: { onClose: () => void; reduced: b
         >
           YES! Spam me forever 🎉
         </button>
-        <button onClick={onClose} className="mt-3 block w-full text-[11px] text-gray-400 underline">
-          No thanks, I hate good opportunities and enjoy missing out
-        </button>
+        <div className="mt-3">
+          <SkipLink
+            reduced={reduced}
+            delay={5}
+            onSkip={onClose}
+            label="No thanks, I hate good opportunities and enjoy missing out"
+          />
+        </div>
       </div>
     </div>
   );
@@ -765,7 +1146,7 @@ function CursedContent({ reduced }: { reduced: boolean }) {
       {/* "Back to top" that scrolls to the bottom, naturally */}
       <button
         onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })}
-        className="fixed bottom-3 left-3 z-[110] border-2 border-black bg-white px-2 py-1 text-[10px] font-black shadow-[2px_2px_0_#000]"
+        className="fixed bottom-10 left-3 z-[125] border-2 border-black bg-white px-2 py-1 text-[10px] font-black shadow-[2px_2px_0_#000]"
         title="Definitely back to top"
       >
         ⬆ Back to top
@@ -811,17 +1192,61 @@ function CursedContent({ reduced }: { reduced: boolean }) {
 
 /* ─────────────────────────── orchestrator ─────────────────────────── */
 
+const MAX_NEWSLETTERS = 3;
+
 export default function BadUI() {
   const reduced = useReducedMotion();
   const [stage, setStage] = useState<Stage>("cookies");
   const [showNewsletter, setShowNewsletter] = useState(false);
+  const [nag, setNag] = useState("");
+  const newsletterCount = useRef(0);
 
-  // Newsletter ambush: fires once, a few seconds after the content loads.
+  // Newsletter ambush: fires a few seconds after the content loads, then keeps
+  // ambushing you each time you dismiss it (up to a merciful cap).
+  useEffect(() => {
+    if (stage !== "content" || showNewsletter) return;
+    if (newsletterCount.current >= MAX_NEWSLETTERS) return;
+    const delay = newsletterCount.current === 0 ? 7000 : 15000;
+    const id = window.setTimeout(() => {
+      newsletterCount.current += 1;
+      setShowNewsletter(true);
+    }, delay);
+    return () => window.clearTimeout(id);
+  }, [stage, showNewsletter]);
+
+  // Scroll hijack: every so often the page yanks itself back upward.
+  useEffect(() => {
+    if (stage !== "content" || reduced) return;
+    const id = window.setInterval(() => {
+      if (Math.random() < 0.55) window.scrollBy({ top: -rand(180, 430), behavior: "smooth" });
+    }, 12000);
+    return () => window.clearInterval(id);
+  }, [stage, reduced]);
+
+  // Copy and right-click are "disabled" with a snide nag (classic bad UI).
   useEffect(() => {
     if (stage !== "content") return;
-    const id = window.setTimeout(() => setShowNewsletter(true), 7000);
-    return () => window.clearTimeout(id);
+    const onCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      setNag("📋 Copying is disabled. We will be keeping this text, thanks.");
+    };
+    const onCtx = (e: MouseEvent) => {
+      e.preventDefault();
+      setNag("🖱️ Right-click? In THIS economy? Request denied.");
+    };
+    document.addEventListener("copy", onCopy);
+    document.addEventListener("contextmenu", onCtx);
+    return () => {
+      document.removeEventListener("copy", onCopy);
+      document.removeEventListener("contextmenu", onCtx);
+    };
   }, [stage]);
+
+  useEffect(() => {
+    if (!nag) return;
+    const id = window.setTimeout(() => setNag(""), 2600);
+    return () => window.clearTimeout(id);
+  }, [nag]);
 
   return (
     <div className="relative min-h-screen bg-[#008080]">
@@ -835,13 +1260,27 @@ export default function BadUI() {
       {stage === "cookies" && <CookieWall reduced={reduced} onDone={() => setStage("age")} />}
       {stage === "age" && <AgeGate reduced={reduced} onDone={() => setStage("captcha")} />}
       {stage === "captcha" && <CaptchaGate reduced={reduced} onDone={() => setStage("loading")} />}
-      {stage === "loading" && <LoadingGate onDone={() => setStage("content")} />}
+      {stage === "loading" && <LoadingGate reduced={reduced} onDone={() => setStage("content")} />}
       {stage === "content" && <CursedContent reduced={reduced} />}
+
+      {/* Spam apocalypse: only in the content stage, so the gate modals above it
+          stay usable. */}
+      {stage === "content" && <SpamPopups active reduced={reduced} />}
+      {stage === "content" && <SpamBanner reduced={reduced} />}
 
       {showNewsletter && <NewsletterPopup reduced={reduced} onClose={() => setShowNewsletter(false)} />}
 
+      {nag && (
+        <div
+          className="fixed left-1/2 top-14 z-[260] -translate-x-1/2 border-2 border-black bg-yellow-200 px-3 py-1.5 text-[12px] font-bold text-black shadow-[3px_3px_0_#000]"
+          style={{ fontFamily: COMIC }}
+        >
+          {nag}
+        </div>
+      )}
+
       {/* Persistent annoyances kick in once past the cookie wall. */}
-      <ToastSpawner active={stage !== "cookies"} />
+      <ToastSpawner active={stage !== "cookies"} reduced={reduced} />
       {stage !== "cookies" && <EvilAssistant reduced={reduced} />}
       <CursorComet reduced={reduced} />
     </div>
