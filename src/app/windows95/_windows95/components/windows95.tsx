@@ -963,7 +963,11 @@ function MinesweeperContent({
   const pressTimer = useRef<number | null>(null);
   const longPressed = useRef(false);
 
-  const startPress = (idx: number) => {
+  const startPress = (e: React.PointerEvent, idx: number) => {
+    // Long-press is a touch-only affordance. On mouse, right-click handles
+    // flagging, so arming the timer there would double-toggle the flag and
+    // leave the mine counter looking frozen.
+    if (e.pointerType !== "touch") return;
     longPressed.current = false;
     pressTimer.current = window.setTimeout(() => {
       longPressed.current = true;
@@ -1009,7 +1013,7 @@ function MinesweeperContent({
               key={idx}
               onClick={() => handleCellClick(idx)}
               onContextMenu={(e) => onRightClick(e, idx)}
-              onPointerDown={() => startPress(idx)}
+              onPointerDown={(e) => startPress(e, idx)}
               onPointerUp={cancelPress}
               onPointerLeave={cancelPress}
               onPointerCancel={cancelPress}

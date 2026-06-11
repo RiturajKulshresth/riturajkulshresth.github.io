@@ -396,4 +396,5 @@ export const renderModes = [
   { href: "/editorial", label: "Editorial" },
   { href: "/magazine", label: "Magazine" },
   { href: "/munchkincat", label: "Munchkin Cat" },
+  { href: "/badui", label: "Bad UI" },
 ] as const;

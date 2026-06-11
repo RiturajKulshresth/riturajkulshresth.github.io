@@ -943,6 +943,29 @@ header[data-nav-overlay="true"] {
   50% { transform: perspective(60px) rotateY(-28deg) skewY(-4deg); }
 }
 
+/* Bad UI: a deliberately tacky Comic-Sans label that jitters and hue-shifts,
+   foreshadowing the cursed dark-pattern mode it links to. */
+.nav-badui {
+  position: relative;
+  display: inline-block;
+  font-family: "Comic Sans MS", "Comic Sans", "Chalkboard SE", cursive;
+  font-weight: 700;
+  color: #ec4899;
+  text-shadow: 1px 1px 0 #22d3ee;
+  animation: nav-badui-jitter 0.7s steps(2) infinite;
+}
+.nav-badui:hover {
+  animation: nav-badui-hue 1.2s linear infinite;
+}
+@keyframes nav-badui-jitter {
+  0%, 100% { transform: translate(0, 0) rotate(-1deg); }
+  50% { transform: translate(0.5px, -0.5px) rotate(1deg); }
+}
+@keyframes nav-badui-hue {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nav-bento { animation: none; }
   .nav-bento:hover::after { animation: none; }
@@ -953,4 +976,6 @@ header[data-nav-overlay="true"] {
   .nav-cli::after { animation: none; opacity: 1; }
   .nav-arcade { animation: none; }
   .nav-win95::before { animation: none; }
+  .nav-badui { animation: none; }
+  .nav-badui:hover { animation: none; }
 }

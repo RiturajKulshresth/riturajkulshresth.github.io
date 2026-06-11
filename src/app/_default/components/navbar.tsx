@@ -16,6 +16,7 @@ import {
   BookOpen,
   Camera,
   Gamepad2,
+  Skull,
   Terminal as TerminalIcon,
   Eye,
   ChevronDown,
@@ -64,6 +65,7 @@ const routeIcons: Record<string, LucideIcon> = {
   "/editorial": Newspaper,
   "/magazine": BookOpen,
   "/munchkincat": Gamepad2,
+  "/badui": Skull,
   "/photography": Camera,
   "/terminal": TerminalIcon,
 };
@@ -78,6 +80,7 @@ const navEffect: Record<string, string> = {
   "/cli": "nav-cli",
   "/magazine": "nav-magazine",
   "/munchkincat": "nav-arcade",
+  "/badui": "nav-badui",
 };
 
 export default function Navbar() {

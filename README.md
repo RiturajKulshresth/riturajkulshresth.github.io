@@ -2,7 +2,7 @@
 
 Personal portfolio of [Rituraj Kulshresth](https://riturajkulshresth.github.io), built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4. Statically exported and deployed to GitHub Pages.
 
-The site is more than a single page: the same portfolio content is presented through several swappable "render modes" (Default, Windows 95, CLI, Editorial, Magazine, Munchkin Cat), plus two standalone experiences (a drag-to-pan Photography gallery and a full cyberpunk Terminal with a 10-game arcade).
+The site is more than a single page: the same portfolio content is presented through several swappable "render modes" (Default, Windows 95, CLI, Editorial, Magazine, Munchkin Cat, Bad UI), plus two standalone experiences (a drag-to-pan Photography gallery and a full cyberpunk Terminal with a 10-game arcade).
 
 ## Stack
 
@@ -37,6 +37,7 @@ src/
 │   ├── editorial/              # Render mode: long-form editorial layout
 │   ├── magazine/               # Render mode: print-magazine spread
 │   ├── munchkincat/            # Render mode: side-scrolling cat platformer
+│   ├── badui/                  # Render mode: cursed dark-pattern homage (r/badUIbattles)
 │   ├── photography/            # Standalone: fullscreen drag-to-pan gallery + lightbox
 │   └── terminal/               # Standalone: cyberpunk "AEGIS" terminal + arcade
 │
@@ -68,6 +69,7 @@ All portfolio content is defined once in `src/lib/data.ts` and re-presented by e
 | `/editorial`    | Editorial     | A calm, long-form editorial reading layout. |
 | `/magazine`     | Magazine      | A print-magazine-style spread. |
 | `/munchkincat`  | Munchkin Cat  | A side-scrolling platformer where a cat explores rooms ("stations") that surface portfolio content. |
+| `/badui`        | Bad UI        | A deliberately cursed, dark-pattern homage to r/badUIbattles: a cookie wall, slider age gate, impossible captcha, fake loading, then the portfolio in Comic Sans with running buttons, marquees, popups, and a paperclip assistant. Stays escapable: every gate has a "skip", the Exit always works, and it respects `prefers-reduced-motion`. |
 | `/photography`  | Photography   | Standalone fullscreen gallery (see below). |
 | `/terminal`     | Terminal      | Standalone cyberpunk terminal with an arcade (see below). |
 
