@@ -201,6 +201,7 @@ function CursorComet({ reduced }: { reduced: boolean }) {
     if (!layer) return;
 
     const sparkles = ["✨", "⭐", "💫", "🌟", "💥"];
+    const timers = new Set<number>();
     let last = 0;
     const onMove = (e: MouseEvent) => {
       const now = performance.now();
@@ -210,11 +211,16 @@ function CursorComet({ reduced }: { reduced: boolean }) {
       s.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
       s.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;font-size:${rand(10, 22)}px;pointer-events:none;z-index:2147483000;animation:badui-sparkle 0.7s ease-out forwards;`;
       layer.appendChild(s);
-      window.setTimeout(() => s.remove(), 720);
+      const t = window.setTimeout(() => {
+        s.remove();
+        timers.delete(t);
+      }, 720);
+      timers.add(t);
     };
     window.addEventListener("mousemove", onMove);
     return () => {
       window.removeEventListener("mousemove", onMove);
+      timers.forEach((t) => window.clearTimeout(t));
       layer.replaceChildren();
     };
   }, [reduced]);
@@ -361,6 +367,8 @@ function SpamPopups({ active, reduced }: { active: boolean; reduced: boolean }) 
     };
   };
 
+  const respawnTimersRef = useRef<number[]>([]);
+
   useEffect(() => {
     if (!active) return;
     const id = window.setInterval(() => {
@@ -368,6 +376,14 @@ function SpamPopups({ active, reduced }: { active: boolean; reduced: boolean }) 
     }, 2300);
     return () => window.clearInterval(id);
   }, [active]);
+
+  // Clear any pending respawn timeouts on unmount so they don't setState late.
+  useEffect(() => {
+    return () => {
+      respawnTimersRef.current.forEach((t) => window.clearTimeout(t));
+      respawnTimersRef.current = [];
+    };
+  }, []);
 
   const spawnMore = (n: number) =>
     setItems((prev) => {
@@ -378,7 +394,11 @@ function SpamPopups({ active, reduced }: { active: boolean; reduced: boolean }) 
 
   const close = (id: number) => {
     setItems((prev) => prev.filter((x) => x.id !== id));
-    if (Math.random() < 0.7) window.setTimeout(() => spawnMore(Math.random() < 0.4 ? 2 : 1), 120);
+    if (Math.random() < 0.7) {
+      respawnTimersRef.current.push(
+        window.setTimeout(() => spawnMore(Math.random() < 0.4 ? 2 : 1), 120)
+      );
+    }
   };
 
   if (!active) return null;
@@ -534,6 +554,8 @@ function CookieWall({ onDone, reduced }: { onDone: () => void; reduced: boolean 
   // Every vendor defaults ON; "reject all" only sticks for a moment.
   const [vendors, setVendors] = useState<boolean[]>(() => VENDORS.map(() => true));
 
+  const rejectTimerRef = useRef<number | null>(null);
+
   // Cruel one-time reset: when the wait is almost over, send it back to the top.
   useEffect(() => {
     if (left === 2 && !resetUsed.current) {
@@ -543,12 +565,19 @@ function CookieWall({ onDone, reduced }: { onDone: () => void; reduced: boolean 
     }
   }, [left, setLeft]);
 
+  // Clear the pending "legitimate interest" re-enable on unmount.
+  useEffect(() => {
+    return () => {
+      if (rejectTimerRef.current) window.clearTimeout(rejectTimerRef.current);
+    };
+  }, []);
+
   const ready = left <= 0;
 
   const rejectAll = () => {
     setVendors(VENDORS.map(() => false));
     // ...but a few "legitimate interest" vendors quietly switch themselves back on.
-    window.setTimeout(() => {
+    rejectTimerRef.current = window.setTimeout(() => {
       setVendors((prev) => prev.map((v, i) => (i % 5 === 0 ? true : v)));
     }, 600);
   };
@@ -837,6 +866,7 @@ function LoadingGate({ onDone, reduced }: { onDone: () => void; reduced: boolean
   const [msg, setMsg] = useState(LOAD_MSGS[0]);
   const resets = useRef(0);
   const doneRef = useRef(false);
+  const doneTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -855,7 +885,7 @@ function LoadingGate({ onDone, reduced }: { onDone: () => void; reduced: boolean
         }
         if (p >= 100) {
           doneRef.current = true;
-          window.setTimeout(onDone, 800);
+          doneTimerRef.current = window.setTimeout(onDone, 800);
           return 100;
         }
         if (Math.random() < 0.3) setMsg(LOAD_MSGS[Math.floor(Math.random() * LOAD_MSGS.length)]);
@@ -863,13 +893,19 @@ function LoadingGate({ onDone, reduced }: { onDone: () => void; reduced: boolean
         return Math.min(100, p + (p > 90 ? rand(0.3, 0.9) : rand(2, 8)));
       });
     }, 260);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      if (doneTimerRef.current) window.clearTimeout(doneTimerRef.current);
+    };
   }, [onDone]);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#000080] p-4" style={{ fontFamily: COMIC }}>
       <div className="w-full max-w-md text-center text-white">
-        <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-white border-t-transparent" style={{ animation: "badui-spin 0.8s linear infinite" }} />
+        <div
+          className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-white border-t-transparent"
+          style={reduced ? undefined : { animation: "badui-spin 0.8s linear infinite" }}
+        />
         <h2 className="text-2xl font-black">Please wait...</h2>
         <p className="mt-1 text-sm text-yellow-300">{msg}</p>
         <div className="mt-4 h-7 w-full overflow-hidden border-2 border-white bg-black/40">

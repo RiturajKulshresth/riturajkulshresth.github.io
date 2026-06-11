@@ -352,6 +352,7 @@ export default function Magazine() {
             // Page 3: WBD; Page 4: Deloitte; Page 5: Oyo + IIT.
             if (i < 2) {
               const job = experience[i];
+              if (!job) return null;
               return (
                 <Page key={`career-${i}`} folio={`II · Career (${i + 1})`}>
                   <Eyebrow>Section II // Career</Eyebrow>

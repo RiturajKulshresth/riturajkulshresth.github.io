@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,7 +9,7 @@
  * diegetic subsystem checks then calls onComplete to dismiss the overlay.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";
 import { Power, CheckCircle2, Loader2, Flame, TriangleAlert, MonitorSmartphone } from "lucide-react";

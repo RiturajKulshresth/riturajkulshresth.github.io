@@ -5,7 +5,7 @@
  * images fade in after load (with a mount-time `complete` check for cache hits).
  */
 import { useEffect, useRef, useState } from "react";
-import type { Project } from "@/lib/data";
+import { GITHUB_URL, type Project } from "@/lib/data";
 import { ArrowUpRight } from "./icons";
 
 export default function ProjectCard({ project }: { project: Project }) {
@@ -46,16 +46,16 @@ export default function ProjectCard({ project }: { project: Project }) {
     }
   }, [inView]);
 
-  const isExternalLink = Boolean(project.link);
+  // Projects without their own `link` fall back to the GitHub profile so the
+  // card is always a valid, navigable external anchor.
+  const href = project.link ?? GITHUB_URL;
 
   return (
     <a
       ref={cardRef}
-      href={project.link ?? undefined}
-      target={isExternalLink ? "_blank" : undefined}
-      rel={isExternalLink ? "noopener noreferrer" : undefined}
-      // Cards without a `link` still render but are not navigable.
-      aria-disabled={!isExternalLink || undefined}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="card group flex h-full flex-col overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/30"
     >
       <div className="relative aspect-[16/10] overflow-hidden">

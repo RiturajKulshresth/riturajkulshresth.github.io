@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,7 +9,7 @@
  * single-channel focus adds a stats column and 24-sample histogram.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";
 import { Gauge, LineChart } from "lucide-react";

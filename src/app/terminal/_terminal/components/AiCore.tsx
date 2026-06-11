@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,10 +9,11 @@
  * unavailable (no API credentials), so responses come from scripted semantic registers.
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChatMessage } from "../types";
 import { synth } from "../audio";
 import ShaderCanvas from "./ShaderCanvas";
+import { useIsMobile } from "@/lib/hooks";
 import {
   Send,
   Terminal,
@@ -43,6 +42,26 @@ export default function AiCore() {
   const [connectStage, setConnectStage] = useState<string>("");
   const [uplinkAttempts, setUplinkAttempts] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Phones skip the full-bleed shader (see App.tsx); skip this nested WebGL
+  // context too so a second GPU surface doesn't undo the mobile-lite strategy.
+  const isMobile = useIsMobile();
+
+  // Pending interval/timeout handles, cleared on unmount so the theatrical
+  // handshake and "inference" delay never call setState on a dead component.
+  const timersRef = useRef<number[]>([]);
+  const trackTimer = (id: number) => {
+    timersRef.current.push(id);
+    return id;
+  };
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach((id) => {
+        window.clearTimeout(id);
+        window.clearInterval(id);
+      });
+      timersRef.current = [];
+    };
+  }, []);
 
   // Auto scroll
   useEffect(() => {
@@ -200,22 +219,22 @@ Type 'help' to see the main query manual.`;
 
     let idx = 0;
     setConnectStage(stages[0]);
-    const stageInterval = window.setInterval(() => {
+    const stageInterval = trackTimer(window.setInterval(() => {
       idx += 1;
       if (idx < stages.length) {
         setConnectStage(stages[idx]);
         synth.playClick(420 + idx * 60, 0.03);
       }
-    }, 420);
+    }, 420));
 
-    window.setTimeout(() => {
+    trackTimer(window.setTimeout(() => {
       window.clearInterval(stageInterval);
       setConnectStage("");
       setIsConnecting(false);
       setUplinkAttempts((n) => n + 1);
       setShowOfflineModal(true);
       synth.playAlert();
-    }, 1900);
+    }, 1900));
   };
 
   const dismissOfflineModal = () => {
@@ -242,7 +261,7 @@ Type 'help' to see the main query manual.`;
     setErrorText(null);
 
     // Artificial delay so the loading state reads as real inference, not instant lookup.
-    setTimeout(() => {
+    trackTimer(window.setTimeout(() => {
       try {
         const replyText = getOfflineResponse(promptText);
         
@@ -262,7 +281,7 @@ Type 'help' to see the main query manual.`;
       } finally {
         setIsLoading(false);
       }
-    }, 1000);
+    }, 1000));
   };
 
   const QUICK_PROMPTS = [
@@ -275,8 +294,9 @@ Type 'help' to see the main query manual.`;
 
   return (
     <div className="quantum-card border border-cyan-500/25 rounded shadow-2xl overflow-hidden relative flex flex-col h-[500px] backdrop-blur-md">
-      {/* Interactive WebGL Shader inside the terminal body */}
-      <ShaderCanvas colorPreset="COSMIC" opacity={0.30} />
+      {/* Interactive WebGL Shader inside the terminal body. Skipped on phones,
+          where a second GPU context risks the same crashes App.tsx guards against. */}
+      {!isMobile && <ShaderCanvas colorPreset="COSMIC" opacity={0.30} />}
 
       {/* Corner Accents */}
       <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-cyan-400" />

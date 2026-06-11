@@ -84,6 +84,29 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
     speedMulRef.current = speedMul;
   }, [speedMul]);
 
+  // The render loop persists across PLAYING/GAMEOVER/VICTORY transitions, so it
+  // reads game state and high scores from refs rather than the effect closure.
+  // Previously gameState was in the loop effect's deps, so every transition tore
+  // the engine down and re-ran init() - which reset the on-screen score to 0 and
+  // restarted the game behind the GAMEOVER overlay.
+  const gameStateRef = useRef(gameState);
+  const highScoresRef = useRef(highScores);
+  useEffect(() => {
+    highScoresRef.current = highScores;
+  }, [highScores]);
+  // Set when (re)starting a round so the loop re-inits the engine on its next
+  // frame in place, without restarting the whole effect.
+  const initRequestedRef = useRef(false);
+
+  // Single entry point for state changes: keeps the ref the loop reads and the
+  // React state the HUD renders in lockstep.
+  const applyGameState = (
+    state: "IDLE" | "PLAYING" | "GAMEOVER" | "VICTORY"
+  ) => {
+    gameStateRef.current = state;
+    setGameState(state);
+  };
+
   // Load high scores from localStorage
   useEffect(() => {
     try {
@@ -98,8 +121,10 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
 
   // Soft warning or play sound upon tab selection
   const handleGameSelect = (gameId: ActiveGame) => {
+    // Switching games changes `activeGame`, which restarts the loop effect and
+    // re-inits the engine at setup, so no explicit init request is needed here.
     setActiveGame(gameId);
-    setGameState("IDLE");
+    applyGameState("IDLE");
     setScore(0);
     if (synth.isAudioEnabled()) {
       synth.playClick(600, 0.08);
@@ -129,11 +154,13 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
     }
   };
 
-  // Save score if it beat high score
+  // Save score if it beat high score. Reads/writes through the ref so a round
+  // that ends before the localStorage load resolves still compares correctly.
   const checkAndSaveHighScore = (finalScore: number) => {
-    const currentHigh = highScores[activeGame];
+    const currentHigh = highScoresRef.current[activeGame];
     if (finalScore > currentHigh) {
-      const updated = { ...highScores, [activeGame]: finalScore };
+      const updated = { ...highScoresRef.current, [activeGame]: finalScore };
+      highScoresRef.current = updated;
       setHighScores(updated);
       try {
         localStorage.setItem("cyberspace_arcade_high_scores", JSON.stringify(updated));
@@ -155,7 +182,9 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
     canvas.width = 600;
     canvas.height = 400;
 
-    let localGameState = gameState;
+    // Current game state is read from gameStateRef each frame; localScore is the
+    // running score for the in-canvas overlays and persists across transitions
+    // because this effect no longer restarts on state change.
     let localScore = 0;
 
     // INPUT TRACKING
@@ -208,13 +237,13 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       const touch = e.touches[0];
       if (touch) setPosFromTouch(touch);
       mouseClicked = true;
-      if (localGameState === "PLAYING") e.preventDefault();
+      if (gameStateRef.current === "PLAYING") e.preventDefault();
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
       if (touch) setPosFromTouch(touch);
-      if (localGameState === "PLAYING") e.preventDefault();
+      if (gameStateRef.current === "PLAYING") e.preventDefault();
     };
 
     const handleTouchEnd = () => {
@@ -251,8 +280,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
         });
       },
       setGameState: (state) => {
-        setGameState(state);
-        localGameState = state;
+        applyGameState(state);
       },
       checkAndSaveHighScore,
     };
@@ -262,6 +290,16 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
     // ============================================
     const step = () => {
       if (!ctx || !canvas) return;
+
+      const localGameState = gameStateRef.current;
+
+      // A pending (re)start re-inits the engine and zeroes the score in place,
+      // so the next round begins clean without rebuilding the loop.
+      if (initRequestedRef.current && gameEngine) {
+        gameEngine.init(gameContext);
+        localScore = 0;
+        initRequestedRef.current = false;
+      }
 
       // CLEAR MATRIX
       ctx.fillStyle = "#020206";
@@ -347,7 +385,7 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
         ctx.font = "14px monospace";
         ctx.fillText(`TRANSFERRED_COMMUNICATION: ${localScore} PTS`, canvas.width / 2, 195);
 
-        if (localScore >= highScores[activeGame]) {
+        if (localScore >= highScoresRef.current[activeGame]) {
           ctx.fillStyle = "rgba(251, 191, 36, 0.95)";
           ctx.font = "bold 11px monospace";
           ctx.fillText("★ NEW RECORD DECRYPT SECURED TO SYSTEM CACHE! ★", canvas.width / 2, 240);
@@ -411,17 +449,21 @@ export default function ArcadeTerminal({ colorPreset, initialGame, embedded = fa
       canvas.removeEventListener("touchend", handleTouchEnd);
       canvas.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [activeGame, gameState, colorPreset]);
+    // gameState is intentionally NOT a dependency: the loop reads it from
+    // gameStateRef so transitions don't tear down and re-init the engine.
+  }, [activeGame, colorPreset]);
 
   // Handle manual starting
   const handlePlayStart = () => {
-    setGameState("PLAYING");
+    initRequestedRef.current = true;
+    applyGameState("PLAYING");
     setScore(0);
     playRetroSFX("LAUNCH");
   };
 
   const handleReset = () => {
-    setGameState("IDLE");
+    initRequestedRef.current = true;
+    applyGameState("IDLE");
     setScore(0);
     playRetroSFX("LAUNCH");
   };

@@ -24,6 +24,17 @@ export default function EditorialSwiss() {
   const [hoveredProjectIdx, setHoveredProjectIdx] = useState<number | null>(null);
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [cursorHoveringHeader, setCursorHoveringHeader] = useState(false);
+  // When the visitor prefers reduced motion, fall back to the real system cursor
+  // instead of hiding it behind a lagging custom ring follower.
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
 
   // Mouse coordinates relative to the container (not the viewport) for the ring follower.
   // The page uses `cursor-none`, so this ring is the only visible pointer on desktop.
@@ -73,21 +84,25 @@ export default function EditorialSwiss() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full min-h-[640px] bg-[#f5f5f0] text-[#1c1c1a] font-sans p-6 md:p-10 border-4 border-neutral-900 shadow-3xl overflow-hidden flex flex-col justify-between group/swiss cursor-none selection:bg-neutral-900 selection:text-white"
+      className={`relative w-full min-h-[640px] bg-[#f5f5f0] text-[#1c1c1a] font-sans p-6 md:p-10 border-4 border-neutral-900 shadow-3xl overflow-hidden flex flex-col justify-between group/swiss selection:bg-neutral-900 selection:text-white ${
+        reducedMotion ? "" : "cursor-none"
+      }`}
     >
 
-      {/* 1. CUSTOM CURSOR FOLLOWER RING */}
-      <div
-        className="hidden md:block absolute rounded-full border border-neutral-950 pointer-events-none z-40 transition-all duration-150 ease-out -translate-x-1/2 -translate-y-1/2"
-        style={{
-          left: cursorPos.x,
-          top: cursorPos.y,
-          width: cursorHoveringHeader ? "60px" : "32px",
-          height: cursorHoveringHeader ? "60px" : "32px",
-          backgroundColor: cursorHoveringHeader ? "rgba(28,28,26,0.08)" : "transparent",
-          borderColor: cursorHoveringHeader ? "#ef4444" : "#1c1c1a"
-        }}
-      />
+      {/* 1. CUSTOM CURSOR FOLLOWER RING (skipped under reduced motion) */}
+      {!reducedMotion && (
+        <div
+          className="hidden md:block absolute rounded-full border border-neutral-950 pointer-events-none z-40 transition-all duration-150 ease-out -translate-x-1/2 -translate-y-1/2"
+          style={{
+            left: cursorPos.x,
+            top: cursorPos.y,
+            width: cursorHoveringHeader ? "60px" : "32px",
+            height: cursorHoveringHeader ? "60px" : "32px",
+            backgroundColor: cursorHoveringHeader ? "rgba(28,28,26,0.08)" : "transparent",
+            borderColor: cursorHoveringHeader ? "#ef4444" : "#1c1c1a"
+          }}
+        />
+      )}
 
       {/* 2. GIANT HOVER BACKGROUND PREVIEW (BLEND MODE OVERLAY) */}
       <div className="absolute inset-0 pointer-events-none z-10 transition-all duration-700">
@@ -210,14 +225,19 @@ export default function EditorialSwiss() {
 
           <div id="swiss-accolades-grid" className="border-t-2 border-neutral-950 pt-4 space-y-3 font-mono text-[10px]">
             <span className="block uppercase font-bold text-neutral-800">SYSTEM MILESTONES REGISTER:</span>
-            <div className="grid grid-cols-2 gap-3 pb-2 border-b border-neutral-300">
-              <p className="font-semibold">{projects[0].title}</p>
-              <p className="text-neutral-500">{projects[0].subtitle}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <p className="font-semibold">{projects[1].title}</p>
-              <p className="text-neutral-500">{projects[1].subtitle}</p>
-            </div>
+            {projects.slice(0, 2).map((project, i) => (
+              <div
+                key={project.title}
+                className={
+                  i === 0
+                    ? "grid grid-cols-2 gap-3 pb-2 border-b border-neutral-300"
+                    : "grid grid-cols-2 gap-3"
+                }
+              >
+                <p className="font-semibold">{project.title}</p>
+                <p className="text-neutral-500">{project.subtitle}</p>
+              </div>
+            ))}
           </div>
         </div>
 

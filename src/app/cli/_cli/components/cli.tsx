@@ -566,11 +566,18 @@ export default function Cli() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = (canvas.width = window.innerWidth);
-    const height = (canvas.height = window.innerHeight);
-    const cols = Math.floor(width / 16);
-    const drops = Array(cols).fill(1);
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+    let drops = Array(Math.floor(width / 16)).fill(1);
     const glyphs = "01ｱｲｳｴｵｶｷｸｹｺabcdef<>/{}[]=$#".split("");
+
+    // Re-fit the canvas (and the column count) when the viewport changes so the
+    // rain doesn't get clipped or leave dead bands while the screensaver is up.
+    const resize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      drops = Array(Math.floor(width / 16)).fill(1);
+    };
 
     const render = () => {
       ctx.fillStyle = "rgba(20, 20, 22, 0.06)";
@@ -590,9 +597,11 @@ export default function Cli() {
       if (e.key === "Escape") setMatrixOn(false);
     };
     window.addEventListener("keydown", onEsc);
+    window.addEventListener("resize", resize);
     return () => {
       clearInterval(interval);
       window.removeEventListener("keydown", onEsc);
+      window.removeEventListener("resize", resize);
     };
   }, [matrixOn]);
 

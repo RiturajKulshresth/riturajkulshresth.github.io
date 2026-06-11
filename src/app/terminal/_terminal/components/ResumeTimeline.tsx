@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,20 +9,14 @@
  * RedactedBriefing tails pad shorter panels so tab switches do not jump layout height.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { synth } from "../audio";
 import { 
   Briefcase, 
-  GraduationCap, 
   Award, 
   TrendingDown, 
-  ShieldCheck, 
   CheckCircle, 
-  Server, 
   Database,
-  ArrowRight,
-  TrendingUp,
-  LineChart,
   Lock,
   ShieldAlert
 } from "lucide-react";

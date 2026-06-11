@@ -1206,6 +1206,13 @@ function Game({
       window.removeEventListener("pointerup", onCanvasPointerUp);
       window.removeEventListener("pointercancel", onCanvasPointerUp);
       ro.disconnect();
+      // Release the Web Audio context so remounting (e.g. replay) doesn't orphan
+      // one per mount. The next playSound() lazily recreates it.
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+        masterGainRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

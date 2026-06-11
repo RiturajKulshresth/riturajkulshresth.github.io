@@ -5,6 +5,10 @@
  */
 export const RESUME_PATH = "/resume/RiturajKulshresth_Resume.pdf";
 
+// Fallback destination for any project that doesn't specify its own `link`,
+// so project cards are always navigable instead of rendering a dead anchor.
+export const GITHUB_URL = "https://github.com/RiturajKulshresth";
+
 export const profile = {
   name: "Rituraj Kulshresth",
   role: "Software Engineer · AI Platforms",
@@ -162,6 +166,7 @@ export const projects: Project[] = [
     year: "2021",
     tags: ["MATLAB", "Signal Processing", "Biomedical"],
     link: "https://github.com/RiturajKulshresth",
+    preview: "/images/ECG.gif",
   },
   {
     title: "Kakuro Solver",

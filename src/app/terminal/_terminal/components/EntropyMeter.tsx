@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,7 +9,7 @@
  * Rolling history strips and peak markers update inside the canvas rAF loop.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { synth } from "../audio";
 import { useOverdrive } from "../contexts/OverdriveContext";
 import { Atom, Gauge } from "lucide-react";

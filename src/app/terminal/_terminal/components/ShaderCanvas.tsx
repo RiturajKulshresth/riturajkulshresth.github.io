@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,7 +9,7 @@
  * Accepts GREEN / AMBER / COSMIC presets and scales uTime by overdrive speedMul.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useOverdrive } from "../contexts/OverdriveContext";
 
 interface ShaderCanvasProps {
@@ -39,8 +37,10 @@ export default function ShaderCanvas({ colorPreset = "GREEN", opacity = 0.08 }: 
       return;
     }
 
-    // Enable standard derivatives for fwidth
-    const derivativesExt = gl.getExtension("OES_standard_derivatives");
+    // Enable standard derivatives so the fragment shader's fwidth() works in
+    // WebGL1. The call has the side effect of activating the extension; the
+    // returned handle isn't needed directly.
+    gl.getExtension("OES_standard_derivatives");
 
     // Vertex Shader Source
     const vsSource = `
@@ -283,6 +283,16 @@ export default function ShaderCanvas({ colorPreset = "GREEN", opacity = 0.08 }: 
     let lastTs = Date.now();
     let simTime = 0;
 
+    // If the GPU drops the context (tab backgrounded, driver reset, too many
+    // live contexts), stop the loop and show the telemetry fallback instead of
+    // spamming WebGL errors. preventDefault lets the browser try to restore it.
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(animationId);
+      setErrorStatus("GPU context lost. Loading telemetry backup.");
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost as EventListener);
+
     const render = () => {
       animationId = requestAnimationFrame(render);
       const now = Date.now();
@@ -313,6 +323,7 @@ export default function ShaderCanvas({ colorPreset = "GREEN", opacity = 0.08 }: 
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("webglcontextlost", handleContextLost as EventListener);
       gl.deleteProgram(program);
       gl.deleteShader(vs);
       gl.deleteShader(fs);

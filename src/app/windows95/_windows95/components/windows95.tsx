@@ -30,6 +30,36 @@ import {
 
 type RetroIcon = React.ComponentType<{ className?: string }>;
 
+// Hoisted to module scope so it isn't recreated (and its subtree remounted) on
+// every Windows95 render. Depends only on its props.
+function DesktopIcon({
+  id,
+  label,
+  icon: Icon,
+  onOpen,
+}: {
+  id: string;
+  label: string;
+  icon: RetroIcon;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      onDoubleClick={onOpen}
+      onClick={onOpen}
+      className="group flex w-20 flex-col items-center text-center text-white focus:outline-none active:scale-95"
+      id={`icn-${id}`}
+    >
+      <span className="mb-1 flex h-11 w-11 items-center justify-center rounded p-1 group-focus:bg-blue-800/40">
+        <Icon className="h-9 w-9 drop-shadow-[1px_1px_0_rgba(0,0,0,0.5)]" />
+      </span>
+      <span className="max-w-full truncate border border-transparent bg-black/30 px-1 text-xs font-semibold leading-tight group-focus:border-dotted group-focus:border-white group-focus:bg-blue-800">
+        {label}
+      </span>
+    </button>
+  );
+}
+
 interface Win {
   id: string;
   title: string;
@@ -110,17 +140,23 @@ export default function Windows95() {
       return () => clearTimeout(id);
     }
     if (bootStep === 1) {
+      // Captured by the cleanup closure so the hand-off timer is cancelled too
+      // if the desktop unmounts mid-boot (otherwise setBootStep fires late).
+      let finishTimer: ReturnType<typeof setTimeout> | undefined;
       const id = setInterval(() => {
         setBootProgress((p) => {
           if (p >= 100) {
             clearInterval(id);
-            setTimeout(() => setBootStep(2), 500);
+            finishTimer = setTimeout(() => setBootStep(2), 500);
             return 100;
           }
           return p + Math.floor(Math.random() * 8) + 5;
         });
       }, 90);
-      return () => clearInterval(id);
+      return () => {
+        clearInterval(id);
+        if (finishTimer) clearTimeout(finishTimer);
+      };
     }
   }, [bootStep]);
 
@@ -426,33 +462,6 @@ export default function Windows95() {
       </div>
     );
   }
-
-  // ── Desktop ──
-  const DesktopIcon = ({
-    id,
-    label,
-    icon: Icon,
-    onOpen,
-  }: {
-    id: string;
-    label: string;
-    icon: RetroIcon;
-    onOpen: () => void;
-  }) => (
-    <button
-      onDoubleClick={onOpen}
-      onClick={onOpen}
-      className="group flex w-20 flex-col items-center text-center text-white focus:outline-none active:scale-95"
-      id={`icn-${id}`}
-    >
-      <span className="mb-1 flex h-11 w-11 items-center justify-center rounded p-1 group-focus:bg-blue-800/40">
-        <Icon className="h-9 w-9 drop-shadow-[1px_1px_0_rgba(0,0,0,0.5)]" />
-      </span>
-      <span className="max-w-full truncate border border-transparent bg-black/30 px-1 text-xs font-semibold leading-tight group-focus:border-dotted group-focus:border-white group-focus:bg-blue-800">
-        {label}
-      </span>
-    </button>
-  );
 
   return (
     <div className="relative flex min-h-screen select-none flex-col justify-between overflow-hidden font-sans text-black">

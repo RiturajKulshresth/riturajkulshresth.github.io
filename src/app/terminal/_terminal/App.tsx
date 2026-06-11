@@ -1,11 +1,9 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import BackgroundLogStream from "./components/BackgroundLogStream";
 import BootSequence from "./components/BootSequence";
 
@@ -29,14 +27,12 @@ import { SystemLog } from "./types";
 import { OverdriveProvider, useOverdrive, useStamina } from "./contexts/OverdriveContext";
 import { useIsMobile } from "@/lib/hooks";
 import {
-  Terminal,
   Activity,
   Tv,
   Volume2,
   VolumeX,
   Compass,
   Cpu,
-  RefreshCw,
   Orbit,
   Crosshair,
   Wifi,
@@ -226,16 +222,19 @@ function AppShell() {
   const [logs, setLogs] = useState<SystemLog[]>(SECURE_LOGS);
   const logScrollRef = useRef<HTMLDivElement | null>(null);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const [cpuOSC, setCpuOSC] = useState(42.4);
   const [netOSC, setNetOSC] = useState(72);
   const [timeStr, setTimeStr] = useState("");
 
   // BootSequence owns audio unlock and runs a multi-step intro animation.
   // It calls onComplete() once the sequence finishes; sync that with audio state here.
-  const handleBootComplete = () => {
+  // Memoized so its identity is stable: BootSequence keys its sequencing effect on
+  // onComplete, and AppShell re-renders constantly during boot (clock, log stream,
+  // cursor tracking). An unstable callback would tear down and restart the boot
+  // animation on every one of those re-renders.
+  const handleBootComplete = useCallback(() => {
     setAudioEnabled(synth.isAudioEnabled());
     setHasBooted(true);
-  };
+  }, []);
 
   // Tracking cursor coordinates to print hex sensors in footer
   useEffect(() => {
@@ -259,9 +258,8 @@ function AppShell() {
     const timer = setInterval(() => {
       const now = new Date();
       setTimeStr(now.toISOString());
-      
-      // Floating metrics values
-      setCpuOSC((c) => Math.min(Math.max(c + (Math.random() - 0.5) * 6, 20), 99));
+
+      // Floating metric value for the network telemetry indicator.
       setNetOSC((n) => Math.min(Math.max(n + (Math.random() - 0.5) * 4, 30), 100));
     }, 1000);
     return () => clearInterval(timer);
@@ -340,18 +338,6 @@ function AppShell() {
     : depleted
     ? "RECHARGING"
     : "OVERDRIVE";
-
-  const getThemeBorderClass = () => {
-    if (colorPreset === "AMBER") return "border-amber-500/30 text-amber-400 font-mono";
-    if (colorPreset === "COSMIC") return "border-cyan-500/35 text-cyan-300 font-mono";
-    return "border-emerald-500/30 text-emerald-400 font-mono";
-  };
-
-  const getPresetAccentClass = () => {
-    if (colorPreset === "AMBER") return "bg-amber-500 text-black";
-    if (colorPreset === "COSMIC") return "bg-cyan-500 text-black";
-    return "bg-emerald-500 text-black";
-  };
 
   const logStatusColor = (status: string) => {
     switch (status) {

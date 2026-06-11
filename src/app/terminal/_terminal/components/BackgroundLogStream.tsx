@@ -1,5 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -11,7 +9,7 @@
  * overdrive speedMul accelerates the typing cadence without restarting timers.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useOverdrive } from "../contexts/OverdriveContext";
 
 interface BackgroundLogStreamProps {
