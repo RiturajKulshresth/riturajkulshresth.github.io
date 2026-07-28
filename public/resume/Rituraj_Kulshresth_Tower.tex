@@ -1,0 +1,200 @@
+\documentclass[letterpaper,9pt]{extarticle}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[pdftex]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{fontawesome5}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\hypersetup{hidelinks}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.50in}
+\addtolength{\evensidemargin}{-0.40in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.1in}
+
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-7pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+%-------------------------
+% Custom commands
+
+
+% \resumeItem — bold header followed by a nested bulleted list (used inside Experience clusters)
+\newcommand{\resumeItem}[2]{
+  \item\small{
+    \textbf{#1}{:} 
+  \begin{itemize}[label=\textbullet, leftmargin=8pt, itemsep=2pt]
+      #2
+    \end{itemize}
+    }
+}
+
+% \resumeSubItem — single-line "Title: description" entry (used in Projects, Skills, Accolades)
+\newcommand{\resumeSubItem}[2]{
+  \item\small{
+    \textbf{#1}{: #2}
+  }\vspace{-2pt}
+}
+
+% \resumeSubheading — job/education header: Company/Location on top row, Role/Dates on bottom row
+\newcommand{\resumeSubheading}[4]{
+  \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & {\small #2} \\
+      {\small#3} & {\small #4} \\
+    \end{tabular*}
+}
+
+\renewcommand{\labelitemii}{$\circ$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=6pt, itemindent=0pt, labelsep=4pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}}
+
+%-------------------------------------------
+%%%%%%  CV STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING-----------------
+
+\begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+
+    \textbf{{\large Rituraj Kulshresth}} & Email:\href{mailto:kulshresth.1@alumni.iitj.ac.in}{ kulshresth.1@alumni.iitj.ac.in}\\
+    
+     \href{https://github.com/RiturajKulshresth}{GitHub} \textbar{} \href{https://riturajkulshresth.vercel.app}{Portfolio} & Location: Hyderabad, India \\
+    
+     \href{https://www.linkedin.com/in/rituraj-kulshresth/}{LinkedIn}& Mobile: +91 7004742004 \\
+  
+\end{tabular*}
+
+%-----------SUMMARY-----------------
+\section{Summary}
+\small{Software engineer with 4 years building production platforms at scale. Designed and shipped three enterprise agent and RAG platforms at Warner Bros. Discovery used by 11+ internal teams, with a consistent record of performance, cost, and reliability optimization. Systems-programming background in Rust, C/C++, and Assembly; architecture lead on organization-wide standards for authentication, evaluation, and retrieval.}
+
+%-----------EDUCATION-----------------
+
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Indian Institute of Technology, Jodhpur}{Jodhpur, Rajasthan}
+      {Bachelor of Technology in Computer Science and Engineering;}{July 2018 -- June 2022}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+\section{Experience}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+          {Warner Bros. Discovery}{Hyderabad, India}
+          {Software Development Engineer 2 (AI Platforms)}{Nov 2024 - Present}
+          \resumeItemListStart
+            \resumeItem{ACME (Agent Core for Managed Execution): Enterprise Agent Platform}
+            {
+                \item Designed ACME's credentials and authentication architecture: a \textbf{four-resource model} (Team, App, Agent, Sub-agent) with separate Edit and Invocation ACLs and dual auth modes (\texttt{act\_as\_app} via API keys and AWS Secrets Manager; \texttt{act\_as\_user} via Okta OIDC), plus a \textbf{sub-agent safety property} propagating only the caller's identity through every tool call, making cross-team agent reuse safe by construction.
+
+                \item Refactored agent configuration off local YAML into a versioned \textbf{PostgreSQL (JSONB) registry} with a draft/published/archived lifecycle and API-driven Console Builder and Catalog, enabling \textbf{multi-tenant onboarding} without code changes.
+
+                \item Drove ACME from \textbf{CRITICAL}-severity SAST findings to \textbf{zero} in a single sprint, hardening release posture ahead of org rollout.
+
+                \item Provisioned ACME infrastructure on the org IaC platform (Terraform/Terragrunt, Helm) and bootstrapped the \textbf{BOLT dual-language monorepo} (FastAPI + Next.js) with CI/CD across DEV, INT, STG, and PROD.
+            }
+            \vspace{2pt}
+
+            \resumeItem{Knowledge Hub: Enterprise RAG-as-a-Service}
+            {
+                \item Built Knowledge Hub \textbf{end-to-end}: a \textbf{self-serve retrieval service} on \textbf{AWS OpenSearch} where teams create enterprise document indices and share document and index catalogs org-wide, so any AI app can reuse existing indices without re-ingesting; consumed by multiple internal apps and backed by an org-wide architecture document I authored.
+
+                \item Implemented ingestion from Confluence, Jira, GitHub, S3, Airflow logs, and arbitrary text, with bulk upload, team-specific chunking, and a \textbf{semantic chunking} mode that splits by meaning instead of token windows.
+            }
+            \vspace{2pt}
+
+            \resumeItem{Daisy: Data Analytics AI Platform}
+            {
+                \item Developed Daisy, a \textbf{multi-agent AI platform} used by \textbf{11+} engineering and business teams to build domain-specific chatbots with fine-grained control over tools, data sources (SQL, Text), and models, using Vercel AI SDK, FastAPI, and LangChain.
+
+                \item Cut Daisy infra spend from \textbf{$\sim$\$700 to $\sim$\$200 per environment} (DEV/INT/STG) and \textbf{$\sim$\$1000 to $\sim$\$800 in PROD} by right-sizing compute/storage and decommissioning unused services.
+
+                \item Cut chat-session storage by \textbf{$\sim$66\%} by optimizing Vercel AI SDK logging, removing redundancy and improving OpenSearch indexing and query performance.
+
+                \item Led migration of the entire Daisy platform to the org's new in-house IaC accounts during an org split: moved codebases and Lambdas off the legacy Discovery account and reprovisioned infrastructure with Terraform/Terragrunt, maintaining \textbf{zero downtime}.
+
+                \item Authored \textbf{org-wide Architecture Documents} (Evaluation Platform, Daisy Vector DB API) and ran code reviews for a team of \textbf{7 engineers}.
+            }
+        \resumeItemListEnd
+        \vspace{3pt}
+
+    \resumeSubheading
+        {Deloitte}{Hyderabad, India}
+        {Software Engineer (Analyst)}{July 2022 -- Nov 2024}
+        \resumeItemListStart
+            \resumeItem{Outlook add-ins and Document Archival Apps}
+            {
+                \item Developed and deployed S2SACC Outlook add-in using Yeoman and MS GraphAPI, facilitating document transfer to ContentCloud via email, with role-based access based on distribution groups, serving \textbf{1000+ users}.
+                
+                \item Migrated services from \textbf{Mule ESB to AWS Lambda}, reducing compute costs and improving performance for the Document Archival system; maintained \textbf{4 critical Java applications} ensuring seamless business operations.
+            }
+        \resumeItemListEnd
+    \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\section{Projects}
+    \resumeSubHeadingListStart
+        \resumeSubItem{\href{https://github.com/RiturajKulshresth/RustyBun}{RustyBun} (Rust)}
+            {Published open-source clipboard manager for Debian-based Linux, written in \textbf{Rust}: a lightweight background daemon that streamlines workflow by giving fast access to clipboard history.}
+        \resumeSubItem{x86 Operating System (Assembly, C)}
+            {Built a 32-bit operating system from scratch with keyboard input handling, a VGA output driver, and a functional shell for basic tasks.}
+        \resumeSubItem{RGB Face Video to Core Body Temperature}
+            {Implemented CNN models in TensorFlow to predict core body temperature from diverse image data (NIR, hyper-spectral, RGB), achieving \textbf{60\%} accuracy.}
+    \resumeSubHeadingListEnd
+
+%--------PROGRAMMING SKILLS------------
+\section{Skills}
+    \resumeSubHeadingListStart
+        \resumeSubItem
+            {Languages} {Rust, C/C++, Python, JavaScript/TypeScript, Java, Assembly, SQL}
+        \resumeSubItem
+            {Backend \& Frontend} {FastAPI, SQLAlchemy, Alembic, Next.js, React, PostgreSQL, MERN, Electron, Yeoman}
+        \resumeSubItem
+            {Cloud \& DevOps} {AWS (EKS, OpenSearch, Lambda, S3, API Gateway, Secrets Manager), Kubernetes, Helm, Docker, Terraform, Terragrunt, Okta OIDC, Git, Mainframe (z/OS)}
+        \resumeSubItem
+            {AI \& Agent Frameworks} {LangGraph, LangChain, LangSmith, OpenAI SDK, Anthropic Claude SDK, Vercel AI SDK, DeepEval, AWS Bedrock, TensorFlow}
+ \resumeSubHeadingListEnd
+
+%--------Achievements------------
+ \section{Accolades}
+  \resumeSubHeadingListStart
+      \resumeSubItem{KVPY}
+      {Recognized as a Kishore Vaigyanik Protsahan Yojana Scholar in 2017-2018}
+    \resumeSubItem{Deloitte}
+      {Honored with 3 Excellence Awards for development of the S2SACC Add-in and the OpenText Server upgrade}
+    \resumeSubItem{Warner Bros. Discovery}
+      {Honored with an Excellence Award for designing and building Knowledge Hub}
+  \resumeSubHeadingListEnd
+%-------------------------------------------
+\end{document}
