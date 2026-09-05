@@ -43,9 +43,12 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
       setError(null);
       try {
         const decrypted = await decryptVault(blob, candidate);
+        // Deliberately not clearing `passphrase` here: emptying the input in
+        // the same commit that unmounts the form makes Chrome's "the login
+        // form vanished" heuristic see no password, and it then never offers
+        // to save one. `lock()` clears it instead.
         setEntries(decrypted);
         setActiveSlug(decrypted[0]?.slug ?? null);
-        setPassphrase("");
         sessionStorage.setItem(SESSION_KEY, candidate);
       } catch (err) {
         if (err instanceof WrongPassphraseError) {
@@ -118,8 +121,27 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
               }}
               className="flex flex-col gap-3"
             >
+              {/*
+                Password managers key a credential on (site, username,
+                password) and skip forms that have no username at all, reading
+                them as re-auth rather than sign-in. This fixed, unfocusable
+                stand-in gives them something to file the passphrase under.
+                `sr-only` rather than `type="hidden"` or `display: none` on
+                purpose: Chrome ignores fields it considers unrendered.
+              */}
+              <input
+                type="text"
+                name="username"
+                value="vault"
+                readOnly
+                tabIndex={-1}
+                aria-hidden="true"
+                autoComplete="username"
+                className="sr-only"
+              />
               <input
                 type="password"
+                name="passphrase"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
                 autoFocus
