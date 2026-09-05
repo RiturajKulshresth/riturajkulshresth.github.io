@@ -1,0 +1,210 @@
+/*
+ * Long-form styles for the vault's decrypted markdown.
+ *
+ * The project has no Tailwind typography plugin, and the markdown is rendered
+ * to raw HTML at encrypt time, so those tags need styling by hand. Everything
+ * is scoped under `.vault-prose` (the same containment approach as
+ * `src/app/terminal/terminal.css`) and reads the site's theme tokens, so the
+ * vault follows the light/dark switch like the rest of the site.
+ */
+
+.vault-prose {
+  color: var(--color-fg-muted);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+.vault-prose > :first-child {
+  margin-top: 0;
+}
+
+.vault-prose > :last-child {
+  margin-bottom: 0;
+}
+
+/* ─── Headings ───────────────────────────────────────────────── */
+
+.vault-prose h1,
+.vault-prose h2,
+.vault-prose h3,
+.vault-prose h4 {
+  color: var(--color-fg);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  margin-block: 2em 0.75em;
+  text-wrap: balance;
+}
+
+.vault-prose h1 {
+  font-size: 1.625rem;
+  margin-top: 0;
+}
+
+.vault-prose h2 {
+  border-top: 1px solid var(--color-border);
+  font-size: 1.25rem;
+  padding-top: 1.25em;
+}
+
+.vault-prose h3 {
+  font-size: 1.0625rem;
+}
+
+.vault-prose h4 {
+  font-size: 0.9375rem;
+}
+
+/* ─── Body ───────────────────────────────────────────────────── */
+
+.vault-prose p {
+  margin-block: 1.1em;
+}
+
+.vault-prose strong {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.vault-prose a {
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: opacity 150ms;
+}
+
+.vault-prose a:hover {
+  opacity: 0.7;
+}
+
+.vault-prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin-block: 2.5em;
+}
+
+.vault-prose blockquote {
+  border-left: 2px solid var(--color-accent-strong);
+  color: var(--color-fg-subtle);
+  font-style: italic;
+  margin-block: 1.5em;
+  padding-left: 1.125em;
+}
+
+/* Watch photos are portrait phone shots, so both axes need capping or a single
+   picture swamps the reading pane. Bump these two values to show them bigger. */
+.vault-prose img {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  display: block;
+  height: auto;
+  margin-block: 1.5em;
+  max-height: 20rem;
+  max-width: min(100%, 18rem);
+  width: auto;
+}
+
+/* ─── Lists ──────────────────────────────────────────────────── */
+
+.vault-prose ul,
+.vault-prose ol {
+  margin-block: 1.1em;
+  padding-left: 1.5em;
+}
+
+.vault-prose ul {
+  list-style: disc;
+}
+
+.vault-prose ol {
+  list-style: decimal;
+}
+
+.vault-prose li {
+  margin-block: 0.4em;
+}
+
+.vault-prose li::marker {
+  color: var(--color-fg-subtle);
+}
+
+/* Nested lists tighten up so a deep buy-list doesn't sprawl. */
+.vault-prose li > ul,
+.vault-prose li > ol {
+  margin-block: 0.4em;
+}
+
+/* GFM task lists. `marked` emits a bare checkbox as the list item's first
+   child, so the bullet is dropped and the box is pulled into the gutter. */
+.vault-prose li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.5em;
+  padding-left: 1.5em;
+}
+
+.vault-prose input[type="checkbox"] {
+  accent-color: var(--color-accent-strong);
+  margin-right: 0.55em;
+  vertical-align: baseline;
+}
+
+/* Checked items read as done rather than as current work. */
+.vault-prose li:has(> input[type="checkbox"]:checked) {
+  color: var(--color-fg-subtle);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-border-strong);
+}
+
+/* ─── Code ───────────────────────────────────────────────────── */
+
+.vault-prose code {
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  color: var(--color-fg);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+}
+
+.vault-prose pre {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  margin-block: 1.5em;
+  overflow-x: auto;
+  padding: 1em 1.125em;
+}
+
+.vault-prose pre code {
+  background: none;
+  border: 0;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  padding: 0;
+}
+
+/* ─── Tables ─────────────────────────────────────────────────── */
+
+.vault-prose table {
+  border-collapse: collapse;
+  display: block;
+  font-size: 0.875rem;
+  margin-block: 1.5em;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.vault-prose th,
+.vault-prose td {
+  border: 1px solid var(--color-border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.vault-prose th {
+  background: var(--color-surface-subtle);
+  color: var(--color-fg);
+  font-weight: 500;
+}

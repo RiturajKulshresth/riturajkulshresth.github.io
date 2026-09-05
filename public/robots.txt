@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /vault/
 
 Sitemap: https://riturajkulshresth.github.io/sitemap.xml

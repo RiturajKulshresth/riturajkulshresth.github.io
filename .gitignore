@@ -34,6 +34,11 @@ yarn-error.log*
 .env
 .env*.local
 
+# vault plaintext - the unencrypted source for /vault. Only the encrypted
+# src/app/vault/_vault/vault.json is ever committed. Committing this would
+# publish the vault to the world, since this repo is public.
+/content/vault/
+
 # misc
 *.pem
 .turbo

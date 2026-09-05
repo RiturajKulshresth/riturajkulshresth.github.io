@@ -39,12 +39,16 @@ src/
 │   ├── munchkincat/            # Render mode: side-scrolling cat platformer
 │   ├── badui/                  # Render mode: cursed dark-pattern homage (r/badUIbattles)
 │   ├── photography/            # Standalone: fullscreen drag-to-pan gallery + lightbox
-│   └── terminal/               # Standalone: cyberpunk "AEGIS" terminal + arcade
+│   ├── terminal/               # Standalone: cyberpunk "AEGIS" terminal + arcade
+│   └── vault/                  # Standalone: passphrase-protected encrypted notes
 │
-└── lib/
-    ├── data.ts                 # All portfolio content + nav/route/render-mode tables
-    ├── hooks.ts                # Shared hooks (useLockBodyScroll)
-    └── photography.ts          # Photo data + Unsplash URL builders
+├── lib/
+│   ├── data.ts                 # All portfolio content + nav/route/render-mode tables
+│   ├── hooks.ts                # Shared hooks (useLockBodyScroll)
+│   └── photography.ts          # Photo data + Unsplash URL builders
+│
+content/vault/                  # Gitignored plaintext source for /vault
+scripts/encrypt-vault.mjs       # Encrypts content/vault/ into the /vault blob
 ```
 
 ### Route folder convention
@@ -135,6 +139,45 @@ The game states separate a **win** (`VICTORY`, green overlay) from a **loss** (`
 | HIGHWAY    | Speedway     | 3 lives + invuln; Space/Up/W nitro boost. |
 | DINO       | Dino Runner  | Single-life. |
 
+## Private vault
+
+`/vault` is a passphrase-protected area for personal notes and buy/todo lists, reachable from the lock icon in the footer. It is deliberately absent from `src/app/sitemap.ts`, marked noindex, and disallowed in `public/robots.txt`.
+
+Because the site is a static export on public GitHub Pages there is no server to check a password against, so privacy comes from the content itself being ciphertext:
+
+1. Entries are authored as markdown in `content/vault/`, which is **gitignored** and never leaves your machine.
+2. `npm run vault` renders each file to HTML with `marked`, bundles them, derives a key from your passphrase with PBKDF2-SHA256 (600,000 iterations, fresh 16-byte salt), encrypts with AES-256-GCM under a fresh 12-byte IV, and writes `src/app/vault/_vault/vault.json`.
+3. That JSON blob is the only thing committed and deployed. The browser decrypts it via Web Crypto after you enter the passphrase; nothing is sent anywhere.
+
+The deploy workflow needs no secret, because it only ever builds the already-encrypted blob.
+
+### Authoring loop
+
+```bash
+# write or edit files in content/vault/
+npm run vault    # prompts for the passphrase (or set VAULT_PASSWORD)
+git add src/app/vault/_vault/vault.json && git commit && git push
+```
+
+Frontmatter takes three fields. `tags` become the sidebar filter chips, so `blog`, `buy`, and `todo` give you three views over one vault:
+
+```markdown
+---
+title: Things to buy
+date: 2026-09-04
+tags: [buy]
+---
+
+- [ ] Standing desk
+- [x] Mechanical keyboard
+```
+
+### Passphrase
+
+The ciphertext is publicly downloadable, so passphrase strength is the only thing protecting the vault against an offline attack. Use five or more random words, and do not reuse a password from elsewhere. The 600,000 PBKDF2 iterations cost a legitimate unlock about half a second and make bulk guessing expensive, but they are not a substitute for a strong passphrase. To harden further, `scripts/encrypt-vault.mjs` and `src/app/vault/_vault/crypto.ts` are the only two files that would need to change to swap PBKDF2 for Argon2id.
+
+The browser caches the passphrase in `sessionStorage` so a refresh does not re-prompt; it dies with the tab, and the Lock button clears it immediately.
+
 ## Editing content
 
 Almost all copy lives in [`src/lib/data.ts`](./src/lib/data.ts):
@@ -186,4 +229,5 @@ Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds the stat
 | `npm run build`  | Static export to `out/`                |
 | `npm run start`  | Serve a production build               |
 | `npm run lint`   | Next.js ESLint                         |
+| `npm run vault`  | Encrypt `content/vault/` into the `/vault` blob |
 | `npm run clean`  | Wipe `node_modules`, lockfile, `.next`, `out` |
