@@ -17,6 +17,7 @@ import {
   Camera,
   Gamepad2,
   Skull,
+  FileText,
   Terminal as TerminalIcon,
   Eye,
   ChevronDown,
@@ -60,6 +61,7 @@ const MOBILE_TOGGLE =
 // (.nav-photo) treatments. `Eye` is the fallback icon.
 const routeIcons: Record<string, LucideIcon> = {
   "/": Home,
+  "/colophon": FileText,
   "/windows95": Monitor,
   "/cli": TerminalIcon,
   "/editorial": Newspaper,
@@ -70,9 +72,9 @@ const routeIcons: Record<string, LucideIcon> = {
   "/terminal": TerminalIcon,
 };
 
-// Bespoke nav link effects in globals.css. Terminal's `nav-glitch` reads
-// `data-text` (set on the label span) to duplicate the label for the glitch.
+// Bespoke nav link effects in globals.css.
 const navEffect: Record<string, string> = {
+  "/colophon": "nav-colophon",
   "/editorial": "nav-editorial",
   "/photography": "nav-photo",
   "/terminal": "nav-glitch",
@@ -82,6 +84,14 @@ const navEffect: Record<string, string> = {
   "/munchkincat": "nav-arcade",
   "/badui": "nav-badui",
 };
+
+// Effects that duplicate their label through a `content: attr(data-text)`
+// pseudo-element: Terminal's chromatic-aberration glitch, and Colophon's
+// out-of-register second plate. Both need `data-text` on the label span.
+const effectsNeedingDataText = new Set(["nav-glitch", "nav-colophon"]);
+
+const dataTextFor = (effect: string | undefined, label: string) =>
+  effect && effectsNeedingDataText.has(effect) ? label : undefined;
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -203,7 +213,7 @@ export default function Navbar() {
                 <li key={route.href}>
                   <Link
                     href={route.href}
-                    data-text={effect === "nav-glitch" ? route.label : undefined}
+                    data-text={dataTextFor(effect, route.label)}
                     className={clsx(
                       "relative rounded-md px-3 py-1.5 text-sm transition",
                       effect,
@@ -260,9 +270,7 @@ export default function Navbar() {
                         <Icon className="h-4 w-4 shrink-0" />
                         <span
                           className={effect}
-                          data-text={
-                            effect === "nav-glitch" ? mode.label : undefined
-                          }
+                          data-text={dataTextFor(effect, mode.label)}
                         >
                           {mode.label}
                         </span>
@@ -343,7 +351,7 @@ export default function Navbar() {
                     <Icon className="h-4 w-4 shrink-0" />
                     <span
                       className={effect}
-                      data-text={effect === "nav-glitch" ? route.label : undefined}
+                      data-text={dataTextFor(effect, route.label)}
                     >
                       {route.label}
                     </span>
@@ -375,9 +383,7 @@ export default function Navbar() {
                         <Icon className="h-4 w-4 shrink-0" />
                         <span
                           className={effect}
-                          data-text={
-                            effect === "nav-glitch" ? mode.label : undefined
-                          }
+                          data-text={dataTextFor(effect, mode.label)}
                         >
                           {mode.label}
                         </span>

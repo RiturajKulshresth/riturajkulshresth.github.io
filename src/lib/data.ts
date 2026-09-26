@@ -396,6 +396,7 @@ export const routes = [
 // Alternate render styles aggregated under the navbar "Render Modes" dropdown.
 export const renderModes = [
   { href: "/", label: "Default" },
+  { href: "/colophon", label: "Colophon" },
   { href: "/windows95", label: "Windows 95" },
   { href: "/cli", label: "CLI" },
   { href: "/editorial", label: "Editorial" },

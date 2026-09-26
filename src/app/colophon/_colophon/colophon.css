@@ -1,0 +1,1623 @@
+/**
+ * Colophon render mode - route-scoped stylesheet.
+ *
+ * SPECIFICITY CONTRACT
+ * This file is deliberately UNLAYERED. globals.css does `@import "tailwindcss"`
+ * and puts its own resets inside `@layer base`, which already owns `::selection`,
+ * `:focus-visible` (with a 4px radius), a rounded 10px scrollbar, and a `body`
+ * rule setting `letter-spacing: -0.011em` / `font-feature-settings: "ss01","cv11"`.
+ * Unlayered CSS always beats layered CSS regardless of source order, so every
+ * rule here wins without a single `!important` and without touching a global
+ * token. Nothing is declared in `@theme` (that would emit global utilities).
+ *
+ * All tokens are `--clp-*` and all classes are `clp-*`, mirroring the existing
+ * `terminal.css` precedent, so this cannot collide with globals.css or with any
+ * of the other render modes.
+ *
+ * THE TYPOGRAPHIC LAW, enforced structurally below:
+ *   words are Instrument Serif · numbers and labels are Geist Mono ·
+ *   Geist Sans sets running prose only and never exceeds 17px.
+ */
+
+/* ─── Tokens ─────────────────────────────────────────────────────────
+   Dark is the default (matching globals.css), light is the override, so an
+   unresolved `data-theme` still renders a coherent sheet. */
+
+/* Declared on BOTH the route wrapper and the document element. The document
+   element needs them because the viewport scroller's background, overscroll
+   colour and scrollbar can only be reached through `html` - and a token
+   declared solely on `.clp-root` does not resolve there, which silently left
+   `html` on its hardcoded fallback and gave light theme a near-black
+   overscroll band and a default-grey scrollbar. `:has` keeps the declaration
+   scoped to this route; no other mode is affected. */
+html:has(.clp-root),
+.clp-root {
+  /* Two papers */
+  --clp-paper: #111110;
+  --clp-paper-2: #181816;
+  /* Two inks, three values each */
+  --clp-ink: #e8e6e0;
+  --clp-ink-muted: #a9a49a;
+  --clp-ink-subtle: #8c877e;
+  /* Hairlines. `rule` is decorative sub-division only (1.4:1 by design);
+     `rule-strong` carries every grouping a reader must parse (3.50:1). */
+  --clp-rule: rgba(232, 230, 224, 0.14);
+  --clp-rule-strong: rgba(232, 230, 224, 0.42);
+  /* The rubric. Structure only - never emphasis, never a fill, never a gradient. */
+  --clp-accent: #e9573a;
+  --clp-accent-lift: #f26a4c;
+  --clp-ghost: rgba(233, 87, 58, 0.55);
+  --clp-plate-matte: #1c1c1a;
+  --clp-selection-bg: rgba(233, 87, 58, 0.24);
+  --clp-selection-fg: #f4f2ec;
+  --clp-focus: #e9573a;
+  /* `screen` lifts the rubric off a black ground; `multiply` sinks it into a
+     white one. One declaration, correct in both themes. Set to `normal` as a
+     one-line kill switch if the blend ever ships wrong. */
+  --clp-blend: screen;
+
+  /* Grid programme: 64px rail · 12 columns · 24px gutters · 40px right trim */
+  --clp-rail: 64px;
+  --clp-trim: 40px;
+  --clp-gutter: 24px;
+  /* 8px base rhythm, no exceptions anywhere in the route */
+  --clp-band: 96px;
+
+  /* §03's fixed plate has to land exactly on grid columns 7-12 while being
+     positioned against the viewport. It is anchored from the RIGHT edge, which
+     is exact (columns 7-12 end at the right trim), so a scrollbar can only
+     perturb its width by a few px and never its position. Height is capped so
+     the plate and the detail block beneath it always fit one viewport. */
+  --clp-content: calc(100vw - var(--clp-rail) - var(--clp-gutter) - var(--clp-trim));
+  --clp-colw: calc((var(--clp-content) - 11 * var(--clp-gutter)) / 12);
+  /* Capped at 38vh rather than 46vh: the plate and the detail block share one
+     viewport, and at 46vh the longest project description (~700 characters)
+     was clipped by the detail's own max-height. */
+  --clp-plate-w: min(
+    calc(6 * var(--clp-colw) + 5 * var(--clp-gutter)),
+    calc(38vh * 4 / 3)
+  );
+  --clp-plate-h: calc(var(--clp-plate-w) * 3 / 4);
+
+  /* Three easings, one job each. A fourth is not added for any reason. */
+  --clp-ease-press: cubic-bezier(0.16, 1, 0.3, 1);
+  --clp-ease-ink: cubic-bezier(0.62, 0.02, 0.2, 1);
+  --clp-ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Five durations. Anything needing a value off this list is redesigned. */
+  --clp-t-hover: 140ms;
+  --clp-t-plate: 260ms;
+  --clp-t-ink: 420ms;
+  --clp-t-arrive: 680ms;
+  --clp-t-snap: 900ms;
+
+  /* The static register offset, in em so it scales with the type it slips.
+     Used on phones, under reduced motion, and before the engine mounts. */
+  --clp-reg-x: 0.045em;
+  --clp-reg-y: 0.03em;
+
+  /* Type scale. Display carries words only; numerals are always mono. */
+  /* 29vw, not the 17vw the direction first specified. Measured: "Kulshresth"
+     set in Instrument Serif renders 3.18x its font-size, so at 17vw the second
+     line stopped ~490px short of the trim and the one deliberate violation in
+     the document - the masthead running off the uncut sheet - simply never
+     happened. At 29vw the second line's right edge lands at 88 + 0.964W, which
+     clears the viewport edge for every width below ~2720px, so the overrun
+     holds from a 375px phone to a 2560px display rather than only at one size.
+     The trade is that the masthead grows past 100svh and the manifest begins
+     just below the fold; `min-height` lets it, and the name dominating the
+     first screen is the intent. */
+  --clp-display-0: clamp(3.5rem, 29vw, 34rem);
+  --clp-display-1: clamp(3rem, 9vw, 8.5rem);
+  --clp-display-2: clamp(1.75rem, 3.6vw, 3rem);
+  --clp-lede: clamp(1.375rem, 2.1vw, 2rem);
+  --clp-numeral-lg: clamp(2rem, 4vw, 3.25rem);
+  --clp-meta-lg: 0.8125rem;
+  --clp-meta: 0.6875rem;
+
+  --clp-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --clp-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --clp-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* `data-theme` lives ON <html>, so the document-element variant needs an
+   attribute selector rather than a descendant one. */
+html[data-theme="light"]:has(.clp-root),
+[data-theme="light"] .clp-root {
+  --clp-paper: #f1efe9;
+  --clp-paper-2: #e7e4dc;
+  --clp-ink: #141310;
+  --clp-ink-muted: #4a463e;
+  --clp-ink-subtle: #615b53;
+  --clp-rule: rgba(20, 19, 16, 0.16);
+  --clp-rule-strong: rgba(20, 19, 16, 0.5);
+  --clp-accent: #b02a15;
+  --clp-accent-lift: #c8371c;
+  --clp-ghost: rgba(176, 42, 21, 0.62);
+  --clp-plate-matte: #e3dfd6;
+  --clp-selection-bg: rgba(176, 42, 21, 0.16);
+  --clp-selection-fg: #141310;
+  --clp-focus: #b02a15;
+  --clp-blend: multiply;
+}
+
+/* ─── Document-level chrome ──────────────────────────────────────────
+   A `.clp-root::-webkit-scrollbar` selector cannot reach the viewport
+   scroller, so these are hung off `html` with `:has`. */
+
+html:has(.clp-root) {
+  background: var(--clp-paper, #111110);
+  /* `clip`, never `hidden`: the masthead deliberately overruns the right trim
+     and must be cut off, but `overflow-x: hidden` would turn the root into a
+     scroll container and kill §02's sticky period and §04's pin. */
+  overflow-x: clip;
+  /* A rail anchor jumping past §04 must not smooth-scroll through 460vh. */
+  scroll-behavior: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--clp-rule-strong) transparent;
+}
+html:has(.clp-root)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html:has(.clp-root)::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:has(.clp-root)::-webkit-scrollbar-thumb {
+  background: var(--clp-rule-strong);
+  /* Square. There is not one rounded corner in this document. */
+  border-radius: 0;
+  border: 0;
+}
+
+/* ─── Route reset ────────────────────────────────────────────────────
+   Four real inherited leaks from globals.css are neutralised here, plus the
+   structural ban on cards. */
+
+.clp-root {
+  /* The positioning context for the crop marks at the sheet's four corners. */
+  position: relative;
+  background: var(--clp-paper);
+  color: var(--clp-ink);
+  /* NOTE: deliberately NO `overflow-x` here. The masthead's right-trim overrun
+     is already clipped by `.clp-masthead-wrap`, and the document-level scroll
+     width is handled by `html:has(.clp-root)` above - so clipping here would be
+     redundant. It would also be actively harmful: an ancestor with a clipping
+     overflow clips `position: fixed` descendants in several engines, which
+     would cut off §03's fixed plate and its detail block. */
+  /* globals.css sets these on `body`; they would silently override the
+     tracking and character variants designed for this route. */
+  letter-spacing: 0;
+  font-feature-settings: normal;
+  /* Instrument Serif is a static 400 master. Without this, any stray
+     `<strong>` or utility fake-bolds it, which alters advance widths - a text
+     reflow on the element this direction promises is stable. */
+  font-synthesis: none;
+  /* So 13 plate numbers and 13 four-digit years hold exact vertical register,
+     and a weight transition cannot shift a pixel. Slashed zero because a
+     typesetter distinguishes 0 from O. */
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-optical-sizing: auto;
+  hanging-punctuation: first last;
+}
+
+/* No inherited Tailwind utility can smuggle a rounded card into this
+   direction. There is also no box-shadow and no backdrop-filter in the route. */
+.clp-root *,
+.clp-root *::before,
+.clp-root *::after {
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.clp-root ::selection {
+  background: var(--clp-selection-bg);
+  color: var(--clp-selection-fg);
+}
+
+/* A registration mark, not a glow. */
+.clp-root :focus-visible {
+  outline: 1px solid var(--clp-focus);
+  outline-offset: 3px;
+  border-radius: 0;
+}
+
+.clp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.clp-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.clp-skip:focus {
+  left: 8px;
+  top: 8px;
+  background: var(--clp-ink);
+  color: var(--clp-paper);
+  padding: 8px 12px;
+  font-family: var(--clp-mono);
+  font-size: var(--clp-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ─── Voices ─────────────────────────────────────────────────────────
+   Three faces, three non-overlapping jobs. */
+
+.clp-meta,
+.clp-meta-lg {
+  font-family: var(--clp-mono);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+.clp-meta {
+  font-size: var(--clp-meta);
+  letter-spacing: 0.16em;
+  font-weight: 450;
+  line-height: 1.5;
+}
+.clp-meta-lg {
+  font-size: var(--clp-meta-lg);
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Running prose. Never above 17px, never a heading, label, number or button. */
+.clp-prose {
+  font-family: var(--clp-sans);
+  font-size: 1rem;
+  line-height: 1.62;
+  font-weight: 400;
+  max-width: 62ch;
+  color: var(--clp-ink-muted);
+  /* The dense clauses run past 400 characters; these keep them free of rivers. */
+  hyphens: auto;
+  hyphenate-limit-chars: 7 3 3;
+  text-wrap: pretty;
+}
+
+.clp-display-1,
+.clp-display-2 {
+  font-family: var(--clp-serif);
+  font-weight: 400;
+  color: var(--clp-ink);
+}
+.clp-display-1 {
+  font-size: var(--clp-display-1);
+  line-height: 0.85;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.clp-display-2 {
+  font-size: var(--clp-display-2);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Inline links: a hairline at exactly the weight of every rule in the
+   document, that does not dodge descenders. */
+.clp-root a {
+  color: inherit;
+  text-decoration: none;
+}
+.clp-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.28em;
+  text-decoration-skip-ink: none;
+  text-decoration-color: var(--clp-accent);
+  transition: color var(--clp-t-hover) var(--clp-ease-ink);
+}
+.clp-link:hover {
+  color: var(--clp-ink);
+}
+
+/* Leaders are real typography: not a string of periods, and not an invisible
+   dotted border. A painted gradient run justifies to its container at any
+   width, stays visible at 1x DPR, and inks up on hover. */
+.clp-leader {
+  flex: 1 1 auto;
+  min-width: 16px;
+  height: 1px;
+  align-self: center;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--clp-rule-strong) 0 1px,
+    transparent 1px 4px
+  );
+  transition: background-image var(--clp-t-hover) var(--clp-ease-ink);
+}
+
+/* ─── Grid programme ────────────────────────────────────────────────
+   The rail owns 0-64px exclusively. The 12-column grid begins after it.
+   No content element ever enters the rail strip. */
+
+.clp-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--clp-gutter);
+  margin-left: calc(var(--clp-rail) + var(--clp-gutter));
+  margin-right: var(--clp-trim);
+}
+
+.clp-c-full { grid-column: 1 / -1; }
+.clp-c-1-2 { grid-column: 1 / span 2; }
+.clp-c-1-5 { grid-column: 1 / span 5; }
+.clp-c-1-6 { grid-column: 1 / span 6; }
+.clp-c-1-7 { grid-column: 1 / span 7; }
+.clp-c-3-9 { grid-column: 3 / span 7; }
+.clp-c-6-11 { grid-column: 6 / span 6; }
+.clp-c-7-12 { grid-column: 7 / span 6; }
+.clp-c-8-12 { grid-column: 8 / span 5; }
+.clp-c-12 { grid-column: 12 / span 1; }
+
+/* Section bands. Hairlines always land on an 8px multiple from the section
+   top, so rules across §02, §03, §05 and §06 align into one continuous
+   horizontal register as you scroll. */
+/* SECTION LAYERING, and why it matters.
+   §03's plate is `position: fixed`, so nothing in the normal flow can push it
+   out of the way - at the boundary between §03 and its neighbours the plate
+   would hang in the viewport on top of §02 and §04. Rather than trying to time
+   its disappearance, every section paints its own paper above it: sections sit
+   at z-index 2, and §03 sits at z-index 1 and so becomes a stacking context
+   that confines its own plate (z-index 5 within it). The result is that
+   scrolling out of the index occludes the plate cleanly in both directions,
+   with no fade to mistime. */
+.clp-section {
+  position: relative;
+  z-index: 2;
+  background: var(--clp-paper);
+  padding-block: var(--clp-band);
+}
+.clp-index {
+  z-index: 1;
+}
+.clp-rule-top {
+  border-top: 1px solid var(--clp-rule-strong);
+}
+
+/* ─── Reveals ────────────────────────────────────────────────────────
+   The only permitted reveal in the route: translateY(14px) -> 0 plus opacity.
+   No scale-in, no blur-in, no rotate-in, no clip-path wipe, no per-character
+   split anywhere. Fires once and never reverses - a printed page does not
+   un-print itself. Stagger is a transition-delay computed from the item's
+   index, capped at 8 so the 13-row index never accumulates a visible wait. */
+
+/* The pre-reveal state is declared ONLY behind the kinetic gate, and in CSS
+   rather than JS. That matters for three reasons: it is correct from first
+   paint so nothing flashes on hydration; below the gate (touch, narrow,
+   reduced motion) content is simply never hidden, so no fallback branch is
+   needed; and a JS failure on a kinetic device is recovered by the <noscript>
+   override in page.tsx rather than leaving the document blank. */
+@media (min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .clp-reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity var(--clp-t-arrive) var(--clp-ease-press),
+      transform var(--clp-t-arrive) var(--clp-ease-press);
+    /* Stagger is a delay computed once from the item's index, never per frame,
+       capped at 8 so the 13-row index and the 14-item skill column never
+       accumulate a visible wait. */
+    transition-delay: calc(min(var(--clp-i, 0), 8) * 34ms);
+  }
+  .clp-revealed {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ─── The clause rail ────────────────────────────────────────────────
+   A fixed left-edge instrument panel: running head, clause list, and the
+   register readout at its foot. */
+
+.clp-rail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--clp-rail);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 24px;
+  border-right: 1px solid var(--clp-rule);
+  background: var(--clp-paper);
+}
+
+/* The running head names the live section, set vertically up the rail. */
+.clp-runhead {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--clp-ink-subtle);
+  white-space: nowrap;
+  max-height: 22vh;
+  overflow: hidden;
+}
+
+.clp-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+.clp-rail-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* WCAG 2.5.8: an 11px mono link still needs a 24x24 target, and 24 is on
+     the 8px grid so the rhythm holds. */
+  min-width: 32px;
+  min-height: 24px;
+  color: var(--clp-ink-subtle);
+  transition: color var(--clp-t-hover) var(--clp-ease-ink);
+}
+.clp-rail-item:hover {
+  color: var(--clp-ink);
+}
+/* Current clause is marked by a glyph AND accent ink AND aria-current, so no
+   state in this route is signalled by hue alone. */
+.clp-rail-item[aria-current="location"] {
+  color: var(--clp-accent);
+}
+.clp-rail-mark {
+  position: absolute;
+  left: 2px;
+  opacity: 0;
+  color: var(--clp-accent);
+}
+.clp-rail-item[aria-current="location"] .clp-rail-mark {
+  opacity: 1;
+}
+
+/* The one number in the document that measures something, because it measures
+   itself. `contain: layout` plus a ch-locked width so an 8Hz text change can
+   never reflow a neighbour. */
+.clp-readout {
+  contain: layout;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 7ch;
+  text-align: center;
+  color: var(--clp-ink-subtle);
+  font-family: var(--clp-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* ─── §00 · Masthead ─────────────────────────────────────────────── */
+
+/* NOTE: this element also carries `.clp-grid`, so it must NOT declare its own
+   `display` - doing so overrides `display: grid` (same specificity, later
+   rule) and silently drops every column placement inside the masthead.
+   `align-content` spaces the three rows instead of flex justification. */
+.clp-masthead {
+  position: relative;
+  /* Same reason as `.clp-section`: paints above §03's fixed plate. */
+  z-index: 2;
+  background: var(--clp-paper);
+  min-height: 100svh;
+  align-content: space-between;
+  row-gap: 40px;
+  padding-top: 88px;
+  padding-bottom: 32px;
+}
+
+/* THE GHOST'S BLEND PARENT.
+   `mix-blend-mode` blends only within the nearest stacking context, so the
+   paper must be painted INSIDE this element for the ghost to multiply against
+   it - otherwise the ghost renders at full rubric red over a transparent
+   group. `isolation: isolate` makes this the blend parent; the background
+   gives the blend something to act on. This element and the h1 must never
+   animate opacity or transform, or they would form a second isolation group
+   and break it. That is free here: the masthead is already printed on arrival
+   by design. */
+.clp-masthead-wrap {
+  position: relative;
+  isolation: isolate;
+  background: var(--clp-paper);
+  overflow: clip;
+  overflow-clip-margin: 0;
+  /* Matching the optical hang below, so the R's stem sits ON the grid line
+     without the overhang being sheared by the clip. */
+  padding-left: 0.055em;
+  font-size: var(--clp-display-0);
+}
+
+/* The ink plate and the ghost plate must share every metric that affects glyph
+   position, or the misregistration reads as a font bug rather than a press
+   one. Declared once for both. */
+.clp-name,
+.clp-nghost {
+  font-family: var(--clp-serif);
+  font-weight: 400;
+  font-size: 1em;
+  line-height: 0.78;
+  letter-spacing: -0.045em;
+  /* Optical rather than metric alignment: the R's stem sits ON the grid line
+     rather than beside it. */
+  margin-left: -0.055em;
+  margin-block: 0;
+  /* `text-wrap: balance` is deliberately NOT used here: balancing the largest
+     element on the page means the Instrument Serif swap re-breaks it and pays
+     a large CLS on the LCP element. The two lines are hardcoded spans. */
+  text-wrap: nowrap;
+}
+
+.clp-name {
+  position: relative;
+  z-index: 2;
+  color: var(--clp-ink);
+}
+
+.clp-nline {
+  display: block;
+  white-space: nowrap;
+}
+/* The second line deliberately overruns the right trim and is cut by the
+   viewport edge, so the sheet reads as uncut stock. */
+.clp-nline-2 {
+  margin-left: 0.14em;
+}
+
+/* The out-of-register second plate - ONE node covering both lines, so the
+   route holds to exactly three ghosts. Carries zero information: aria-hidden,
+   unselectable, unclickable, and always behind the ink plate, so primary text
+   legibility is structurally guaranteed whatever the blend does. */
+.clp-nghost {
+  position: absolute;
+  left: 0.055em;
+  top: 0;
+  z-index: 1;
+  color: var(--clp-ghost);
+  mix-blend-mode: var(--clp-blend);
+  user-select: none;
+  pointer-events: none;
+  transform: translate(var(--clp-reg-x), var(--clp-reg-y));
+}
+
+/* ─── The register pattern, reused by §05's numeral and §06's END ─────
+   Same construction as the masthead, generalised: a positioned, isolated
+   parent painting paper, an ink copy above and a ghost copy below. The ghost
+   takes `font: inherit` so it cannot drift from its ink plate. */
+.clp-reg {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  background: var(--clp-paper);
+}
+.clp-reg-ink {
+  position: relative;
+  z-index: 2;
+}
+.clp-reg-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--clp-ghost);
+  mix-blend-mode: var(--clp-blend);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(var(--clp-reg-x), var(--clp-reg-y));
+}
+
+/* The manifest: a left-aligned mono table of leader rows. STATUS is a ruled
+   table row - not a pill, and there is no dot of any kind in this route. */
+/* No max-width: the manifest IS the ruled table, so its leader rows should
+   justify across the full seven columns they are given rather than stopping
+   short at a prose measure. */
+.clp-manifest {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Leader rows. The leader sits INSIDE the <dt> rather than between <dt> and
+   <dd>, because a <dl> wrapper div may only contain dt/dd - a sibling <span>
+   there is invalid HTML. The dt is itself the growing flex item, so the run
+   still justifies to the container at any width. */
+.clp-mrow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-block: 8px;
+  border-top: 1px solid var(--clp-rule);
+  color: var(--clp-ink-subtle);
+}
+.clp-mrow:first-child {
+  border-top-color: var(--clp-rule-strong);
+}
+.clp-mkey {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--clp-ink-subtle);
+}
+.clp-mlabel {
+  flex: none;
+  width: 7ch;
+}
+.clp-mval {
+  flex: none;
+  color: var(--clp-ink);
+  max-width: 46ch;
+  text-align: right;
+  margin: 0;
+}
+
+.clp-sheetline {
+  color: var(--clp-ink-subtle);
+  padding-top: 16px;
+  border-top: 1px solid var(--clp-rule-strong);
+}
+
+/* ─── §01 · Abstract ─────────────────────────────────────────────── */
+
+/* The bio's first three words, set as a raised opening on their own line.
+   A real editorial device - and specifically NOT `font-variant-caps`, since
+   Instrument Serif ships no smcp and synthesised small caps in a
+   high-contrast display serif look like a bug. */
+.clp-raised {
+  display: block;
+  font-family: var(--clp-serif);
+  font-size: var(--clp-display-2);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--clp-ink);
+  margin-bottom: 8px;
+}
+.clp-lede {
+  font-family: var(--clp-serif);
+  font-size: var(--clp-lede);
+  line-height: 1.28;
+  font-weight: 400;
+  color: var(--clp-ink);
+  max-width: 46ch;
+  margin: 0;
+  text-wrap: pretty;
+}
+/* A flex row with its own gap: the shared `.clp-mlabel` is 7ch wide, and
+   "KEYWORDS" is eight characters, so in a plain text flow the label ran
+   straight into its value with no space at all. */
+.clp-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--clp-rule-strong);
+  color: var(--clp-ink-subtle);
+}
+.clp-keywords .clp-mlabel {
+  width: auto;
+}
+
+/* ─── §02 · Posts ────────────────────────────────────────────────── */
+
+/* An entry has no border, no background, no radius and no padding box. Its
+   extent is a top hairline and a sticky date, and its left and right edges
+   are the page's own edges - so four posts read as four ruled passages of one
+   document rather than four objects. */
+.clp-post {
+  padding-top: 32px;
+  padding-bottom: 64px;
+  border-top: 1px solid var(--clp-rule-strong);
+}
+.clp-period {
+  position: sticky;
+  top: var(--clp-band);
+  align-self: start;
+  color: var(--clp-ink-subtle);
+}
+.clp-period-b {
+  display: block;
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--clp-rule);
+}
+.clp-period span {
+  transition: font-weight var(--clp-t-ink) var(--clp-ease-ink);
+}
+.clp-post-active .clp-period span {
+  font-weight: 600;
+}
+
+/* Instrument Serif has no weight axis, so the company name inks up by COLOUR
+   rather than weight. A synthesised bold on a proportional face would alter
+   advance widths - a reflow mid-scroll on the element the spec promised was
+   stable. Colour reads as ink saturating, costs one paint, cannot reflow. */
+.clp-company {
+  color: var(--clp-ink-muted);
+  transition: color var(--clp-t-ink) var(--clp-ease-ink);
+  margin: 0;
+}
+.clp-post-active .clp-company,
+.clp-post:hover .clp-company {
+  color: var(--clp-ink);
+}
+/* One of the serif italic's only two uses in the document. */
+.clp-company em {
+  font-style: italic;
+}
+
+.clp-post-meta {
+  margin-top: 12px;
+  color: var(--clp-ink-subtle);
+}
+.clp-post-summary {
+  margin-top: 24px;
+}
+
+/* The highlights are the real work: each a numbered sub-clause with its key
+   hanging in the left margin, outside the text block. */
+.clp-clauses {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+}
+.clp-clause {
+  position: relative;
+  padding-left: 72px;
+  padding-block: 12px;
+  border-top: 1px solid var(--clp-rule);
+}
+.clp-clause-key {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  color: var(--clp-accent);
+  font-weight: 300;
+  transition: font-weight var(--clp-t-ink) var(--clp-ease-ink);
+}
+.clp-post-active .clp-clause-key {
+  font-weight: 560;
+}
+.clp-clause p {
+  margin: 0;
+}
+.clp-count {
+  color: var(--clp-ink-subtle);
+  text-align: right;
+  align-self: start;
+  padding-top: 4px;
+}
+
+/* ─── §03 · Index of plates ──────────────────────────────────────── */
+
+.clp-index-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 24px;
+  margin-bottom: 48px;
+}
+.clp-sort {
+  color: var(--clp-ink-subtle);
+}
+
+.clp-plates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: clp-plate;
+}
+
+/* Rows are 72px tall PERMANENTLY, in every state. No hover expansion: it
+   animated track sizing (layout per frame for every row below), it broke the
+   route's hover-is-ink law, it destroyed the cross-section hairline register
+   the moment a cursor landed, and it was a pointer oscillator - hovering a row
+   pushed the next one under the cursor, which collapsed the first, which
+   pulled the next back. */
+.clp-plate-row {
+  counter-increment: clp-plate;
+  border-top: 1px solid var(--clp-rule-strong);
+}
+.clp-plate-row:last-child {
+  border-bottom: 1px solid var(--clp-rule-strong);
+}
+.clp-plate-line {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 72px;
+  /* A registration crosshair is native to the metaphor, costs nothing, and
+     cannot lag. /editorial owns the custom cursor ring; this route keeps the
+     native pointer everywhere else. */
+  cursor: crosshair;
+}
+.clp-plate-num {
+  flex: none;
+  font-family: var(--clp-mono);
+  font-size: var(--clp-numeral-lg);
+  line-height: 1;
+  font-weight: 300;
+  color: var(--clp-accent);
+  font-variant-numeric: tabular-nums slashed-zero;
+  transition: font-weight var(--clp-t-ink) var(--clp-ease-ink);
+  width: 4.5ch;
+}
+.clp-plate-num::before {
+  content: counter(clp-plate, decimal-leading-zero);
+}
+/* Whole-row state is driven from the list item, so keyboard and mouse get
+   identical behaviour by construction. */
+.clp-plate-row:hover .clp-plate-num,
+.clp-plate-row:has(a:focus-visible) .clp-plate-num {
+  font-weight: 720;
+}
+.clp-plate-row:hover .clp-leader,
+.clp-plate-row:has(a:focus-visible) .clp-leader {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--clp-accent) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+/* Index titles get their own step rather than reusing display-2. At display-2
+   (48px at 1440) the longest title - "S2SACC, S2EDS Outlook Add-ins & Doc
+   Archival" - sets about 890px wide inside a 639px column, so it overran the
+   six-column measure and slid under the plate. The `overflow`/`text-overflow`
+   pair is a backstop, not the mechanism: at this size all 13 titles fit, and
+   nothing can ever bleed into the plate column if the content changes. */
+.clp-plate-title {
+  flex: 0 1 auto;
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(1.125rem, 1.7vw, 1.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+/* The anchor wraps ONLY the title, so the link's accessible name is three
+   words rather than three hundred characters; the description is associated
+   through aria-describedby instead. */
+.clp-plate-title a {
+  display: block;
+  color: var(--clp-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.clp-plate-year {
+  flex: none;
+  font-family: var(--clp-mono);
+  font-size: var(--clp-meta-lg);
+  letter-spacing: 0.06em;
+  color: var(--clp-ink-subtle);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+.clp-plate-arrow {
+  flex: none;
+  font-family: var(--clp-mono);
+  font-size: 10px;
+  color: var(--clp-ink-subtle);
+  width: 1.5ch;
+}
+
+/* The fixed plate. The media is NOT in the row - it lives in a fixed viewport
+   position outside the list, so no bounded object ever contains an image and a
+   title together. A row owns a baseline and a hairline. */
+.clp-plate-frame {
+  position: fixed;
+  right: var(--clp-trim);
+  width: var(--clp-plate-w);
+  height: var(--clp-plate-h);
+  /* Lifted off centre so the detail block has room beneath it. */
+  top: calc(50% - 6vh);
+  transform: translateY(-50%);
+  z-index: 5;
+  border: 1px solid var(--clp-rule-strong);
+  background: var(--clp-plate-matte);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--clp-t-plate) var(--clp-ease-press);
+  pointer-events: none;
+}
+.clp-index-inview .clp-plate-frame {
+  opacity: 1;
+}
+.clp-plate-media,
+.clp-plate-typo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity var(--clp-t-plate) var(--clp-ease-press),
+    transform var(--clp-t-plate) var(--clp-ease-press);
+}
+.clp-plate-media-on,
+.clp-plate-typo-on {
+  opacity: 1;
+  transform: none;
+}
+.clp-plate-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* No GIF can break the two-ink rule. */
+  filter: grayscale(1) contrast(1.06);
+}
+/* Six of the thirteen plates are typographic: their own tags set as a
+   ranged-left mono block on the matte, inside the same hairline frame. The
+   honest answer for internal platform work that cannot be screenshotted. */
+.clp-plate-typo {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 24px;
+  overflow: hidden;
+}
+.clp-plate-typo span {
+  font-family: var(--clp-mono);
+  font-size: clamp(0.875rem, 1.5vw, 1.375rem);
+  line-height: 1.15;
+  font-weight: 350;
+  letter-spacing: -0.01em;
+  color: var(--clp-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.clp-plate-typo span:last-child {
+  color: var(--clp-ink);
+}
+
+/* The detail block is ALWAYS in the DOM and always in the accessibility tree.
+   Above the kinetic gate it is fixed into the plate column and hidden only by
+   opacity; below the gate the identical markup renders static inside its own
+   row. One markup, two placements, zero `display: none`, no invisible
+   tabbable descendants, and find-in-page works in both. */
+.clp-detail {
+  position: static;
+  padding-bottom: 32px;
+}
+.clp-detail-sub {
+  color: var(--clp-accent);
+  margin-bottom: 8px;
+}
+.clp-detail-desc {
+  margin: 0;
+}
+.clp-detail-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--clp-rule);
+  color: var(--clp-ink-subtle);
+}
+
+/* ─── §04 · Specimen ─────────────────────────────────────────────── */
+
+/* The document's second gathering, on the other paper, so it reads as a
+   separate signature of the same sheet. */
+.clp-specimen {
+  background: var(--clp-paper-2);
+}
+/* The track is the one run of content in the route that is not inside
+   `.clp-grid`, so it has to restate the grid's own insets or the first
+   column's indices sit under the fixed rail. Carried as padding rather than
+   margin because the pan sizes the track in `vw`: under the route's
+   border-box reset the inset is taken out of that width, so the travel stays
+   exactly one viewport and the last column still lands on the right trim. */
+.clp-spec-track {
+  display: flex;
+  align-items: stretch;
+  padding-left: calc(var(--clp-rail) + var(--clp-gutter));
+  padding-right: var(--clp-trim);
+}
+/* There are no group containers at all. Four columns of one table divided by
+   three vertical rules, exactly as a printed specimen sheet divides faces. */
+.clp-spec-col {
+  flex: 1 1 0;
+  min-width: 0;
+  position: relative;
+  padding: 0 32px;
+  border-left: 1px solid var(--clp-rule-strong);
+}
+.clp-spec-col:first-child {
+  border-left: 0;
+}
+/* Red marks structure - the column indices and the column rules - and is
+   visible without a legend, in all four columns. */
+.clp-spec-col + .clp-spec-col {
+  border-left-color: var(--clp-accent);
+}
+.clp-spec-title {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--clp-ink-subtle);
+  margin: 0;
+  white-space: nowrap;
+}
+.clp-spec-items {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 32px;
+}
+.clp-spec-item {
+  position: relative;
+  font-family: var(--clp-mono);
+  font-size: clamp(24px, 2.4vw, 40px);
+  line-height: 1.2;
+  font-weight: 350;
+  letter-spacing: -0.02em;
+  color: var(--clp-ink);
+  padding-block: 4px;
+  transition: font-weight var(--clp-t-ink) var(--clp-ease-ink);
+}
+.clp-spec-col-lit .clp-spec-item {
+  font-weight: 480;
+}
+.clp-spec-idx {
+  position: absolute;
+  left: -32px;
+  top: 0.55em;
+  font-family: var(--clp-mono);
+  font-size: var(--clp-meta);
+  letter-spacing: 0.16em;
+  font-weight: 450;
+  color: var(--clp-accent);
+}
+/* The load-bearing claim is carried by a glyph, not a hue - `font-weight:
+   inherit` on the `<strong>` keeps the visual system untouched while the
+   semantics and the screen-reader phrase do the work. */
+.clp-spec-item strong {
+  font-weight: inherit;
+}
+.clp-dagger {
+  position: absolute;
+  left: -14px;
+  color: var(--clp-ink-subtle);
+}
+.clp-spec-desc {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--clp-rule);
+  color: var(--clp-ink-subtle);
+}
+.clp-spec-note {
+  color: var(--clp-ink-subtle);
+  margin-top: 48px;
+}
+
+/* ─── §05 · Citations ────────────────────────────────────────────── */
+
+.clp-cit-num {
+  font-family: var(--clp-mono);
+  font-size: var(--clp-display-1);
+  line-height: 0.85;
+  font-weight: 300;
+  color: var(--clp-accent-lift);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+.clp-cit-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--clp-ink-subtle);
+  margin: 24px 0 0;
+}
+.clp-cit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Three hanging-indent bibliography records in a narrow right-hand column can
+   never read as three equal cards: they are one list with one left edge, and
+   the seven empty columns beside them are the section's actual subject. */
+.clp-cit {
+  position: relative;
+  padding-left: 48px;
+  padding-block: 32px;
+  border-top: 1px solid var(--clp-rule-strong);
+}
+.clp-cit-key {
+  position: absolute;
+  left: 0;
+  top: 36px;
+  color: var(--clp-accent);
+}
+.clp-cit-title {
+  margin: 0;
+}
+.clp-cit-meta {
+  margin-top: 8px;
+  color: var(--clp-ink-subtle);
+}
+.clp-cit-desc {
+  margin-top: 16px;
+}
+
+/* ─── §06 · Colophon ─────────────────────────────────────────────── */
+
+.clp-end {
+  position: relative;
+  margin: 0;
+}
+.clp-end em {
+  font-style: italic;
+}
+.clp-colo-para {
+  margin-top: 32px;
+  max-width: 52ch;
+  color: var(--clp-ink-subtle);
+  text-transform: none;
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+}
+
+/* Contact is a ruled table of leader rows: the single most un-card-like
+   object in typography. No "Let's build something", no centred CTA, no
+   button, and no icons. */
+.clp-corr {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Same leader-row construction as the masthead manifest: the leader lives
+   inside the <dt>, because a <dl> wrapper may only contain dt/dd. */
+.clp-crow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  border-top: 1px solid var(--clp-rule-strong);
+  color: var(--clp-ink-subtle);
+}
+.clp-crow:last-child {
+  border-bottom: 1px solid var(--clp-rule-strong);
+}
+.clp-ckey {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.clp-clabel {
+  flex: none;
+  width: 13ch;
+}
+.clp-cval {
+  flex: none;
+  max-width: 44ch;
+  margin: 0;
+  color: var(--clp-ink);
+  text-align: right;
+}
+/* Every link in this table clears WCAG 2.5.8's 24x24 target, and 24 is on the
+   8px grid so the system holds. */
+.clp-crow a,
+.clp-crow .clp-cval {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 24px;
+  padding-block: 4px;
+}
+.clp-crow:hover .clp-leader {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--clp-accent) 0 1px,
+    transparent 1px 4px
+  );
+}
+.clp-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+/* ─── §07 · Trim ─────────────────────────────────────────────────── */
+
+/* The document stops moving before it ends. This band is static in every
+   condition, every theme, every viewport. */
+.clp-trim {
+  position: relative;
+  z-index: 2;
+  background: var(--clp-paper-2);
+  border-top: 1px solid var(--clp-rule-strong);
+  min-height: 88px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  padding: 24px calc(var(--clp-trim)) 24px calc(var(--clp-rail) + var(--clp-gutter));
+  color: var(--clp-ink-subtle);
+}
+.clp-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.clp-chips {
+  display: flex;
+}
+/* Built from the six ACTUAL palette tokens, so the artefact that claims to
+   declare the page's palette declares the real one. */
+.clp-chip {
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+}
+.clp-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  max-width: 56ch;
+}
+.clp-modes a {
+  color: var(--clp-ink-subtle);
+  transition: color var(--clp-t-hover) var(--clp-ease-ink);
+}
+.clp-modes a:hover {
+  color: var(--clp-ink);
+}
+.clp-modes [aria-current="page"] {
+  color: var(--clp-accent);
+}
+.clp-sep {
+  color: var(--clp-rule-strong);
+}
+
+/* Crop marks: real press artefacts, 1px, present in both themes. */
+.clp-crop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 12px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--clp-rule-strong), var(--clp-rule-strong)),
+    linear-gradient(var(--clp-rule-strong), var(--clp-rule-strong)),
+    linear-gradient(var(--clp-rule-strong), var(--clp-rule-strong)),
+    linear-gradient(var(--clp-rule-strong), var(--clp-rule-strong));
+  background-repeat: no-repeat;
+  background-size: 12px 1px, 1px 12px, 12px 1px, 1px 12px;
+}
+.clp-crop-top {
+  top: 0;
+  background-position: 8px 8px, 8px 0, calc(100% - 8px) 8px, calc(100% - 8px) 0;
+}
+.clp-crop-bottom {
+  bottom: 0;
+  background-position: 8px 4px, 8px 0, calc(100% - 8px) 4px, calc(100% - 8px) 0;
+}
+
+.clp-back {
+  position: fixed;
+  right: var(--clp-trim);
+  top: 24px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 6px 10px;
+  border: 1px solid var(--clp-rule-strong);
+  background: var(--clp-paper);
+  color: var(--clp-ink-subtle);
+  transition:
+    color var(--clp-t-hover) var(--clp-ease-ink),
+    border-color var(--clp-t-hover) var(--clp-ease-ink);
+}
+.clp-back:hover {
+  color: var(--clp-ink);
+  border-color: var(--clp-accent);
+}
+
+/* ─── The kinetic gate ───────────────────────────────────────────────
+   ONE canonical query string, expressed identically here and in JS (via the
+   existing generic `useIsMobile` hook). JS gates only behaviours and never
+   layout, because the hook returns false until mount and the export is
+   static - so every layout branch must already be correct in the
+   server-rendered HTML and switched purely by this query. No hydration flash,
+   no CLS under the 17vw LCP element. */
+
+@media (min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* §03: the detail block leaves the row and takes its place beneath the
+     plate, in the same columns. Identical markup, different placement - never
+     `display: none`, so it stays in the accessibility tree and find-in-page
+     keeps working. */
+  .clp-detail {
+    position: fixed;
+    right: var(--clp-trim);
+    width: var(--clp-plate-w);
+    top: calc(50% - 6vh + var(--clp-plate-h) / 2 + 24px);
+    z-index: 6;
+    padding-bottom: 0;
+    max-height: 30vh;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity var(--clp-t-plate) var(--clp-ease-press),
+      transform var(--clp-t-plate) var(--clp-ease-press);
+    pointer-events: none;
+  }
+  /* Slightly tighter than the route's running prose, so the longest
+     description sets in full rather than being cut by the max-height. Still
+     Geist Sans, still under the 17px ceiling. */
+  .clp-detail .clp-detail-desc {
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    max-width: none;
+  }
+  /* The visible state is scoped to the index being on screen. Without this the
+     active row's detail block stays fixed in the viewport and floats over the
+     masthead and §02, because unlike the plate frame it would otherwise never
+     be told to leave. */
+  .clp-index-inview .clp-detail-on {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* §04: the only pinned section in the route. Fixed 460vh length so it cannot
+     misbehave on unusual viewport heights. */
+  .clp-spec-pin {
+    height: 460vh;
+  }
+  .clp-spec-stick {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .clp-spec-track {
+    width: 200vw;
+    /* `flex: none` is load-bearing: the track is a flex item of
+       `.clp-spec-stick`, so with the default `flex-shrink: 1` the 200vw width
+       is shrunk straight back to the container's 100vw and the pan has zero
+       travel to cover. */
+    flex: none;
+  }
+}
+
+/* Below the gate the plate construction does not exist at all: no fixed
+   frame, no fixed detail, no horizontal track. The same document, set for
+   narrower stock. */
+@media not all and (min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .clp-plate-frame {
+    display: none;
+  }
+}
+
+/* ─── Breakpoints ────────────────────────────────────────────────────
+   Width queries use 767/768 consistently so no viewport lands in two bands. */
+
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .clp-root {
+    --clp-rail: 40px;
+  }
+  .clp-runhead {
+    display: none;
+  }
+}
+
+/* 768-1023: the rail unpins into a horizontal strip, §04 stops panning. */
+@media (max-width: 1023px) {
+  .clp-root {
+    --clp-rail: 0px;
+    --clp-band: 96px;
+  }
+  .clp-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    margin-left: var(--clp-gutter);
+  }
+  .clp-c-1-5 { grid-column: 1 / span 8; }
+  .clp-c-1-7 { grid-column: 1 / span 8; }
+  .clp-c-6-11 { grid-column: 1 / span 8; }
+  .clp-c-8-12 { grid-column: 1 / span 8; }
+  .clp-c-7-12 { grid-column: 1 / span 8; }
+  .clp-c-1-2 { grid-column: 1 / span 8; }
+  .clp-c-3-9 { grid-column: 1 / span 8; }
+  .clp-c-12 { grid-column: 1 / span 8; }
+
+  .clp-rail {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 16px;
+    /* Room on the right for the fixed back button, which shares this band. */
+    padding: 12px 160px 12px var(--clp-gutter);
+    border-right: 0;
+    border-bottom: 1px solid var(--clp-rule);
+  }
+  .clp-rail-list {
+    flex-direction: row;
+  }
+  .clp-runhead {
+    writing-mode: horizontal-tb;
+    transform: none;
+    max-height: none;
+  }
+  /* The readout is a decorative instrument reporting a now-constant offset
+     (the ghost is statically out of register below the gate), and there is no
+     room for it beside the clause index on a narrow band. */
+  .clp-readout {
+    display: none;
+  }
+  .clp-back {
+    top: 8px;
+  }
+  .clp-period {
+    position: static;
+    padding-bottom: 16px;
+  }
+  .clp-period-b {
+    display: inline;
+    padding: 0;
+    margin: 0;
+    border: 0;
+  }
+  .clp-period-b::before {
+    content: " – ";
+  }
+  /* Four plain ruled vertical tables - which is what a printed specimen sheet
+     is anyway. Full find-in-page, and no horizontal scroll ever exists. */
+  .clp-spec-track {
+    flex-direction: column;
+    width: auto;
+    gap: 64px;
+  }
+  .clp-spec-col {
+    padding: 0;
+    border-left: 0;
+  }
+  .clp-spec-col + .clp-spec-col {
+    border-left: 0;
+    border-top: 1px solid var(--clp-accent);
+    padding-top: 48px;
+  }
+  .clp-spec-title {
+    position: static;
+    writing-mode: horizontal-tb;
+    transform: none;
+    margin-bottom: 24px;
+  }
+  .clp-spec-item {
+    font-weight: 480;
+  }
+  .clp-trim {
+    padding-left: var(--clp-gutter);
+    padding-right: var(--clp-gutter);
+  }
+  .clp-back {
+    right: var(--clp-gutter);
+  }
+}
+
+@media (max-width: 767px) {
+  .clp-root {
+    --clp-gutter: 20px;
+    --clp-trim: 20px;
+    --clp-band: 64px;
+  }
+  .clp-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .clp-grid > * {
+    grid-column: 1 / -1 !important;
+  }
+  .clp-masthead {
+    padding-top: 72px;
+  }
+  .clp-clause {
+    padding-left: 0;
+    padding-top: 28px;
+  }
+  .clp-clause-key {
+    top: 8px;
+  }
+  .clp-cit {
+    padding-left: 0;
+    padding-top: 40px;
+  }
+  .clp-cit-key {
+    top: 12px;
+  }
+  .clp-cit-label {
+    writing-mode: horizontal-tb;
+    transform: none;
+    margin-top: 8px;
+  }
+  .clp-ckey {
+    width: 11ch;
+  }
+  .clp-mkey {
+    width: 6ch;
+  }
+  .clp-plate-line {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding-block: 16px;
+    cursor: auto;
+  }
+  .clp-plate-title a {
+    white-space: normal;
+  }
+  .clp-plate-num {
+    font-size: 1.5rem;
+    font-weight: 720;
+  }
+  .clp-leader {
+    display: none;
+  }
+}
+
+/* ─── prefers-contrast ──────────────────────────────────────────────
+   The hairline aesthetic degrades into a legible one rather than
+   disappearing. */
+
+@media (prefers-contrast: more) {
+  .clp-root {
+    --clp-rule: rgba(232, 230, 224, 0.75);
+    --clp-ink-subtle: var(--clp-ink-muted);
+  }
+  [data-theme="light"] .clp-root {
+    --clp-rule: rgba(20, 19, 16, 0.75);
+  }
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────
+   Not a page with faster animations: a press sheet that was printed slightly
+   out of register and then stopped. Nothing moves at any time, in any
+   section, and the document is fully composed and fully legible. */
+
+@media (prefers-reduced-motion: reduce) {
+  .clp-root {
+    --clp-t-hover: 1ms;
+    --clp-t-plate: 1ms;
+    --clp-t-ink: 1ms;
+    --clp-t-arrive: 1ms;
+    --clp-t-snap: 1ms;
+  }
+  .clp-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .clp-nghost {
+    transform: translate(var(--clp-reg-x), var(--clp-reg-y));
+  }
+}

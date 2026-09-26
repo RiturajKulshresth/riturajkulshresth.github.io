@@ -33,7 +33,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     // Render modes share lower priority than primary content routes.
-    ...["windows95", "cli", "editorial", "magazine", "munchkincat", "badui"].map(
+    ...[
+      "colophon",
+      "windows95",
+      "cli",
+      "editorial",
+      "magazine",
+      "munchkincat",
+      "badui",
+    ].map(
       (slug) => ({
         url: `${BASE_URL}/${slug}`,
         lastModified: now,

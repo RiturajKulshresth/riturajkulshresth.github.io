@@ -966,6 +966,39 @@ header[data-nav-overlay="true"] {
   to { filter: hue-rotate(360deg); }
 }
 
+/* Colophon: a serif label printed slightly out of register. A rubric-red
+   second plate sits adrift of the black one and snaps into register on hover,
+   previewing the route's signature moment in a nav link. The blend mode flips
+   per theme for the same reason it does on the route itself - multiply sinks
+   the red into light paper, screen lifts it off dark. */
+.nav-colophon {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  font-family: var(--font-display, ui-serif, Georgia, serif);
+  font-size: 1.05em;
+  letter-spacing: 0.01em;
+  color: var(--color-fg);
+}
+.nav-colophon::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  color: #e9573a;
+  mix-blend-mode: screen;
+  transform: translate(1.5px, 1px);
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-theme="light"] .nav-colophon::before {
+  color: #b02a15;
+  mix-blend-mode: multiply;
+}
+.nav-colophon:hover::before {
+  transform: translate(0, 0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nav-bento { animation: none; }
   .nav-bento:hover::after { animation: none; }
@@ -978,4 +1011,8 @@ header[data-nav-overlay="true"] {
   .nav-win95::before { animation: none; }
   .nav-badui { animation: none; }
   .nav-badui:hover { animation: none; }
+  /* The plate stays out of register rather than snapping - one story, told
+     statically, matching the route's own reduced-motion behaviour. */
+  .nav-colophon::before { transition: none; }
+  .nav-colophon:hover::before { transform: translate(1.5px, 1px); }
 }
