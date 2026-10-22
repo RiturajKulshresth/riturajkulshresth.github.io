@@ -156,6 +156,219 @@
   text-decoration-color: var(--color-border-strong);
 }
 
+/* ─── Cards ──────────────────────────────────────────────────── */
+
+/* Buy-list items carrying a `Label: value` list are emitted as cards by
+   `cardRenderer` in scripts/encrypt-vault.mjs. The container query keys the
+   layout off the reading pane's width rather than the viewport's, since the
+   sidebar eats a different share of the screen at each breakpoint. */
+.vault-prose ul.cards {
+  container-type: inline-size;
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin-block: 1.5em 2.5em;
+  padding: 0;
+}
+
+.vault-prose li.card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.875rem;
+  display: grid;
+  gap: 0 1.5rem;
+  grid-template-areas:
+    "media head"
+    "media body";
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  margin: 0;
+  padding: 1.25rem;
+}
+
+.vault-prose li.card[data-status="done"] {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-elevated));
+  border-color: color-mix(in srgb, var(--color-accent-strong) 40%, transparent);
+}
+
+.vault-prose li.card[data-status="maybe"] {
+  background: transparent;
+  border-color: var(--color-border-strong);
+  border-style: dashed;
+}
+
+.vault-prose .card-media {
+  grid-area: media;
+  margin: 0;
+}
+
+/* Every photo is already squared onto white at encrypt time, so a fixed
+   square frame lines them all up without cropping. */
+.vault-prose .card-media img {
+  aspect-ratio: 1;
+  background: #ffffff;
+  border-radius: 0.625rem;
+  margin: 0;
+  max-height: none;
+  max-width: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.vault-prose .card-head {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  grid-area: head;
+  justify-content: space-between;
+}
+
+/* A long name wraps before it shoves the price onto its own line. */
+.vault-prose .card-title {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.vault-prose .card-name {
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.vault-prose .card-ref {
+  color: var(--color-fg-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  margin: 0.3rem 0 0;
+  text-transform: uppercase;
+}
+
+.vault-prose .card-meta {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.vault-prose .card-price {
+  color: var(--color-fg);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0;
+}
+
+.vault-prose .card-status {
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-fg-muted);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  gap: 0.35em;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  padding: 0.4em 0.75em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vault-prose [data-status="done"] .card-status {
+  background: var(--color-accent-strong);
+  border-color: transparent;
+  color: var(--color-bg);
+  font-weight: 600;
+}
+
+.vault-prose [data-status="maybe"] .card-status {
+  border-style: dashed;
+}
+
+.vault-prose [data-status="done"] .card-status::before {
+  background: currentColor;
+  content: "";
+  height: 0.95em;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  width: 0.95em;
+}
+
+.vault-prose .card-body {
+  grid-area: body;
+  min-width: 0;
+}
+
+/* `display: contents` on the wrappers lets every label and value share one
+   grid, so the value column lines up across the whole card. The column gap
+   lives in the label's padding instead of `gap`, so a border drawn across a
+   row runs unbroken. */
+.vault-prose .card-fields {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  font-size: 0.875rem;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  line-height: 1.6;
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  row-gap: 0.45rem;
+}
+
+.vault-prose .card-fields > div {
+  display: contents;
+}
+
+.vault-prose .card-fields dt {
+  color: var(--color-fg-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  padding-right: 1rem;
+  padding-top: 0.35em;
+  text-transform: uppercase;
+}
+
+.vault-prose .card-fields dd {
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+
+/* Specs come first; buying details and notes start a second group. */
+.vault-prose .card-fields [data-field="cost"] > * {
+  border-top: 1px dashed var(--color-border);
+  margin-top: 0.35rem;
+  padding-top: 0.8rem;
+}
+
+.vault-prose .card-fields [data-field="cost"] dt {
+  padding-top: calc(0.8rem + 0.35em);
+}
+
+.vault-prose .card-fields [data-field="note"] dd {
+  color: var(--color-fg);
+}
+
+@container (max-width: 34rem) {
+  .vault-prose li.card {
+    gap: 0 1rem;
+    grid-template-areas:
+      "media head"
+      "body body";
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    padding: 1rem;
+  }
+
+  .vault-prose .card-meta {
+    align-items: center;
+    flex-direction: row;
+    margin-left: 0;
+  }
+}
+
 /* ─── Code ───────────────────────────────────────────────────── */
 
 .vault-prose code {
@@ -187,24 +400,89 @@
 
 /* ─── Tables ─────────────────────────────────────────────────── */
 
+/* Full width rather than a scrolling block, so stacked tables share a right
+   edge. Cells break long words instead of overflowing a narrow pane. */
 .vault-prose table {
   border-collapse: collapse;
-  display: block;
   font-size: 0.875rem;
   margin-block: 1.5em;
-  overflow-x: auto;
   width: 100%;
 }
 
 .vault-prose th,
 .vault-prose td {
   border: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
   padding: 0.5em 0.75em;
   text-align: left;
+}
+
+/* A right-aligned (`---:`) column holds figures: it shrinks to its widest
+   figure and never wraps one. */
+.vault-prose :is(th, td)[align="right"] {
+  overflow-wrap: normal;
+  text-align: right;
+  white-space: nowrap;
+  width: 1%;
+}
+
+/* A fixed share for the name column keeps the columns of stacked figure
+   tables in line with each other. */
+.vault-prose table:has(td[align="right"]) th:first-child {
+  width: 50%;
 }
 
 .vault-prose th {
   background: var(--color-surface-subtle);
   color: var(--color-fg);
   font-weight: 500;
+}
+
+.vault-prose td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A row whose first cell is nothing but bold text is a subtotal. */
+.vault-prose tr:has(> td:first-child > strong:only-child) > td {
+  background: var(--color-surface-hover);
+  border-top-color: var(--color-border-strong);
+  color: var(--color-fg);
+}
+
+/* ─── Light theme ────────────────────────────────────────────── */
+
+/* The site's light palette is built for sparse pages: a tinted glow behind the
+   content and surfaces washed in 2 to 5 percent green, which vanish behind
+   dense white cards. The vault swaps in a flat cool-grey page, neutral tints
+   strong enough to see, and a darker faint-text shade so small labels stay
+   legible. Dark mode uses the site tokens unchanged. */
+[data-theme="light"]:has(.vault-root),
+[data-theme="light"]:has(.vault-root) body {
+  background: #edf0f3;
+}
+
+[data-theme="light"] .vault-root {
+  --color-bg-overlay: rgb(237 240 243 / 0.8);
+  --color-fg-subtle: #6b7480;
+  --color-surface-hover: rgb(15 23 42 / 0.05);
+  --color-surface-subtle: rgb(15 23 42 / 0.035);
+}
+
+/* White surfaces on the grey page get a soft lift, not just a hairline. */
+[data-theme="light"] .vault-root nav [aria-current="true"],
+[data-theme="light"] .vault-prose li.card,
+[data-theme="light"] .vault-prose table {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 8px 24px -14px rgb(15 23 42 / 0.18);
+}
+
+[data-theme="light"] .vault-root nav [aria-current="true"],
+[data-theme="light"] .vault-prose table {
+  background: var(--color-bg-elevated);
+}
+
+/* A maybe stays flat so it reads as provisional next to the raised cards. */
+[data-theme="light"] .vault-prose li.card[data-status="maybe"] {
+  box-shadow: none;
 }

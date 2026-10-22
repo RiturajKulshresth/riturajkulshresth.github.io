@@ -10,6 +10,7 @@
  */
 import type { Metadata } from "next";
 import BackButton from "./_vault/components/back-button";
+import ThemeSwitch from "./_vault/components/theme-switch";
 import Vault from "./_vault/components/vault";
 import type { VaultBlob } from "./_vault/crypto";
 import vaultBlob from "./_vault/vault.json";
@@ -22,9 +23,10 @@ export const metadata: Metadata = {
 
 export default function VaultPage() {
   return (
-    <>
+    <div className="vault-root">
       <BackButton />
+      <ThemeSwitch />
       <Vault blob={vaultBlob as VaultBlob} />
-    </>
+    </div>
   );
 }

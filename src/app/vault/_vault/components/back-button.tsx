@@ -11,7 +11,7 @@ export default function BackButton() {
     <Link
       href="/"
       aria-label="Back to main page"
-      className="group fixed left-4 top-4 z-30 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-bg-overlay)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-fg-muted)] backdrop-blur-md transition hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-fg)] md:left-8 md:top-6"
+      className="group fixed left-4 top-4 z-30 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-bg-overlay)] h-8 px-3 font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-fg-muted)] backdrop-blur-md transition hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-fg)] md:left-8 md:top-6"
     >
       <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
       <span>Back</span>

@@ -56,6 +56,18 @@ const IMAGE_BACKGROUND = "#ffffff";
 // worth knowing when it starts getting heavy.
 const BLOB_WARN_BYTES = 6 * 1024 * 1024;
 
+// A list item whose body holds a bullet list made entirely of `Label: value`
+// lines renders as a card instead of a list row. Card lists in this vault are
+// buy-lists, hence the status wording: ticked is bought, unticked is to buy,
+// and no checkbox at all is a maybe. A plain checklist has no such list and
+// renders as an ordinary checklist.
+const CARD_FIELD = /^([A-Z][A-Za-z ]{0,19}):\s/;
+const CARD_STATUS = { done: "Bought", open: "To buy", maybe: "Maybe" };
+// The leading figure of this field is repeated in the card header, so prices
+// can be compared without reading each field grid.
+const CARD_PRICE_FIELD = "Cost";
+const CARD_PRICE_PREFIX = "₹";
+
 /**
  * Minimal YAML-ish frontmatter parser. The vault only ever needs `title` and
  * `date`, so a real YAML dependency would be dead weight.
@@ -82,6 +94,100 @@ function parseFrontmatter(raw) {
   }
   return { meta, body: raw.slice(match[0].length) };
 }
+
+function isFieldList(token) {
+  return (
+    token.type === "list" &&
+    !token.ordered &&
+    token.items.every((item) => !item.task && CARD_FIELD.test(item.text))
+  );
+}
+
+function isCard(item) {
+  return item.tokens.some(isFieldList);
+}
+
+/** Inline children of a paragraph, or of a tight list item's text token. */
+function inlineOf(token) {
+  return (token.type === "paragraph" || token.type === "text") && token.tokens
+    ? token.tokens
+    : null;
+}
+
+/**
+ * marked renderer overrides that turn buy-list items into cards. The bold
+ * text on the item's first line is the name and whatever follows it is the
+ * reference, a paragraph holding only an image is the photo, and the
+ * `Label: value` list becomes a definition list. Returning false hands a token
+ * back to marked's default renderer.
+ */
+const cardRenderer = {
+  list(token) {
+    if (token.items.length === 0 || !token.items.every(isCard)) return false;
+    return `<ul class="cards">\n${token.items.map((item) => this.listitem(item)).join("")}</ul>\n`;
+  },
+
+  listitem(item) {
+    if (!isCard(item)) return false;
+
+    const [titleToken, ...rest] = item.tokens;
+    const title = (inlineOf(titleToken) ?? []).filter((t) => t.type !== "checkbox");
+    const nameAt = title.findIndex((t) => t.type === "strong");
+    const name = this.parser.parseInline(nameAt === -1 ? title : title[nameAt].tokens);
+    const ref = nameAt === -1
+      ? ""
+      : this.parser
+          .parseInline(title.filter((_, i) => i !== nameAt))
+          .trim()
+          .replace(/^\(([\s\S]*)\)$/, "$1");
+
+    let media = "";
+    let extra = "";
+    const fields = [];
+    for (const token of rest) {
+      const visible = inlineOf(token)?.filter((t) => t.type !== "text" || t.text.trim());
+      if (!media && visible?.length === 1 && visible[0].type === "image") {
+        media = `<figure class="card-media">${this.parser.parseInline(visible)}</figure>`;
+      } else if (isFieldList(token)) {
+        fields.push(...token.items);
+      } else if (token.type !== "space") {
+        extra += this.parser.parse([token]);
+      }
+    }
+
+    let price = "";
+    const rows = fields.map((field) => {
+      const label = CARD_FIELD.exec(field.text)[1];
+      if (label === CARD_PRICE_FIELD) {
+        price = /^[^:]+:\s*([\d,]+)/.exec(field.text)?.[1] ?? "";
+      }
+      const value = this.parser
+        .parse(field.tokens)
+        .trim()
+        .replace(/^<p>([\s\S]*)<\/p>$/, "$1")
+        .replace(new RegExp(`^${label}:\\s*`), "");
+      const key = label.toLowerCase().replace(/ +/g, "-");
+      return `<div data-field="${key}"><dt>${label}</dt><dd>${value}</dd></div>`;
+    });
+
+    const status = !item.task ? "maybe" : item.checked ? "done" : "open";
+    return [
+      `<li class="card" data-status="${status}">`,
+      media,
+      `<header class="card-head">`,
+      `<div class="card-title"><h3 class="card-name">${name}</h3>`,
+      ref ? `<p class="card-ref">${ref}</p>` : "",
+      `</div><div class="card-meta">`,
+      price ? `<p class="card-price">${CARD_PRICE_PREFIX}${price}</p>` : "",
+      `<span class="card-status">${CARD_STATUS[status]}</span>`,
+      `</div></header>`,
+      `<div class="card-body">${extra}<dl class="card-fields">${rows.join("")}</dl></div>`,
+      `</li>\n`,
+    ].join("");
+  },
+};
+
+marked.use({ renderer: cardRenderer });
 
 /**
  * Rewrites every local `<img src>` into a downscaled WebP data URI, so photos
