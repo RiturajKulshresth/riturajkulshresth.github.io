@@ -552,6 +552,34 @@
   font-size: 1.0625rem;
 }
 
+/* A tile with a photo wears its chip on the photo's top corner, so all that
+   sits under the name is the price, and an owned tile leaves even that to the
+   dialog. The to-buy chip is otherwise see-through, so it takes the tile's
+   own background to stay legible on the white photo. */
+.vault-prose .gallery > li.card:has(> .card-media) .card-meta {
+  display: contents;
+}
+
+.vault-prose .gallery > li.card:has(> .card-media) .card-status {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  left: 1.25rem;
+  position: absolute;
+  top: 1.25rem;
+}
+
+.vault-prose .gallery > li.card[data-status="open"]:has(> .card-media) .card-status {
+  background: var(--color-bg-elevated);
+}
+
+.vault-prose .gallery > li.card[data-status="done"] .card-price {
+  display: none;
+}
+
+/* Without a photo the chip stays under the name, right of any price. */
+.vault-prose .gallery .card-status {
+  margin-left: auto;
+}
+
 /* The button's ::after stretches over the whole tile, so a click anywhere on
    it opens the card, and the focus ring outlines the tile. */
 .vault-prose .card-open {
@@ -640,6 +668,16 @@
 
   .vault-prose .gallery .card-media {
     margin-bottom: 0;
+  }
+
+  /* With the name beside the photo, the chip has room under it again. */
+  .vault-prose .gallery > li.card:has(> .card-media) .card-meta {
+    display: flex;
+  }
+
+  .vault-prose .gallery > li.card:has(> .card-media) .card-status {
+    box-shadow: none;
+    position: static;
   }
 }
 
@@ -826,7 +864,7 @@ html:has(.card-dialog[open]) {
 }
 
 /* The overview reads top to bottom as the arc of the collection: a row per
-   chapter, strung on a timeline, with its count, photos and total. Each row
+   chapter, strung on a timeline, with its count and photos. Each row
    draws its own stretch of the line, so the line stays joined however tall a
    row gets when its photos wrap. */
 .vault-prose .roll {
@@ -843,8 +881,8 @@ html:has(.card-dialog[open]) {
   align-items: center;
   display: grid;
   gap: 0.625rem 1rem;
-  grid-template-areas: "name items total";
-  grid-template-columns: 8.5rem minmax(0, 1fr) auto;
+  grid-template-areas: "name items";
+  grid-template-columns: 8.5rem minmax(0, 1fr);
   padding: 0.875rem 0 0.875rem 1.75rem;
   position: relative;
 }
@@ -1017,19 +1055,7 @@ html:has(.card-dialog[open]) {
   z-index: 1;
 }
 
-.vault-prose .roll-total {
-  color: var(--color-fg);
-  font-size: 0.9375rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  grid-area: total;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
-  margin: 0;
-  text-align: right;
-}
-
-/* On a narrow pane the name and total share a line with the photos wrapping
+/* On a narrow pane the name gets its own line with the photos wrapping
    underneath, so the dot moves up beside the name: row padding plus half a
    line of the name. */
 @container (width < 30rem) {
@@ -1037,9 +1063,9 @@ html:has(.card-dialog[open]) {
     --dot-y: calc(0.875rem + 0.875rem * 1.35 / 2);
     align-items: start;
     grid-template-areas:
-      "name total"
-      "items items";
-    grid-template-columns: minmax(0, 1fr) auto;
+      "name"
+      "items";
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

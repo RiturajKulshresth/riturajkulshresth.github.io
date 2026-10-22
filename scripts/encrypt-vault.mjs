@@ -74,8 +74,6 @@ const CARD_WORDING = { ticked: "Owned", unticked: "To buy", ranked: "" };
 // can be compared without reading each field grid.
 const CARD_PRICE_FIELD = "Cost";
 const CARD_PRICE_PREFIX = "₹";
-// Prices are written with Indian digit grouping, so computed totals are too.
-const PRICE_LOCALE = "en-IN";
 // A list of unticked cards gets these sort buttons, and each card its place in
 // the markdown for "My order". `sortCards` in
 // src/app/vault/_vault/components/vault.tsx does the sorting off these keys.
@@ -85,8 +83,8 @@ const CARD_SORTS = [
   { key: "price-desc", label: "Price ↓", title: "Price, high to low" },
 ];
 // A page with `layout: story` in its frontmatter opens with an overview: a
-// row per chapter (h2) that holds cards, with its count, its total and a
-// thumbnail per card that scrolls down to it and opens it in the card dialog.
+// row per chapter (h2) that holds cards, with its count and a thumbnail per
+// card that scrolls down to it and opens it in the card dialog.
 // vault.css numbers the chapters.
 const STORY_LAYOUT = "story";
 // Overview thumbnails are 3rem tiles, so they get their own small encode
@@ -96,8 +94,8 @@ const THUMB_SUFFIX = "#thumb";
 const THUMB_SIDE = 160;
 
 /**
- * Minimal YAML-ish frontmatter parser. The vault only ever needs `title` and
- * `date`, so a real YAML dependency would be dead weight.
+ * Minimal YAML-ish frontmatter parser. The vault only ever needs flat
+ * `key: value` lines, so a real YAML dependency would be dead weight.
  */
 function parseFrontmatter(raw) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(raw);
@@ -202,7 +200,7 @@ function priceOf(field) {
 
 /**
  * The overview a story page opens with. It reads the same tokens the cards
- * are rendered from, so its counts and totals always agree with them.
+ * are rendered from, so its counts always agree with them.
  */
 function storyRoll(tokens) {
   const chapters = [];
@@ -218,23 +216,15 @@ function storyRoll(tokens) {
   const rows = chapters
     .filter(({ cards }) => cards.length > 0)
     .map(({ name, cards }) => {
-      let total = 0;
       const thumbs = cards.map(({ item, rank }) => {
-        const cost = item.tokens
-          .filter(isFieldList)
-          .flatMap((list) => list.items)
-          .find((field) => CARD_FIELD.exec(field.text)[1] === CARD_PRICE_FIELD);
-        const price = cost ? priceOf(cost) : "";
-        total += Number(price.replace(/,/g, ""));
         const image = item.tokens.slice(1).map(loneImage).find(Boolean);
         const label = cardLabel(item);
-        const tip = price ? `${label}, ${CARD_PRICE_PREFIX}${price}` : label;
         // With no photo, the thumbnail is the name's first letter, and the
         // link takes the name the photo's alt text would have given it.
         const initial = /[a-z0-9]/i.exec(cardNameText(item))?.[0].toUpperCase() ?? "";
         const named = image ? "" : ` aria-label="${label}"`;
         return [
-          `<li><a href="#${item.cardId}" title="${tip}" aria-haspopup="dialog"${named}>`,
+          `<li><a href="#${item.cardId}" title="${label}" aria-haspopup="dialog"${named}>`,
           rank ? `<span class="roll-rank">${rank}</span>` : "",
           image
             ? `<img src="${image.href}${THUMB_SUFFIX}" alt="${label}">`
@@ -246,7 +236,6 @@ function storyRoll(tokens) {
         `<div class="roll-row" data-status="${cardStatus(cards[0].item)}">`,
         `<p class="roll-name">${name}<span class="roll-count">${cards.length}</span></p>`,
         `<ul class="roll-items">${thumbs.join("")}</ul>`,
-        total ? `<p class="roll-total">${CARD_PRICE_PREFIX}${total.toLocaleString(PRICE_LOCALE)}</p>` : "",
         `</div>\n`,
       ].join("");
     });
@@ -476,23 +465,28 @@ async function readEntries(report) {
     }
     const rendered = marked.parser(tokens);
     const html = story ? `<div class="story">\n${rendered}</div>\n` : rendered;
+    const order = Number.parseFloat(meta.order);
     entries.push({
       slug,
       title: meta.title || slug,
       date: meta.date || "",
       html: await inlineImages(html, slug, report),
+      order: Number.isFinite(order) ? order : Infinity,
     });
   }
 
-  // Newest first, undated entries last, then alphabetical for stability.
+  // Entries with an `order` in their frontmatter come first, lowest first.
+  // The rest follow newest first, undated last, then alphabetical for
+  // stability. The vault opens on the first entry.
   entries.sort((a, b) => {
+    if (a.order !== b.order) return a.order < b.order ? -1 : 1;
     if (a.date && b.date && a.date !== b.date) return b.date.localeCompare(a.date);
     if (a.date && !b.date) return -1;
     if (!a.date && b.date) return 1;
     return a.title.localeCompare(b.title);
   });
 
-  return entries;
+  return entries.map(({ order, ...entry }) => entry);
 }
 
 /** Prompts on the TTY without echoing keystrokes. */
