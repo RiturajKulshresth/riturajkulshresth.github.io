@@ -19,6 +19,44 @@ import "../vault.css";
 // it dies with the tab rather than persisting on disk.
 const SESSION_KEY = "vault:passphrase";
 
+// Keys match CARD_SORTS in scripts/encrypt-vault.mjs; any other key ("order")
+// sorts by place in the markdown.
+const SORT_DIRECTION: Record<string, number> = { "price-asc": 1, "price-desc": -1 };
+
+/**
+ * Reorders a card list when one of the sort buttons the encrypt script puts
+ * above it is pressed. Each card carries its place in the markdown
+ * (`data-order`) and its price (`data-price`); unpriced cards sink to the end
+ * either way and ties keep the markdown order. Mutating the injected DOM is
+ * safe because React only rewrites the article when the entry's HTML changes.
+ */
+function sortCards(button: HTMLButtonElement) {
+  const group = button.closest(".card-sort");
+  const list = group?.nextElementSibling;
+  if (!group || !(list instanceof HTMLUListElement)) return;
+
+  const direction = SORT_DIRECTION[button.dataset.sort ?? ""] ?? 0;
+  const order = (card: HTMLElement) => Number(card.dataset.order);
+  const price = (card: HTMLElement) => (card.dataset.price ? Number(card.dataset.price) : null);
+
+  const cards = Array.from(list.children).filter((el) => el instanceof HTMLElement);
+  cards.sort((a, b) => {
+    const pa = price(a);
+    const pb = price(b);
+    if (direction && pa !== pb) {
+      if (pa === null) return 1;
+      if (pb === null) return -1;
+      return (pa - pb) * direction;
+    }
+    return order(a) - order(b);
+  });
+  list.append(...cards);
+
+  for (const other of group.querySelectorAll("button[data-sort]")) {
+    other.setAttribute("aria-pressed", String(other === button));
+  }
+}
+
 function formatDate(value: string): string {
   if (!value) return "";
   const parsed = new Date(value);
@@ -237,6 +275,11 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
             // and is only reachable after a successful authenticated decrypt.
             <article
               className="vault-prose"
+              onClick={(event) => {
+                const target = event.target;
+                const button = target instanceof Element ? target.closest("button[data-sort]") : null;
+                if (button instanceof HTMLButtonElement) sortCards(button);
+              }}
               dangerouslySetInnerHTML={{ __html: active.html }}
             />
           ) : (

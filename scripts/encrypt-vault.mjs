@@ -68,6 +68,14 @@ const CARD_STATUS = { done: "Bought", open: "To buy" };
 // can be compared without reading each field grid.
 const CARD_PRICE_FIELD = "Cost";
 const CARD_PRICE_PREFIX = "₹";
+// A list of to-buy cards gets these sort buttons, and each card a number for
+// its place in the markdown, which is the buy order. `sortCards` in
+// src/app/vault/_vault/components/vault.tsx does the sorting off these keys.
+const CARD_SORTS = [
+  { key: "order", label: "My order" },
+  { key: "price-asc", label: "Price ↑", title: "Price, low to high" },
+  { key: "price-desc", label: "Price ↓", title: "Price, high to low" },
+];
 
 /**
  * Minimal YAML-ish frontmatter parser. The vault only ever needs `title` and
@@ -108,6 +116,14 @@ function isCard(item) {
   return item.tokens.some(isFieldList);
 }
 
+function sortButtons() {
+  const buttons = CARD_SORTS.map(({ key, label, title }, i) => {
+    const named = title ? ` title="${title}" aria-label="${title}"` : "";
+    return `<button type="button" data-sort="${key}" aria-pressed="${i === 0}"${named}>${label}</button>`;
+  });
+  return `<div class="card-sort" role="group" aria-label="Sort"><span class="card-sort-label" aria-hidden="true">Sort</span>${buttons.join("")}</div>\n`;
+}
+
 /** Inline children of a paragraph, or of a tight list item's text token. */
 function inlineOf(token) {
   return (token.type === "paragraph" || token.type === "text") && token.tokens
@@ -126,10 +142,14 @@ const cardRenderer = {
   list(token) {
     if (token.items.length === 0 || !token.items.every(isCard)) return false;
     const compact = token.items.every((item) => !item.task);
-    return `<ul class="cards${compact ? " compact" : ""}">\n${token.items.map((item) => this.listitem(item)).join("")}</ul>\n`;
+    const sortable = token.items.length > 1 && token.items.every((item) => item.task && !item.checked);
+    const cards = token.items.map((item, i) => this.listitem(item, sortable ? i + 1 : 0)).join("");
+    const list = `<ul class="cards${compact ? " compact" : ""}">\n${cards}</ul>\n`;
+    return sortable ? sortButtons() + list : list;
   },
 
-  listitem(item) {
+  /** `rank` is the card's place in a sortable list, or 0 outside one. */
+  listitem(item, rank = 0) {
     if (!isCard(item)) return false;
 
     const [titleToken, ...rest] = item.tokens;
@@ -178,11 +198,13 @@ const cardRenderer = {
     }
     const fieldList = rows.length ? `<dl class="card-fields">${rows.join("")}</dl>` : "";
 
+    const sortKeys = rank ? ` data-order="${rank}" data-price="${price.replace(/,/g, "")}"` : "";
+    const rankBadge = rank ? `<span class="card-rank" title="Buy order">${rank}</span>` : "";
     return [
-      `<li class="card" data-status="${status}">`,
+      `<li class="card" data-status="${status}"${sortKeys}>`,
       media,
       `<header class="card-head">`,
-      `<div class="card-title"><h3 class="card-name">${name}</h3>`,
+      `<div class="card-title"><h3 class="card-name">${rankBadge}${name}</h3>`,
       ref ? `<p class="card-ref">${ref}</p>` : "",
       `</div><div class="card-meta">`,
       price ? `<p class="card-price">${CARD_PRICE_PREFIX}${price}</p>` : "",
