@@ -238,49 +238,56 @@
 }
 
 /* Maybes are one dashed panel with a row per watch: thumbnail, name and
-   price, no field grid. */
+   price. The fields stay hidden; the whole row opens the card dialog. Keyed
+   off the list rather than the status, so a maybe opened in the dialog gets
+   the full card layout. */
 .vault-prose ul.cards.compact {
   border: 1px dashed var(--color-border-strong);
   border-radius: 0.875rem;
   gap: 0;
+  overflow: hidden;
 }
 
-.vault-prose li.card[data-status="maybe"] {
+.vault-prose .compact > li.card {
   align-items: center;
   background: transparent;
   border: 0;
   border-radius: 0;
   gap: 0 1rem;
-  grid-template-areas:
-    "media head"
-    "media body";
+  grid-template-areas: "media head";
   grid-template-columns: 3.5rem minmax(0, 1fr);
   grid-template-rows: auto;
   padding: 0.75rem 1rem;
+  position: relative;
+  transition: background-color 150ms;
 }
 
-.vault-prose li.card[data-status="maybe"] + li.card {
+.vault-prose .compact > li.card + li.card {
   border-top: 1px solid var(--color-border);
 }
 
-.vault-prose [data-status="maybe"] .card-head {
+.vault-prose .compact > li.card:has(> .card-open:hover) {
+  background: var(--color-surface-hover);
+}
+
+.vault-prose .compact .card-head {
   align-items: center;
   flex-wrap: nowrap;
 }
 
-.vault-prose [data-status="maybe"] .card-name {
+.vault-prose .compact .card-name {
   font-size: 0.9375rem;
 }
 
-.vault-prose [data-status="maybe"] .card-ref {
+.vault-prose .compact .card-ref {
   margin-top: 0.15rem;
 }
 
-.vault-prose [data-status="maybe"] .card-price {
+.vault-prose .compact .card-price {
   font-size: 1rem;
 }
 
-.vault-prose [data-status="maybe"] .card-media img {
+.vault-prose .compact .card-media img {
   border-radius: 0.5rem;
 }
 
@@ -448,6 +455,17 @@
   padding-top: calc(0.8rem + 0.35em);
 }
 
+/* With no specs above it, the buying group needs no divider of its own. */
+.vault-prose .card-fields > [data-field="cost"]:first-child > * {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.vault-prose .card-fields > [data-field="cost"]:first-child dt {
+  padding-top: 0.35em;
+}
+
 .vault-prose .card-fields [data-field="note"] dd {
   color: var(--color-fg);
 }
@@ -466,6 +484,240 @@
     align-items: center;
     flex-direction: row;
     margin-left: 0;
+  }
+}
+
+/* ─── Gallery ────────────────────────────────────────────────── */
+
+/* Owned and to-buy cards are tiles: photo, name, then price and chip along
+   the bottom. The fields stay hidden; the Details button opens the whole card
+   in the card dialog. As many 12.5rem columns as fit; when only one does, a
+   tile goes back to a photo beside the name. */
+.vault-prose ul.cards.gallery {
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+}
+
+.vault-prose ul.cards.gallery > li.card {
+  gap: 0;
+  grid-template-areas:
+    "media"
+    "head"
+    "body";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  padding: 0.75rem;
+  position: relative;
+  transition: border-color 150ms, translate 150ms;
+}
+
+.vault-prose ul.cards.gallery > li.card:has(> .card-open:hover) {
+  border-color: var(--color-border-strong);
+  translate: 0 -2px;
+}
+
+.vault-prose :is(.gallery, .compact) .card-body {
+  display: none;
+}
+
+.vault-prose .gallery .card-media {
+  margin-bottom: 0.875rem;
+}
+
+/* Price and chip sit on the tile's bottom edge, so a row of tiles lines its
+   prices up whatever the name lengths. */
+.vault-prose .gallery .card-head {
+  align-items: stretch;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  padding-inline: 0.25rem;
+}
+
+.vault-prose .gallery .card-title {
+  flex: none;
+}
+
+.vault-prose .gallery .card-name {
+  font-size: 0.9375rem;
+}
+
+.vault-prose .gallery .card-meta {
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-left: 0;
+}
+
+.vault-prose .gallery .card-price {
+  font-size: 1.0625rem;
+}
+
+/* The button's ::after stretches over the whole tile, so a click anywhere on
+   it opens the card, and the focus ring outlines the tile. */
+.vault-prose .card-open {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-fg-subtle);
+  cursor: pointer;
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  grid-area: body;
+  justify-content: space-between;
+  letter-spacing: 0.14em;
+  margin-top: 0.875rem;
+  padding: 0.75rem 0.25rem 0;
+  text-transform: uppercase;
+  transition: color 150ms;
+  width: 100%;
+}
+
+.vault-prose .card-open::before {
+  background: currentColor;
+  content: "";
+  height: 0.75rem;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+  order: 1;
+  width: 0.75rem;
+}
+
+.vault-prose .card-open::after {
+  border-radius: 0.875rem;
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.vault-prose .card-open:hover {
+  color: var(--color-fg);
+}
+
+.vault-prose .card-open:focus-visible {
+  outline: none;
+}
+
+.vault-prose .card-open:focus-visible::after {
+  outline: 2px solid var(--color-accent-strong);
+  outline-offset: 2px;
+}
+
+/* In a compact row the button is the row, with no visible label. */
+.vault-prose .compact .card-open {
+  border: 0;
+  font-size: 0;
+  grid-area: auto;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+}
+
+.vault-prose .compact .card-open::before {
+  display: none;
+}
+
+.vault-prose .compact .card-open::after {
+  border-radius: 0;
+}
+
+.vault-prose .compact .card-open:focus-visible::after {
+  outline-offset: -2px;
+}
+
+/* Two 12.5rem columns plus the gap need 26rem. */
+@container (width < 26rem) {
+  .vault-prose ul.cards.gallery > li.card {
+    gap: 0 1rem;
+    grid-template-areas:
+      "media head"
+      "body body";
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    grid-template-rows: auto;
+    padding: 1rem;
+  }
+
+  .vault-prose .gallery .card-media {
+    margin-bottom: 0;
+  }
+}
+
+/* A card with no photo drops the photo column, in a tile, a row and the
+   dialog alike. After the layouts above so it wins the specificity ties. */
+.vault-prose ul.cards > li.card:not(:has(> .card-media)) {
+  grid-template-areas:
+    "head"
+    "body";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+}
+
+/* ─── Card dialog ────────────────────────────────────────────── */
+
+/* A tile or row opened at full card size by `openCard` in vault.tsx. The
+   dialog sits outside the article, so it carries `.vault-prose` itself for
+   the card styles to apply. The copied card is the panel: the dialog frames
+   and clips it, and the wrapper scrolls it when it outgrows the screen. */
+.vault-prose.card-dialog {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 1rem;
+  box-shadow: 0 24px 64px -12px rgb(0 0 0 / 0.35);
+  margin: auto;
+  max-height: none;
+  max-width: none;
+  overflow: hidden;
+  padding: 0;
+  width: min(46rem, calc(100vw - 2rem));
+}
+
+.vault-prose.card-dialog[open] {
+  animation: card-dialog-in 180ms ease-out;
+}
+
+.vault-prose.card-dialog::backdrop {
+  backdrop-filter: blur(3px);
+  background: rgb(8 10 12 / 0.55);
+}
+
+.card-dialog-scroll {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.vault-prose.card-dialog ul.cards {
+  margin: 0;
+}
+
+.vault-prose.card-dialog ul.cards > li.card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Room for the close button in the top corner. */
+.vault-prose.card-dialog .card-head {
+  padding-right: 2.75rem;
+}
+
+/* The page behind stays put while the dialog is open. */
+html:has(.card-dialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+@keyframes card-dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-prose.card-dialog[open] {
+    animation: none;
   }
 }
 
@@ -549,6 +801,248 @@
   color: var(--color-fg);
 }
 
+/* ─── Story pages ────────────────────────────────────────────── */
+
+/* A page with `layout: story` frontmatter arrives wrapped in `.story`, with
+   the overview (`.roll`) above its first chapter. Its h2s are the chapters,
+   and get numbered. */
+.vault-prose .story {
+  counter-reset: chapter;
+}
+
+.vault-prose .story h2 {
+  counter-increment: chapter;
+}
+
+.vault-prose .story h2::before {
+  color: var(--color-accent-strong);
+  content: counter(chapter, decimal-leading-zero);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  margin-bottom: 0.4rem;
+}
+
+/* The overview reads top to bottom as the arc of the collection: a row per
+   chapter, strung on a timeline, with its count, photos and total. Each row
+   draws its own stretch of the line, so the line stays joined however tall a
+   row gets when its photos wrap. */
+.vault-prose .roll {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.875rem;
+  container-type: inline-size;
+  margin-block: 2em 2.5em;
+  padding: 0.5rem 1.25rem;
+}
+
+.vault-prose .roll-row {
+  --dot-y: 50%;
+  align-items: center;
+  display: grid;
+  gap: 0.625rem 1rem;
+  grid-template-areas: "name items total";
+  grid-template-columns: 8.5rem minmax(0, 1fr) auto;
+  padding: 0.875rem 0 0.875rem 1.75rem;
+  position: relative;
+}
+
+.vault-prose .roll-row::before,
+.vault-prose .roll-row::after {
+  content: "";
+  position: absolute;
+}
+
+/* The dot. */
+.vault-prose .roll-row::before {
+  background: var(--color-bg-elevated);
+  border: 1.5px solid var(--color-fg-subtle);
+  border-radius: 999px;
+  height: 0.625rem;
+  left: 0;
+  top: var(--dot-y);
+  translate: 0 -50%;
+  width: 0.625rem;
+  z-index: 1;
+}
+
+.vault-prose .roll-row[data-status="done"]::before {
+  background: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+.vault-prose .roll-row[data-status="open"]::before {
+  border: 2px solid var(--color-accent-strong);
+}
+
+/* The line, through the middle of the dot. It starts at the first dot and
+   stops at the last. */
+.vault-prose .roll-row::after {
+  background: var(--color-border-strong);
+  bottom: 0;
+  left: calc(0.3125rem - 0.5px);
+  top: 0;
+  width: 1px;
+}
+
+.vault-prose .roll-row:first-child::after {
+  top: var(--dot-y);
+}
+
+.vault-prose .roll-row:last-child::after {
+  bottom: auto;
+  height: var(--dot-y);
+}
+
+.vault-prose .roll-row:only-child::after {
+  display: none;
+}
+
+.vault-prose .roll-name {
+  align-items: center;
+  color: var(--color-fg);
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 500;
+  gap: 0.5rem;
+  grid-area: name;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.vault-prose .roll-count {
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-fg-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  padding: 0.25em 0.55em;
+}
+
+.vault-prose .roll-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  grid-area: items;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vault-prose .roll-items li {
+  margin: 0;
+}
+
+.vault-prose .roll-items a {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  display: block;
+  height: 3rem;
+  position: relative;
+  text-decoration: none;
+  transition: border-color 150ms, translate 150ms;
+  width: 3rem;
+}
+
+.vault-prose .roll-items a:hover {
+  border-color: var(--color-border-strong);
+  opacity: 1;
+  translate: 0 -2px;
+}
+
+.vault-prose .roll-items img {
+  border: 0;
+  border-radius: calc(0.5rem - 1px);
+  height: 100%;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  object-fit: contain;
+  width: 100%;
+}
+
+/* A card with no photo shows its initial instead. */
+.vault-prose .roll-items a:has(> .roll-initial) {
+  background: var(--color-surface-subtle);
+}
+
+.vault-prose .roll-initial {
+  align-items: center;
+  color: var(--color-fg-muted);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  height: 100%;
+  justify-content: center;
+}
+
+.vault-prose .roll-row[data-status="done"] .roll-items a {
+  border-color: color-mix(in srgb, var(--color-accent-strong) 45%, transparent);
+}
+
+/* Someday stays greyed out until hovered. */
+.vault-prose .roll-row[data-status="maybe"] .roll-items img {
+  filter: grayscale(1);
+  opacity: 0.6;
+  transition: filter 150ms, opacity 150ms;
+}
+
+.vault-prose .roll-row[data-status="maybe"] .roll-items a:hover img {
+  filter: none;
+  opacity: 1;
+}
+
+/* Buy order, matching the badge on the card it links to. */
+.vault-prose .roll-rank {
+  align-items: center;
+  background: var(--color-fg);
+  border-radius: 999px;
+  color: var(--color-bg);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  height: 1rem;
+  justify-content: center;
+  left: -0.375rem;
+  line-height: 1;
+  min-width: 1rem;
+  position: absolute;
+  top: -0.375rem;
+  z-index: 1;
+}
+
+.vault-prose .roll-total {
+  color: var(--color-fg);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  grid-area: total;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  margin: 0;
+  text-align: right;
+}
+
+/* On a narrow pane the name and total share a line with the photos wrapping
+   underneath, so the dot moves up beside the name: row padding plus half a
+   line of the name. */
+@container (width < 30rem) {
+  .vault-prose .roll-row {
+    --dot-y: calc(0.875rem + 0.875rem * 1.35 / 2);
+    align-items: start;
+    grid-template-areas:
+      "name total"
+      "items items";
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
 /* ─── Light theme ────────────────────────────────────────────── */
 
 /* The site's light palette is built for sparse pages: a tinted glow behind the
@@ -571,6 +1065,7 @@
 /* White surfaces on the grey page get a soft lift, not just a hairline. */
 [data-theme="light"] .vault-root nav [aria-current="true"],
 [data-theme="light"] .vault-prose li.card,
+[data-theme="light"] .vault-prose .roll,
 [data-theme="light"] .vault-prose table {
   box-shadow:
     0 1px 2px rgb(15 23 42 / 0.05),
@@ -583,6 +1078,6 @@
 }
 
 /* A maybe stays flat so it reads as provisional next to the raised cards. */
-[data-theme="light"] .vault-prose li.card[data-status="maybe"] {
+[data-theme="light"] .vault-prose .compact > li.card {
   box-shadow: none;
 }

@@ -8,9 +8,9 @@
  * this component is the whole access-control story. Decryption happens entirely
  * in the browser via Web Crypto; the passphrase never travels anywhere.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Lock, LockOpen, Loader2, TriangleAlert } from "lucide-react";
+import { Lock, LockOpen, Loader2, TriangleAlert, X } from "lucide-react";
 import { decryptVault, WrongPassphraseError, type VaultBlob, type VaultEntry } from "../crypto";
 import "../vault.css";
 
@@ -57,6 +57,64 @@ function sortCards(button: HTMLButtonElement) {
   }
 }
 
+/**
+ * The card an in-page link points at, such as a thumbnail in a story page's
+ * overview, or null when it points at anything else.
+ */
+function linkedCard(link: HTMLAnchorElement): Element | null {
+  const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+  return target?.matches("li.card") ? target : null;
+}
+
+const CARD_DIALOG_TITLE_ID = "card-dialog-title";
+
+/**
+ * Shows a gallery tile or compact row as a full card in the card dialog. The
+ * card already carries its fields, hidden by vault.css, so a copy of it is the
+ * whole detail view, and the photo comes along without a second copy in the
+ * blob.
+ */
+function openCard(source: Element, dialog: HTMLDialogElement) {
+  const slot = dialog.querySelector("ul.cards");
+  if (!slot) return;
+
+  const card = source.cloneNode(true) as HTMLElement;
+  card.removeAttribute("id");
+  card.querySelector(".card-open")?.remove();
+  card.querySelector(".card-name")?.setAttribute("id", CARD_DIALOG_TITLE_ID);
+  slot.replaceChildren(card);
+  dialog.showModal();
+}
+
+// Smooth scrolling fires `scroll` every frame, so this long without one means
+// the page has come to rest.
+const SCROLL_SETTLE_MS = 120;
+
+/**
+ * Brings a card to the middle of the screen, then opens it in the card dialog
+ * once scrolling stops. Opening any sooner would cut the scroll short, since
+ * the open dialog locks page scrolling. The card's own open button takes focus
+ * first, so closing the dialog hands focus back here rather than to the link
+ * up the page. The scroll follows the root `scroll-behavior`: smooth unless
+ * reduced motion is on.
+ */
+function scrollToAndOpen(card: Element, dialog: HTMLDialogElement) {
+  let timer = window.setTimeout(open, SCROLL_SETTLE_MS);
+  const wait = () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(open, SCROLL_SETTLE_MS);
+  };
+  function open() {
+    document.removeEventListener("scroll", wait, { capture: true });
+    if (!card.isConnected || !dialog.isConnected || dialog.open) return;
+    card.querySelector<HTMLElement>(".card-open")?.focus({ preventScroll: true });
+    openCard(card, dialog);
+  }
+  // Capturing, because `scroll` doesn't bubble from an inner scroller.
+  document.addEventListener("scroll", wait, { capture: true, passive: true });
+  card.scrollIntoView({ block: "center" });
+}
+
 function formatDate(value: string): string {
   if (!value) return "";
   const parsed = new Date(value);
@@ -74,6 +132,7 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const cardDialog = useRef<HTMLDialogElement>(null);
 
   const unlock = useCallback(
     async (candidate: string, { fromCache = false } = {}) => {
@@ -276,9 +335,19 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
             <article
               className="vault-prose"
               onClick={(event) => {
-                const target = event.target;
-                const button = target instanceof Element ? target.closest("button[data-sort]") : null;
+                const target = event.target instanceof Element ? event.target : null;
+                const button = target?.closest("button[data-sort]");
                 if (button instanceof HTMLButtonElement) sortCards(button);
+                const dialog = cardDialog.current;
+                const link = target?.closest('a[href^="#"]');
+                const linked = link instanceof HTMLAnchorElement ? linkedCard(link) : null;
+                const tile = target?.closest("button.card-open")?.closest("li.card");
+                if (dialog && linked) {
+                  event.preventDefault();
+                  scrollToAndOpen(linked, dialog);
+                } else if (dialog && tile) {
+                  openCard(tile, dialog);
+                }
               }}
               dangerouslySetInnerHTML={{ __html: active.html }}
             />
@@ -289,6 +358,32 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
           )}
         </main>
       </div>
+
+      {/*
+        Filled by `openCard`. React renders no children into the list, so it
+        never overwrites the copied card. The scroll wrapper fills the dialog,
+        so a click whose target is the dialog itself landed on the backdrop.
+      */}
+      <dialog
+        ref={cardDialog}
+        aria-labelledby={CARD_DIALOG_TITLE_ID}
+        className="vault-prose card-dialog"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) event.currentTarget.close();
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => cardDialog.current?.close()}
+          aria-label="Close"
+          className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-bg-overlay)] text-[color:var(--color-fg-muted)] backdrop-blur-md transition hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-fg)]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <div className="card-dialog-scroll">
+          <ul className="cards" />
+        </div>
+      </dialog>
     </div>
   );
 }
