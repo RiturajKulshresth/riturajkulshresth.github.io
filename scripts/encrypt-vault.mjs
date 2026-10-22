@@ -58,11 +58,12 @@ const BLOB_WARN_BYTES = 6 * 1024 * 1024;
 
 // A list item whose body holds a bullet list made entirely of `Label: value`
 // lines renders as a card instead of a list row. Card lists in this vault are
-// buy-lists, hence the status wording: ticked is bought, unticked is to buy,
-// and no checkbox at all is a maybe. A plain checklist has no such list and
-// renders as an ordinary checklist.
+// buy-lists, hence the status wording: ticked is bought, unticked is to buy.
+// An item with no checkbox is a maybe and renders as a compact row of photo,
+// name, reference and price, with no status chip and no Cost field. A plain
+// checklist has no such list and renders as an ordinary checklist.
 const CARD_FIELD = /^([A-Z][A-Za-z ]{0,19}):\s/;
-const CARD_STATUS = { done: "Bought", open: "To buy", maybe: "Maybe" };
+const CARD_STATUS = { done: "Bought", open: "To buy" };
 // The leading figure of this field is repeated in the card header, so prices
 // can be compared without reading each field grid.
 const CARD_PRICE_FIELD = "Cost";
@@ -124,7 +125,8 @@ function inlineOf(token) {
 const cardRenderer = {
   list(token) {
     if (token.items.length === 0 || !token.items.every(isCard)) return false;
-    return `<ul class="cards">\n${token.items.map((item) => this.listitem(item)).join("")}</ul>\n`;
+    const compact = token.items.every((item) => !item.task);
+    return `<ul class="cards${compact ? " compact" : ""}">\n${token.items.map((item) => this.listitem(item)).join("")}</ul>\n`;
   },
 
   listitem(item) {
@@ -155,11 +157,16 @@ const cardRenderer = {
       }
     }
 
+    const status = !item.task ? "maybe" : item.checked ? "done" : "open";
+    const compact = status === "maybe";
+
     let price = "";
-    const rows = fields.map((field) => {
+    const rows = [];
+    for (const field of fields) {
       const label = CARD_FIELD.exec(field.text)[1];
       if (label === CARD_PRICE_FIELD) {
         price = /^[^:]+:\s*([\d,]+)/.exec(field.text)?.[1] ?? "";
+        if (compact) continue;
       }
       const value = this.parser
         .parse(field.tokens)
@@ -167,10 +174,10 @@ const cardRenderer = {
         .replace(/^<p>([\s\S]*)<\/p>$/, "$1")
         .replace(new RegExp(`^${label}:\\s*`), "");
       const key = label.toLowerCase().replace(/ +/g, "-");
-      return `<div data-field="${key}"><dt>${label}</dt><dd>${value}</dd></div>`;
-    });
+      rows.push(`<div data-field="${key}"><dt>${label}</dt><dd>${value}</dd></div>`);
+    }
+    const fieldList = rows.length ? `<dl class="card-fields">${rows.join("")}</dl>` : "";
 
-    const status = !item.task ? "maybe" : item.checked ? "done" : "open";
     return [
       `<li class="card" data-status="${status}">`,
       media,
@@ -179,9 +186,9 @@ const cardRenderer = {
       ref ? `<p class="card-ref">${ref}</p>` : "",
       `</div><div class="card-meta">`,
       price ? `<p class="card-price">${CARD_PRICE_PREFIX}${price}</p>` : "",
-      `<span class="card-status">${CARD_STATUS[status]}</span>`,
+      compact ? "" : `<span class="card-status">${CARD_STATUS[status]}</span>`,
       `</div></header>`,
-      `<div class="card-body">${extra}<dl class="card-fields">${rows.join("")}</dl></div>`,
+      extra || fieldList ? `<div class="card-body">${extra}${fieldList}</div>` : "",
       `</li>\n`,
     ].join("");
   },

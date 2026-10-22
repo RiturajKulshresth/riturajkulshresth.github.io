@@ -191,10 +191,51 @@
   border-color: color-mix(in srgb, var(--color-accent-strong) 40%, transparent);
 }
 
+/* Maybes are one dashed panel with a row per watch: thumbnail, name and
+   price, no field grid. */
+.vault-prose ul.cards.compact {
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 0.875rem;
+  gap: 0;
+}
+
 .vault-prose li.card[data-status="maybe"] {
+  align-items: center;
   background: transparent;
-  border-color: var(--color-border-strong);
-  border-style: dashed;
+  border: 0;
+  border-radius: 0;
+  gap: 0 1rem;
+  grid-template-areas:
+    "media head"
+    "media body";
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  grid-template-rows: auto;
+  padding: 0.75rem 1rem;
+}
+
+.vault-prose li.card[data-status="maybe"] + li.card {
+  border-top: 1px solid var(--color-border);
+}
+
+.vault-prose [data-status="maybe"] .card-head {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.vault-prose [data-status="maybe"] .card-name {
+  font-size: 0.9375rem;
+}
+
+.vault-prose [data-status="maybe"] .card-ref {
+  margin-top: 0.15rem;
+}
+
+.vault-prose [data-status="maybe"] .card-price {
+  font-size: 1rem;
+}
+
+.vault-prose [data-status="maybe"] .card-media img {
+  border-radius: 0.5rem;
 }
 
 .vault-prose .card-media {
@@ -284,10 +325,6 @@
   border-color: transparent;
   color: var(--color-bg);
   font-weight: 600;
-}
-
-.vault-prose [data-status="maybe"] .card-status {
-  border-style: dashed;
 }
 
 .vault-prose [data-status="done"] .card-status::before {
