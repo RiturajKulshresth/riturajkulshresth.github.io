@@ -61,7 +61,7 @@ function sortCards(button: HTMLButtonElement) {
  * The card an in-page link points at, such as a thumbnail in a story page's
  * overview, or null when it points at anything else.
  */
-function linkedCard(link: HTMLAnchorElement): Element | null {
+function linkedCard(link: HTMLAnchorElement): HTMLElement | null {
   const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
   return target?.matches("li.card") ? target : null;
 }
@@ -91,28 +91,56 @@ function openCard(source: Element, dialog: HTMLDialogElement) {
 const SCROLL_SETTLE_MS = 120;
 
 /**
- * Brings a card to the middle of the screen, then opens it in the card dialog
- * once scrolling stops. Opening any sooner would cut the scroll short, since
- * the open dialog locks page scrolling. The card's own open button takes focus
- * first, so closing the dialog hands focus back here rather than to the link
- * up the page. The scroll follows the root `scroll-behavior`: smooth unless
- * reduced motion is on.
+ * Brings a card to the middle of the screen and calls `then` once scrolling
+ * stops. The scroll follows the root `scroll-behavior`: smooth unless reduced
+ * motion is on.
  */
-function scrollToAndOpen(card: Element, dialog: HTMLDialogElement) {
-  let timer = window.setTimeout(open, SCROLL_SETTLE_MS);
+function scrollCardIntoView(card: HTMLElement, then: () => void) {
+  let timer = window.setTimeout(settled, SCROLL_SETTLE_MS);
   const wait = () => {
     window.clearTimeout(timer);
-    timer = window.setTimeout(open, SCROLL_SETTLE_MS);
+    timer = window.setTimeout(settled, SCROLL_SETTLE_MS);
   };
-  function open() {
+  function settled() {
     document.removeEventListener("scroll", wait, { capture: true });
-    if (!card.isConnected || !dialog.isConnected || dialog.open) return;
-    card.querySelector<HTMLElement>(".card-open")?.focus({ preventScroll: true });
-    openCard(card, dialog);
+    if (card.isConnected) then();
   }
   // Capturing, because `scroll` doesn't bubble from an inner scroller.
   document.addEventListener("scroll", wait, { capture: true, passive: true });
   card.scrollIntoView({ block: "center" });
+}
+
+/**
+ * Scrolls to a card, then opens it in the card dialog. Opening any sooner
+ * would cut the scroll short, since the open dialog locks page scrolling. The
+ * card's own open button takes focus first, so closing the dialog hands focus
+ * back here rather than to the link up the page.
+ */
+function scrollToAndOpen(card: HTMLElement, dialog: HTMLDialogElement) {
+  scrollCardIntoView(card, () => {
+    if (!dialog.isConnected || dialog.open) return;
+    card.querySelector<HTMLElement>(".card-open")?.focus({ preventScroll: true });
+    openCard(card, dialog);
+  });
+}
+
+/**
+ * Scrolls to a card that shows its details in place, then highlights it so
+ * the eye finds it among its neighbours. Focus moves to the card, so the
+ * keyboard carries on from there.
+ */
+function scrollToCard(card: HTMLElement) {
+  scrollCardIntoView(card, () => {
+    card.tabIndex = -1;
+    card.focus({ preventScroll: true });
+    card.removeAttribute("data-flash");
+    // Reading layout here lets a repeat click restart the animation.
+    void card.offsetWidth;
+    card.setAttribute("data-flash", "");
+    card.addEventListener("animationend", () => card.removeAttribute("data-flash"), {
+      once: true,
+    });
+  });
 }
 
 function formatDate(value: string): string {
@@ -342,9 +370,10 @@ export default function Vault({ blob }: { blob: VaultBlob }) {
                 const link = target?.closest('a[href^="#"]');
                 const linked = link instanceof HTMLAnchorElement ? linkedCard(link) : null;
                 const tile = target?.closest("button.card-open")?.closest("li.card");
-                if (dialog && linked) {
+                if (linked) {
                   event.preventDefault();
-                  scrollToAndOpen(linked, dialog);
+                  if (dialog && linked.querySelector(".card-open")) scrollToAndOpen(linked, dialog);
+                  else scrollToCard(linked);
                 } else if (dialog && tile) {
                   openCard(tile, dialog);
                 }

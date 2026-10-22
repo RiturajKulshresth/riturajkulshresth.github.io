@@ -62,14 +62,18 @@ const BLOB_WARN_BYTES = 6 * 1024 * 1024;
 // maybes renders as compact rows of photo, name, reference and price; any
 // other card list renders as a gallery of photo tiles. Either way the fields
 // stay hidden, and each card's open button shows the whole card in a dialog
-// (`openCard` in src/app/vault/_vault/components/vault.tsx). A plain checklist
-// has no such list and renders as an ordinary checklist.
+// (`openCard` in src/app/vault/_vault/components/vault.tsx), unless the page
+// asks for its details inline (`CARD_SETTINGS`). A plain checklist has no
+// such list and renders as an ordinary checklist.
 const CARD_FIELD = /^([A-Z][A-Za-z ]{0,19}):\s/;
 const CARD_OPEN_LABEL = "Details";
-// Card wording, which a page can override in its frontmatter. `ticked` and
+// Card settings, which a page can override in its frontmatter. `ticked` and
 // `unticked` are the status chips. `ranked`, when set, numbers the cards of an
 // unticked list in markdown order and is the tooltip on those numbers.
-const CARD_WORDING = { ticked: "Owned", unticked: "To buy", ranked: "" };
+// `details: inline` shows a card's fields on the card itself, with no open
+// button or dialog, for pages with only a few short lines per card.
+const CARD_SETTINGS = { ticked: "Owned", unticked: "To buy", ranked: "", details: "dialog" };
+const INLINE_DETAILS = "inline";
 // The leading figure of this field is repeated in the card header, so prices
 // can be compared without reading each field grid.
 const CARD_PRICE_FIELD = "Cost";
@@ -165,19 +169,19 @@ function cardLabel(item) {
 }
 
 /**
- * Stamps each card list with the page's wording and each card with an id, so
- * a story overview thumbnail can point at it. Ids come from the name, with a
- * number added when the page already has a card by that name, so they are
- * worked out once here rather than separately by the renderer and overview.
+ * Stamps each card list with the page's card settings and each card with an
+ * id, so a story overview thumbnail can point at it. Ids come from the name,
+ * with a number added when the page already has a card by that name, so they
+ * are worked out once here rather than separately by the renderer and overview.
  */
 function prepareCards(tokens, meta) {
-  const wording = Object.fromEntries(
-    Object.entries(CARD_WORDING).map(([key, fallback]) => [key, meta[key] ?? fallback])
+  const settings = Object.fromEntries(
+    Object.entries(CARD_SETTINGS).map(([key, fallback]) => [key, meta[key] ?? fallback])
   );
   const seen = new Map();
   marked.walkTokens(tokens, (token) => {
     if (!isCardList(token)) return;
-    token.wording = wording;
+    token.settings = settings;
     for (const item of token.items) {
       const slug = cardNameText(item).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       const count = (seen.get(slug) ?? 0) + 1;
@@ -208,15 +212,18 @@ function storyRoll(tokens) {
     if (token.type === "heading" && token.depth === 2) {
       chapters.push({ name: marked.parseInline(token.text), cards: [] });
     } else if (chapters.length > 0 && isCardList(token)) {
-      const ranked = isSortable(token) && token.wording.ranked;
-      chapters.at(-1).cards.push(...token.items.map((item, i) => ({ item, rank: ranked ? i + 1 : 0 })));
+      const ranked = isSortable(token) && token.settings.ranked;
+      const dialog = token.settings.details !== INLINE_DETAILS;
+      chapters.at(-1).cards.push(
+        ...token.items.map((item, i) => ({ item, rank: ranked ? i + 1 : 0, dialog }))
+      );
     }
   }
 
   const rows = chapters
     .filter(({ cards }) => cards.length > 0)
     .map(({ name, cards }) => {
-      const thumbs = cards.map(({ item, rank }) => {
+      const thumbs = cards.map(({ item, rank, dialog }) => {
         const image = item.tokens.slice(1).map(loneImage).find(Boolean);
         const label = cardLabel(item);
         // With no photo, the thumbnail is the name's first letter, and the
@@ -224,7 +231,7 @@ function storyRoll(tokens) {
         const initial = /[a-z0-9]/i.exec(cardNameText(item))?.[0].toUpperCase() ?? "";
         const named = image ? "" : ` aria-label="${label}"`;
         return [
-          `<li><a href="#${item.cardId}" title="${label}" aria-haspopup="dialog"${named}>`,
+          `<li><a href="#${item.cardId}" title="${label}"${dialog ? ` aria-haspopup="dialog"` : ""}${named}>`,
           rank ? `<span class="roll-rank">${rank}</span>` : "",
           image
             ? `<img src="${image.href}${THUMB_SUFFIX}" alt="${label}">`
@@ -268,21 +275,22 @@ function inlineOf(token) {
 const cardRenderer = {
   list(token) {
     if (!isCardList(token)) return false;
-    const wording = token.wording ?? CARD_WORDING;
+    const settings = token.settings ?? CARD_SETTINGS;
     const compact = token.items.every((item) => cardStatus(item) === "maybe");
     const sortable = isSortable(token);
     const cards = token.items
-      .map((item, i) => this.listitem(item, sortable ? i + 1 : 0, wording))
+      .map((item, i) => this.listitem(item, sortable ? i + 1 : 0, settings))
       .join("");
-    const list = `<ul class="cards ${compact ? "compact" : "gallery"}">\n${cards}</ul>\n`;
+    const inline = settings.details === INLINE_DETAILS ? ` data-details="${INLINE_DETAILS}"` : "";
+    const list = `<ul class="cards ${compact ? "compact" : "gallery"}"${inline}>\n${cards}</ul>\n`;
     return sortable ? sortButtons() + list : list;
   },
 
   /**
    * `rank` is the card's place in a sortable list, or 0 outside one; it shows
-   * as a badge only when `wording.ranked` is set.
+   * as a badge only when `settings.ranked` is set.
    */
-  listitem(item, rank = 0, wording = CARD_WORDING) {
+  listitem(item, rank = 0, settings = CARD_SETTINGS) {
     if (!isCard(item)) return false;
 
     const rest = item.tokens.slice(1);
@@ -326,15 +334,15 @@ const cardRenderer = {
       rows.push(`<div data-field="${key}"><dt>${label}</dt><dd>${value}</dd></div>`);
     }
     const fieldList = rows.length ? `<dl class="card-fields">${rows.join("")}</dl>` : "";
-    const opener = extra || fieldList
+    const opener = (extra || fieldList) && settings.details !== INLINE_DETAILS
       ? `<button type="button" class="card-open" aria-haspopup="dialog" aria-label="${CARD_OPEN_LABEL}, ${cardLabel(item)}">${CARD_OPEN_LABEL}</button>`
       : "";
 
     const sortKeys = rank ? ` data-order="${rank}" data-price="${price.replace(/,/g, "")}"` : "";
-    const rankBadge = rank && wording.ranked
-      ? `<span class="card-rank" title="${wording.ranked}">${rank}</span>`
+    const rankBadge = rank && settings.ranked
+      ? `<span class="card-rank" title="${settings.ranked}">${rank}</span>`
       : "";
-    const chip = status === "done" ? wording.ticked : status === "open" ? wording.unticked : "";
+    const chip = status === "done" ? settings.ticked : status === "open" ? settings.unticked : "";
     return [
       `<li class="card" id="${item.cardId}" data-status="${status}"${sortKeys}>`,
       media,

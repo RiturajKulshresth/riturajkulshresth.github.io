@@ -681,6 +681,57 @@
   }
 }
 
+/* A page with `details: inline` has too little per card to need the dialog,
+   so its tiles and rows show their fields in place, set smaller, with no
+   Details button. The price field is left out: a to-buy card already shows it
+   in the header, and an owned one keeps it off the tile. */
+.vault-prose ul.cards[data-details="inline"] .card-body {
+  display: block;
+}
+
+.vault-prose .compact[data-details="inline"] > li.card {
+  grid-template-areas:
+    "media head"
+    "media body";
+}
+
+.vault-prose ul.cards[data-details="inline"] .card-fields {
+  font-size: 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  line-height: 1.45;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.25rem 0;
+  row-gap: 0.2rem;
+}
+
+.vault-prose ul.cards[data-details="inline"] .card-fields dt {
+  font-size: 0.5625rem;
+  padding-right: 0.75rem;
+  padding-top: 0.3em;
+}
+
+.vault-prose ul.cards[data-details="inline"] .card-fields dd {
+  overflow-wrap: anywhere;
+}
+
+.vault-prose ul.cards[data-details="inline"] [data-field="cost"] {
+  display: none;
+}
+
+/* An overview thumbnail whose card has no dialog points the card out instead
+   (`scrollToCard` in vault.tsx). */
+.vault-prose li.card[data-flash] {
+  animation: card-flash 1.4s ease-out;
+}
+
+@keyframes card-flash {
+  from,
+  30% {
+    border-color: var(--color-accent-strong);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-strong) 35%, transparent);
+  }
+}
+
 /* A card with no photo drops the photo column, in a tile, a row and the
    dialog alike. After the layouts above so it wins the specificity ties. */
 .vault-prose ul.cards > li.card:not(:has(> .card-media)) {
