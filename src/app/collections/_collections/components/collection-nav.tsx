@@ -1,12 +1,9 @@
-"use client";
-
 /**
- * The list of collections. Every collection is its own static page, so these
- * are plain links, and the current one comes from the URL, with the bare
- * /collections/ standing in for the first collection it opens on.
+ * The list of collections beside a collection's page. Every collection is its
+ * own static page, so these are plain links, and the page says which is
+ * current.
  */
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
 export type CollectionLink = {
@@ -16,10 +13,13 @@ export type CollectionLink = {
   date: string;
 };
 
-export default function CollectionNav({ collections }: { collections: CollectionLink[] }) {
-  const pathname = usePathname();
-  const current = pathname.replace(/\/$/, "").split("/")[2] ?? collections[0]?.slug;
-
+export default function CollectionNav({
+  collections,
+  current,
+}: {
+  collections: CollectionLink[];
+  current: string;
+}) {
   return (
     <nav aria-label="Collections">
       <ul className="flex flex-col gap-0.5">

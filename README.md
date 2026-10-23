@@ -145,7 +145,7 @@ The game states separate a **win** (`VICTORY`, green overlay) from a **loss** (`
 2. `npm run collections` (`scripts/build-collections.mjs`) renders each file to HTML with `marked` into `src/app/collections/_collections/collections.json`, and encodes each photo as a 320px WebP square under 5 KB in `public/collections/images/`. Both outputs are gitignored.
 3. The script runs automatically before `npm run dev` and `npm run build`, so both deploys (the GitHub Pages workflow and Vercel, whose `vercel.json` build command is `npm run build` for this reason) build the collections straight from the committed markdown.
 
-Each collection is a static page at `/collections/<file name>/`, and `/collections/` opens on the first.
+Each collection is a static page at `/collections/<file name>/`. `/collections/` is the index: a tile per collection, showing its first few photos and a count per chapter.
 
 ### Authoring loop
 

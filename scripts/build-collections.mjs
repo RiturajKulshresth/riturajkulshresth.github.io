@@ -84,6 +84,10 @@ const STORY_LAYOUT = "story";
 // as a thumbnail and never reaches the browser.
 const THUMB_SUFFIX = "#thumb";
 const THUMB_SIDE = 160;
+// Each collection's tile on the /collections index shows its first few photos
+// and a count per chapter. The tiles use the full-size photos the cards already
+// load, so they cost no extra encodes and share the browser cache.
+const PREVIEW_PHOTOS = 5;
 
 /**
  * Minimal YAML-ish frontmatter parser. The collections only ever need flat
@@ -191,10 +195,11 @@ function priceOf(field) {
 }
 
 /**
- * The overview a story page opens with. It reads the same tokens the cards
- * are rendered from, so its counts always agree with them.
+ * The chapters (h2) of a page that hold cards, each with its cards in order.
+ * The story overview and the index tile both read these, from the same tokens
+ * the cards are rendered from, so their counts always agree with the page.
  */
-function storyRoll(tokens) {
+function chaptersOf(tokens) {
   const chapters = [];
   for (const token of tokens) {
     if (token.type === "heading" && token.depth === 2) {
@@ -207,12 +212,20 @@ function storyRoll(tokens) {
       );
     }
   }
+  return chapters.filter(({ cards }) => cards.length > 0);
+}
 
-  const rows = chapters
-    .filter(({ cards }) => cards.length > 0)
+/** A card's photo: the first paragraph after its name that holds only an image. */
+function cardImage(item) {
+  return item.tokens.slice(1).map(loneImage).find(Boolean);
+}
+
+/** The overview a story page opens with. */
+function storyRoll(tokens) {
+  const rows = chaptersOf(tokens)
     .map(({ name, cards }) => {
       const thumbs = cards.map(({ item, rank, dialog }) => {
-        const image = item.tokens.slice(1).map(loneImage).find(Boolean);
+        const image = cardImage(item);
         const label = cardLabel(item);
         // With no photo, the thumbnail is the name's first letter, and the
         // link takes the name the photo's alt text would have given it.
@@ -236,6 +249,28 @@ function storyRoll(tokens) {
     });
 
   return rows.length > 0 ? `<nav class="roll" aria-label="Overview">\n${rows.join("")}</nav>\n` : "";
+}
+
+/**
+ * A collection's tile on the /collections index: its first few photos, then a
+ * count per chapter with the same status dot as the overview. The tile is one
+ * link named by its text, so the photos are decorative.
+ */
+function previewOf(tokens) {
+  const chapters = chaptersOf(tokens);
+  const photos = chapters
+    .flatMap(({ cards }) => cards.map(({ item }) => cardImage(item)))
+    .filter(Boolean)
+    .slice(0, PREVIEW_PHOTOS)
+    .map((image) => `<li><img src="${image.href}" alt=""></li>`);
+  const counts = chapters.map(
+    ({ name, cards }) =>
+      `<li data-status="${cardStatus(cards[0].item)}">${name}<span class="preview-count">${cards.length}</span></li>`
+  );
+  return [
+    photos.length ? `<ul class="preview-photos" aria-hidden="true">${photos.join("")}</ul>` : "",
+    counts.length ? `<ul class="preview-chapters">${counts.join("")}</ul>` : "",
+  ].join("");
 }
 
 function sortButtons() {
@@ -381,16 +416,17 @@ async function encodeWithin(data, info, maxBytes) {
  * Encodes every local `<img src>` into a WebP file in IMAGE_DIR and points the
  * tag at it. Files are named after the source plus a hash of the encoded bytes,
  * so a changed photo gets a new URL rather than a stale cached copy. Remote and
- * data URI sources are left alone.
+ * data URI sources are left alone. `written` is shared between the calls for
+ * one page, so a photo that appears in both the page and its tile is encoded
+ * once.
  */
-async function writeImages(html, slug, report) {
+async function writeImages(html, slug, report, written = new Map()) {
   const sources = [
     ...new Set([...html.matchAll(/<img\b[^>]*?\bsrc="([^"]*)"/g)].map((m) => m[1])),
   ];
 
-  const written = new Map();
   for (const src of sources) {
-    if (src.startsWith("data:")) continue;
+    if (src.startsWith("data:") || written.has(src)) continue;
     if (/^(https?:)?\/\//i.test(src)) {
       report.remote.push(`${slug}: ${src}`);
       continue;
@@ -495,18 +531,20 @@ async function readCollections(report) {
     const rendered = marked.parser(tokens);
     const html = story ? `<div class="story">\n${rendered}</div>\n` : rendered;
     const order = Number.parseFloat(meta.order);
+    const written = new Map();
     collections.push({
       slug,
       title: meta.title || slug,
       date: meta.date || "",
-      html: await writeImages(html, slug, report),
+      html: await writeImages(html, slug, report, written),
+      preview: await writeImages(previewOf(tokens), slug, report, written),
       order: Number.isFinite(order) ? order : Infinity,
     });
   }
 
   // Collections with an `order` in their frontmatter come first, lowest first.
   // The rest follow newest first, undated last, then alphabetical for
-  // stability. /collections opens on the first.
+  // stability. This is the order of the index tiles and the nav.
   collections.sort((a, b) => {
     if (a.order !== b.order) return a.order < b.order ? -1 : 1;
     if (a.date && b.date && a.date !== b.date) return b.date.localeCompare(a.date);

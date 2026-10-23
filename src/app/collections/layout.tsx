@@ -1,5 +1,7 @@
 /**
- * Shell for the collections routes: header, collection list and reading pane.
+ * Shell for the collections routes: back button, theme switch and header. The
+ * index lays out its tiles below that; each collection adds the nav and its
+ * reading pane.
  *
  * The collections are public but unlisted. They are deliberately absent from
  * `src/app/sitemap.ts`, and the noindex below covers every collections page,
@@ -8,7 +10,6 @@
 import type { Metadata } from "next";
 import { Archive } from "lucide-react";
 import BackButton from "./_collections/components/back-button";
-import CollectionNav from "./_collections/components/collection-nav";
 import ThemeSwitch from "./_collections/components/theme-switch";
 import { collections } from "./_collections/collections";
 import "./_collections/collections.css";
@@ -21,24 +22,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-// A fixed locale and zone, so the date rendered at build time is the same one
-// the browser renders when it hydrates.
-const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
-});
-
-function formatDate(value: string): string {
-  if (!value) return "";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : DATE_FORMAT.format(parsed);
-}
-
 export default function CollectionsLayout({ children }: { children: React.ReactNode }) {
-  const links = collections.map(({ slug, title, date }) => ({ slug, title, date: formatDate(date) }));
-
   // Top padding clears the fixed back button.
   return (
     <div className="collections-root">
@@ -55,12 +39,7 @@ export default function CollectionsLayout({ children }: { children: React.ReactN
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:gap-10">
-          <CollectionNav collections={links} />
-          <main id="main" className="min-w-0">
-            {children}
-          </main>
-        </div>
+        {children}
       </div>
     </div>
   );

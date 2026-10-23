@@ -1122,6 +1122,83 @@ html:has(.card-dialog[open]) {
   }
 }
 
+/* ─── Index tiles ────────────────────────────────────────────── */
+
+/* The inside of a tile on the /collections index, from `previewOf` in
+   scripts/build-collections.mjs: a row of photos, then a count per chapter
+   with the story overview's status dots. The tile itself is styled in
+   page.tsx. */
+.collection-preview .preview-photos {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.collection-preview .preview-photos img {
+  aspect-ratio: 1;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  display: block;
+  height: auto;
+  object-fit: contain;
+  width: 100%;
+}
+
+.collection-preview .preview-chapters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.collection-preview .preview-photos + .preview-chapters {
+  margin-top: 1.25rem;
+}
+
+.collection-preview .preview-chapters li {
+  align-items: center;
+  color: var(--color-fg-muted);
+  display: flex;
+  font-size: 0.8125rem;
+  gap: 0.5rem;
+  line-height: 1.35;
+}
+
+.collection-preview .preview-chapters li::before {
+  border: 1.5px solid var(--color-fg-subtle);
+  border-radius: 999px;
+  content: "";
+  flex: none;
+  height: 0.625rem;
+  width: 0.625rem;
+}
+
+.collection-preview .preview-chapters li[data-status="done"]::before {
+  background: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+}
+
+.collection-preview .preview-chapters li[data-status="open"]::before {
+  border: 2px solid var(--color-accent-strong);
+}
+
+.collection-preview .preview-count {
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-fg-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  padding: 0.25em 0.55em;
+}
+
 /* ─── Light theme ────────────────────────────────────────────── */
 
 /* The site's light palette is built for sparse pages: a tinted glow behind the
@@ -1143,6 +1220,7 @@ html:has(.card-dialog[open]) {
 
 /* White surfaces on the grey page get a soft lift, not just a hairline. */
 [data-theme="light"] .collections-root nav [aria-current="page"],
+[data-theme="light"] .collections-root .collection-tile,
 [data-theme="light"] .collections-prose li.card,
 [data-theme="light"] .collections-prose .roll,
 [data-theme="light"] .collections-prose table {
