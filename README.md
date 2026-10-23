@@ -166,6 +166,8 @@ layout: story   # optional; numbered chapters under an overview
 ---
 ```
 
+The card format, field order per collection, section rules and writing style are in [`AGENTS.md`](./AGENTS.md), which coding agents read automatically.
+
 A list item with a nested `Label: value` list renders as a card. Card pages can also set `ticked`, `unticked`, `ranked`, and `details: inline` in their frontmatter; see `CARD_SETTINGS` in `scripts/build-collections.mjs`.
 
 ## Editing content

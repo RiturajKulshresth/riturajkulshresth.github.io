@@ -104,6 +104,8 @@ function parseFrontmatter(raw) {
     if (sep === -1) continue;
     const key = line.slice(0, sep).trim();
     let value = line.slice(sep + 1).trim();
+    // As in YAML, ` #` starts a comment unless the value is quoted.
+    if (!/^["']/.test(value)) value = value.replace(/\s+#.*$/, "");
     // Strip one layer of matching quotes.
     if (
       (value.startsWith('"') && value.endsWith('"')) ||
