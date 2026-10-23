@@ -9,8 +9,6 @@ details: inline
 
 # Diecast
 
-A model moves to On the shelf when it arrives, not when it's preordered.
-
 ## On the shelf
 
 - [x] **Hyundai Concept N Vision 74** (VP2)

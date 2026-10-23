@@ -8,14 +8,6 @@ ranked: Buy order
 
 # Watches
 
-Everything on the wrist so far is quartz. Everything next up is mechanical,
-starting with the Alpinist GMT.
-
-A watch moves to On the wrist when it arrives, not when it's ordered. Prices
-checked September and October 2026. Indian items are MRP or best street price.
-Imported items are landed cost, so they already carry the roughly 44 percent
-customs hit, converted at about 88 to the dollar.
-
 ## On the wrist
 
 - [x] **Casio Vintage** (ref. A158WA-1, D011)
@@ -92,8 +84,7 @@ customs hit, converted at about 88 to the dollar.
   - Where: Timex India, Just In Time, Swiss Time House, Watch Brand, Chawla
     and Chhabra
   - Note: This is the quartz Marlin, not the hand-wound mechanical one that
-    shares the name. Acrylic crystal, so expect to polish out scratches. The
-    steel bracelet version is TWEG26704.
+    shares the name. The steel bracelet version is TWEG26704.
 
 - [x] **Timex Waterbury Heritage Chronograph 39mm** (ref. TW2Y93400UJ)
 
@@ -108,9 +99,7 @@ customs hit, converted at about 88 to the dollar.
   - Water: 50m
   - Cost: 23,995 (Timex India MRP)
   - Where: Timex India, Sai Creations, Ganga Ram's Watch Gallery
-  - Note: Meca-quartz, so quartz keeps the time and a mechanical module runs
-    the chronograph, which is why the chrono seconds hand sweeps. The red
-    motorsport version of TW2Y93300.
+  - Note: The red motorsport version of TW2Y93300.
 
 ## Next up
 
@@ -127,8 +116,6 @@ customs hit, converted at about 88 to the dollar.
   - Water: 200m
   - Cost: 1,10,000 available, against the 1,20,000 Seiko India MRP
   - Where: Seiko India, Just In Time, Ethos
-  - Note: Comes on leather, not a bracelet. True GMT, so the hour hand jumps
-    independently.
 
 - [ ] **Orient Classic & Simple Style Semi Skeleton** (ref. RA-AG0002S)
 
@@ -146,7 +133,6 @@ customs hit, converted at about 88 to the dollar.
   - Where: Citywatches, in stock, ships from India or Singapore. Orient India
     is sold out, and names only orientwatch.in and Arbana as authorised
     sellers. Indian listings use RA-AG0002S10B.
-  - Note: Mineral crystal and only 30m, so it's a desk watch.
 
 - [ ] **Vostok Amphibia Scuba Dude** (ref. 420059)
 
@@ -185,8 +171,7 @@ customs hit, converted at about 88 to the dollar.
   - Cost: 3,995 (Casio India Shop MRP), 3,795 on Flipkart. Swiss Time House
     and other resellers ask 4,495.
   - Where: Casio India Shop, Flipkart, Swiss Time House, Amazon
-  - Note: The AE-1200 everyone calls the Casio Royale, on leather instead of
-    the steel bracelet. The glass is resin, not mineral, so it scuffs.
+  - Note: The Casio Royale on leather instead of the steel bracelet.
 
 - **Casio Pro Trek PRW-35-7**
 
@@ -225,8 +210,6 @@ customs hit, converted at about 88 to the dollar.
     (SSC941P1, SSC943P1, SSC911P1). The difference is the bezel markings.
 
 ## Passed on
-
-Keeping these so I stop re-researching them.
 
 | Watch |
 | ----- |
