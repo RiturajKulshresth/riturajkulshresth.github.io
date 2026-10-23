@@ -41,12 +41,14 @@ const VAULT_VERSION = 1;
 // Local images are downscaled and inlined as data URIs so they end up inside
 // the ciphertext. Anything served from `public/` would be a plain file at a
 // guessable URL, which would leak the picture even though the prose around it
-// is encrypted. WebP at these settings keeps a phone photo well under 200 KB.
-// 720px is roughly 2.5x the 18rem display cap in vault.css, so photos stay
-// crisp on a retina screen without bloating the blob. It caps the long edge,
-// since every image is squared off before encoding.
-const IMAGE_MAX_SIDE = 720;
+// is encrypted. Every image is encoded as the same IMAGE_SIDE square, at the
+// highest quality up to IMAGE_QUALITY that keeps it under IMAGE_MAX_BYTES,
+// so a busy photo gives up detail rather than growing the blob. 320px is about
+// the widest a gallery tile gets, and the largest side at which the busiest
+// photos still fit the cap at a usable quality.
+const IMAGE_SIDE = 320;
 const IMAGE_QUALITY = 78;
+const IMAGE_MAX_BYTES = 5000;
 // Product shots are usually transparent PNG or WebP cutouts. Left unflattened
 // they inherit whatever the vault theme is painting behind them, so a page of
 // them looks inconsistent. Compositing onto white first makes every entry read
@@ -363,6 +365,33 @@ const cardRenderer = {
 marked.use({ renderer: cardRenderer });
 
 /**
+ * WebP-encodes raw pixels at the highest quality, up to IMAGE_QUALITY, that
+ * comes in under `maxBytes`. Size grows with quality, so a binary search finds
+ * it in a handful of encodes. `effort: 6` is the slowest and tightest encoder
+ * setting, which buys quality back under the cap. Returns a null `encoded`
+ * when even the lowest quality is too big.
+ */
+async function encodeWithin(data, info, maxBytes) {
+  const raw = { width: info.width, height: info.height, channels: info.channels };
+  let low = 1;
+  let high = IMAGE_QUALITY;
+  let best = { encoded: null, quality: 0 };
+  while (low <= high) {
+    const quality = Math.floor((low + high) / 2);
+    const encoded = await sharp(data, { raw })
+      .webp({ quality, effort: 6, smartSubsample: true })
+      .toBuffer();
+    if (encoded.length < maxBytes) {
+      best = { encoded, quality };
+      low = quality + 1;
+    } else {
+      high = quality - 1;
+    }
+  }
+  return best;
+}
+
+/**
  * Rewrites every local `<img src>` into a downscaled WebP data URI, so photos
  * travel inside the ciphertext instead of sitting in `public/` as plain files.
  * Remote and already-inlined sources are left alone.
@@ -402,29 +431,27 @@ async function inlineImages(html, slug, report) {
     // Entries mix square product shots with portrait phone photos. The reading
     // pane caps both axes, so a portrait image lands visibly narrower than a
     // square one and the column of pictures looks ragged. Padding each image
-    // out to a square on the same white background lines them all up. The side
-    // is the source's own long edge, capped at IMAGE_MAX_SIDE, so the scale
-    // factor is never above 1 and nothing gets upscaled into blur.
-    const meta = await sharp(original).metadata();
-    // EXIF orientations 5 to 8 rotate by a quarter turn, swapping the axes.
-    const upright = (meta.orientation ?? 1) >= 5
-      ? { width: meta.height, height: meta.width }
-      : { width: meta.width, height: meta.height };
-    const side = Math.min(Math.max(upright.width, upright.height), thumb ? THUMB_SIDE : IMAGE_MAX_SIDE);
-
+    // out to a square on the same white background lines them all up.
     // `.rotate()` with no argument applies the EXIF orientation, which phone
     // photos rely on; stripping metadata afterwards drops any GPS tags.
     // `contain` fills the padding with the background but leaves the source's
     // own alpha intact, so the flatten afterwards is still doing work.
-    const encoded = await sharp(original)
+    const side = thumb ? THUMB_SIDE : IMAGE_SIDE;
+    const { data, info } = await sharp(original)
       .rotate()
       .resize({ width: side, height: side, fit: "contain", background: IMAGE_BACKGROUND })
       .flatten({ background: IMAGE_BACKGROUND })
-      .webp({ quality: IMAGE_QUALITY })
-      .toBuffer();
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const { encoded, quality } = await encodeWithin(data, info, IMAGE_MAX_BYTES);
+    if (!encoded) {
+      throw new Error(
+        `${slug}: image won't get under ${formatBytes(IMAGE_MAX_BYTES)} even at the lowest quality: ${src}\n  crop it closer to the subject and try again`
+      );
+    }
 
     inlined.set(src, `data:image/webp;base64,${encoded.toString("base64")}`);
-    report.images.push({ slug, src, from: original.length, to: encoded.length });
+    report.images.push({ slug, src, from: original.length, to: encoded.length, quality });
   }
 
   if (inlined.size === 0) return html;
@@ -562,7 +589,7 @@ async function deriveKey(passphrase, salt) {
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
@@ -606,7 +633,7 @@ async function main() {
     console.log("\nImages inlined into the ciphertext:");
     for (const img of report.images) {
       console.log(
-        `  ${img.src}  ${formatBytes(img.from)} -> ${formatBytes(img.to)} webp`
+        `  ${img.src}  ${formatBytes(img.from)} -> ${formatBytes(img.to)} webp, quality ${img.quality}`
       );
     }
   }
