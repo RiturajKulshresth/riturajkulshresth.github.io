@@ -4,7 +4,6 @@
  * entrance animations and floating tech pills (hidden below `sm`).
  */
 import Link from "next/link";
-import { Lock } from "lucide-react";
 import { profile, RESUME_PATH } from "@/lib/data";
 
 const floatingTags = [
@@ -94,15 +93,6 @@ export default function Hero() {
               </svg>
               Résumé
             </a>
-            {/* Only useful to me, so it gets the same tertiary ghost treatment
-                as Résumé rather than competing with the primary CTA. */}
-            <Link
-              href="/vault"
-              className="group inline-flex items-center gap-2 rounded-full px-3 py-2.5 text-sm text-[color:var(--color-fg-muted)] transition hover:text-[color:var(--color-fg)]"
-            >
-              <Lock className="h-4 w-4 transition-transform group-hover:-translate-y-px" />
-              Vault
-            </Link>
           </div>
 
           <dl
@@ -146,7 +136,6 @@ export default function Hero() {
 
             {/* Illustration */}
             <div className="relative aspect-square overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgb(74_222_128_/_0.14),transparent_55%),radial-gradient(circle_at_80%_80%,rgb(37_150_190_/_0.14),transparent_55%)] p-6">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/coding.svg"
                 alt="Developer at work illustration"

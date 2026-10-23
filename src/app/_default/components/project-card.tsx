@@ -62,7 +62,6 @@ export default function ProjectCard({ project }: { project: Project }) {
         {/* Always-playing preview (GIF or static). The `src` is withheld until
             the card nears the viewport so the heavy GIF isn't fetched on load. */}
         {project.preview && (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             ref={imgRef}
             src={inView ? project.preview : undefined}

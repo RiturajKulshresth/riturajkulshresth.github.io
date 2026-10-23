@@ -1,62 +1,47 @@
 #!/usr/bin/env node
 /**
- * Encrypts the plaintext vault (`content/vault/*.md`) into a single ciphertext
- * blob at `src/app/vault/_vault/vault.json`.
+ * Builds the collections (`content/collections/*.md`) into what the
+ * /collections routes render: every collection as HTML in
+ * `src/app/collections/_collections/collections.json`, and every photo as a
+ * small WebP file in `public/collections/images/`.
  *
- * The site is a static export on public GitHub Pages, so there is no server to
- * check a password against. Privacy therefore has to come from the content
- * itself being ciphertext: the markdown under `content/vault/` is gitignored
- * and never leaves this machine, and only the encrypted blob is committed and
- * deployed. The deploy workflow needs no secret because it just builds an
- * already-encrypted file.
+ * The collections are public, just unlisted. The markdown is committed, and
+ * this runs before every `next dev` and `next build` through the `predev` and
+ * `prebuild` npm hooks, so both outputs are generated and gitignored.
  *
  * Markdown is rendered to HTML here rather than in the browser so no markdown
  * parser ships to visitors; `marked` stays a devDependency.
  *
  * Usage:
- *   npm run vault                    # prompts for the passphrase
- *   VAULT_PASSWORD=... npm run vault # non-interactive
+ *   npm run collections
  */
-import { webcrypto as crypto } from "node:crypto";
-import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { marked } from "marked";
 import sharp from "sharp";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CONTENT_DIR = path.join(projectRoot, "content/vault");
-const OUT_FILE = path.join(projectRoot, "src/app/vault/_vault/vault.json");
+const CONTENT_DIR = path.join(projectRoot, "content/collections");
+const OUT_FILE = path.join(projectRoot, "src/app/collections/_collections/collections.json");
+// `public/` is served from the site root, so IMAGE_DIR is reachable at IMAGE_URL.
+const IMAGE_DIR = path.join(projectRoot, "public/collections/images");
+const IMAGE_URL = "/collections/images";
 
-// OWASP's 2023 floor for PBKDF2-SHA256. Costs a legitimate unlock roughly half
-// a second in the browser; the ciphertext is publicly downloadable, so this is
-// what makes bulk offline guessing expensive. Passphrase strength still does
-// most of the work: use five or more random words.
-const PBKDF2_ITERATIONS = 600_000;
-const SALT_BYTES = 16;
-const IV_BYTES = 12;
-const VAULT_VERSION = 1;
-
-// Local images are downscaled and inlined as data URIs so they end up inside
-// the ciphertext. Anything served from `public/` would be a plain file at a
-// guessable URL, which would leak the picture even though the prose around it
-// is encrypted. Every image is encoded as the same IMAGE_SIDE square, at the
-// highest quality up to IMAGE_QUALITY that keeps it under IMAGE_MAX_BYTES,
-// so a busy photo gives up detail rather than growing the blob. 320px is about
-// the widest a gallery tile gets, and the largest side at which the busiest
-// photos still fit the cap at a usable quality.
+// Every local image is encoded as the same IMAGE_SIDE WebP square, at the
+// highest quality up to IMAGE_QUALITY that keeps it under IMAGE_MAX_BYTES, so
+// a busy photo gives up detail rather than weight. 320px is about the widest a
+// gallery tile gets, and the largest side at which the busiest photos still
+// fit the cap at a usable quality.
 const IMAGE_SIDE = 320;
 const IMAGE_QUALITY = 78;
 const IMAGE_MAX_BYTES = 5000;
 // Product shots are usually transparent PNG or WebP cutouts. Left unflattened
-// they inherit whatever the vault theme is painting behind them, so a page of
-// them looks inconsistent. Compositing onto white first makes every entry read
-// like one catalogue. This is a no-op for images with no alpha channel.
+// they inherit whatever the page theme is painting behind them, so a page of
+// them looks inconsistent. Compositing onto white first makes every collection
+// read like one catalogue. This is a no-op for images with no alpha channel.
 const IMAGE_BACKGROUND = "#ffffff";
-// The whole blob is embedded in the page and decrypted in one pass, so it is
-// worth knowing when it starts getting heavy.
-const BLOB_WARN_BYTES = 6 * 1024 * 1024;
 
 // A list item whose body holds a bullet list made entirely of `Label: value`
 // lines renders as a card instead of a list row. Ticked and unticked cards get
@@ -64,9 +49,9 @@ const BLOB_WARN_BYTES = 6 * 1024 * 1024;
 // maybes renders as compact rows of photo, name, reference and price; any
 // other card list renders as a gallery of photo tiles. Either way the fields
 // stay hidden, and each card's open button shows the whole card in a dialog
-// (`openCard` in src/app/vault/_vault/components/vault.tsx), unless the page
-// asks for its details inline (`CARD_SETTINGS`). A plain checklist has no
-// such list and renders as an ordinary checklist.
+// (`openCard` in src/app/collections/_collections/components/collection-view.tsx),
+// unless the page asks for its details inline (`CARD_SETTINGS`). A plain
+// checklist has no such list and renders as an ordinary checklist.
 const CARD_FIELD = /^([A-Z][A-Za-z ]{0,19}):\s/;
 const CARD_OPEN_LABEL = "Details";
 // Card settings, which a page can override in its frontmatter. `ticked` and
@@ -82,7 +67,8 @@ const CARD_PRICE_FIELD = "Cost";
 const CARD_PRICE_PREFIX = "₹";
 // A list of unticked cards gets these sort buttons, and each card its place in
 // the markdown for "My order". `sortCards` in
-// src/app/vault/_vault/components/vault.tsx does the sorting off these keys.
+// src/app/collections/_collections/components/collection-view.tsx does the
+// sorting off these keys.
 const CARD_SORTS = [
   { key: "order", label: "My order" },
   { key: "price-asc", label: "Price ↑", title: "Price, low to high" },
@@ -91,16 +77,16 @@ const CARD_SORTS = [
 // A page with `layout: story` in its frontmatter opens with an overview: a
 // row per chapter (h2) that holds cards, with its count and a thumbnail per
 // card that scrolls down to it and opens it in the card dialog.
-// vault.css numbers the chapters.
+// collections.css numbers the chapters.
 const STORY_LAYOUT = "story";
 // Overview thumbnails are 3rem tiles, so they get their own small encode
-// rather than repeating each full-size photo in the blob. The suffix marks an
-// image source as a thumbnail and never reaches the browser.
+// rather than loading each full-size photo. The suffix marks an image source
+// as a thumbnail and never reaches the browser.
 const THUMB_SUFFIX = "#thumb";
 const THUMB_SIDE = 160;
 
 /**
- * Minimal YAML-ish frontmatter parser. The vault only ever needs flat
+ * Minimal YAML-ish frontmatter parser. The collections only ever need flat
  * `key: value` lines, so a real YAML dependency would be dead weight.
  */
 function parseFrontmatter(raw) {
@@ -392,16 +378,17 @@ async function encodeWithin(data, info, maxBytes) {
 }
 
 /**
- * Rewrites every local `<img src>` into a downscaled WebP data URI, so photos
- * travel inside the ciphertext instead of sitting in `public/` as plain files.
- * Remote and already-inlined sources are left alone.
+ * Encodes every local `<img src>` into a WebP file in IMAGE_DIR and points the
+ * tag at it. Files are named after the source plus a hash of the encoded bytes,
+ * so a changed photo gets a new URL rather than a stale cached copy. Remote and
+ * data URI sources are left alone.
  */
-async function inlineImages(html, slug, report) {
+async function writeImages(html, slug, report) {
   const sources = [
     ...new Set([...html.matchAll(/<img\b[^>]*?\bsrc="([^"]*)"/g)].map((m) => m[1])),
   ];
 
-  const inlined = new Map();
+  const written = new Map();
   for (const src of sources) {
     if (src.startsWith("data:")) continue;
     if (/^(https?:)?\/\//i.test(src)) {
@@ -413,10 +400,10 @@ async function inlineImages(html, slug, report) {
     const file = thumb ? src.slice(0, -THUMB_SUFFIX.length) : src;
 
     // Resolve inside the content dir only, so a stray `../../.ssh/id_rsa`
-    // in a markdown file can't pull an arbitrary file into the vault.
+    // in a markdown file can't pull an arbitrary file into the site.
     const abs = path.resolve(CONTENT_DIR, decodeURIComponent(file));
     if (abs !== CONTENT_DIR && !abs.startsWith(CONTENT_DIR + path.sep)) {
-      throw new Error(`${slug}: image path escapes content/vault/: ${src}`);
+      throw new Error(`${slug}: image path escapes content/collections/: ${src}`);
     }
 
     let original;
@@ -428,10 +415,10 @@ async function inlineImages(html, slug, report) {
       );
     }
 
-    // Entries mix square product shots with portrait phone photos. The reading
-    // pane caps both axes, so a portrait image lands visibly narrower than a
-    // square one and the column of pictures looks ragged. Padding each image
-    // out to a square on the same white background lines them all up.
+    // Collections mix square product shots with portrait phone photos. The
+    // reading pane caps both axes, so a portrait image lands visibly narrower
+    // than a square one and the column of pictures looks ragged. Padding each
+    // image out to a square on the same white background lines them all up.
     // `.rotate()` with no argument applies the EXIF orientation, which phone
     // photos rely on; stripping metadata afterwards drops any GPS tags.
     // `contain` fills the padding with the background but leaves the source's
@@ -450,26 +437,33 @@ async function inlineImages(html, slug, report) {
       );
     }
 
-    inlined.set(src, `data:image/webp;base64,${encoded.toString("base64")}`);
+    const name = path.basename(abs, path.extname(abs)).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const hash = createHash("sha256").update(encoded).digest("hex").slice(0, 8);
+    const out = `${name}${thumb ? "-thumb" : ""}.${hash}.webp`;
+    await writeFile(path.join(IMAGE_DIR, out), encoded);
+
+    written.set(src, { url: `${IMAGE_URL}/${out}`, side });
     report.images.push({ slug, src, from: original.length, to: encoded.length, quality });
   }
 
-  if (inlined.size === 0) return html;
-  return html.replace(
-    /(<img\b[^>]*?\bsrc=")([^"]*)(")/g,
-    (whole, before, src, after) =>
-      inlined.has(src) ? `${before}${inlined.get(src)}${after}` : whole
-  );
+  if (written.size === 0) return html;
+  // The size attributes reserve each photo's square before it loads, so lazy
+  // loading doesn't shift the page as photos arrive.
+  return html.replace(/(<img\b[^>]*?\bsrc=")([^"]*)(")/g, (whole, before, src, after) => {
+    const image = written.get(src);
+    if (!image) return whole;
+    return `${before}${image.url}${after} width="${image.side}" height="${image.side}" loading="lazy" decoding="async"`;
+  });
 }
 
-async function readEntries(report) {
+async function readCollections(report) {
   let files;
   try {
     files = (await readdir(CONTENT_DIR)).filter((f) => f.endsWith(".md")).sort();
   } catch (err) {
     if (err.code === "ENOENT") {
       throw new Error(
-        `No vault content found. Create ${path.relative(projectRoot, CONTENT_DIR)}/ and add a markdown file.`
+        `No collections found. Create ${path.relative(projectRoot, CONTENT_DIR)}/ and add a markdown file.`
       );
     }
     throw err;
@@ -477,11 +471,11 @@ async function readEntries(report) {
 
   if (files.length === 0) {
     throw new Error(
-      `No .md files in ${path.relative(projectRoot, CONTENT_DIR)}/. Nothing to encrypt.`
+      `No .md files in ${path.relative(projectRoot, CONTENT_DIR)}/. Nothing to build.`
     );
   }
 
-  const entries = [];
+  const collections = [];
   for (const file of files) {
     const raw = await readFile(path.join(CONTENT_DIR, file), "utf8");
     const { meta, body } = parseFrontmatter(raw);
@@ -501,19 +495,19 @@ async function readEntries(report) {
     const rendered = marked.parser(tokens);
     const html = story ? `<div class="story">\n${rendered}</div>\n` : rendered;
     const order = Number.parseFloat(meta.order);
-    entries.push({
+    collections.push({
       slug,
       title: meta.title || slug,
       date: meta.date || "",
-      html: await inlineImages(html, slug, report),
+      html: await writeImages(html, slug, report),
       order: Number.isFinite(order) ? order : Infinity,
     });
   }
 
-  // Entries with an `order` in their frontmatter come first, lowest first.
+  // Collections with an `order` in their frontmatter come first, lowest first.
   // The rest follow newest first, undated last, then alphabetical for
-  // stability. The vault opens on the first entry.
-  entries.sort((a, b) => {
+  // stability. /collections opens on the first.
+  collections.sort((a, b) => {
     if (a.order !== b.order) return a.order < b.order ? -1 : 1;
     if (a.date && b.date && a.date !== b.date) return b.date.localeCompare(a.date);
     if (a.date && !b.date) return -1;
@@ -521,70 +515,7 @@ async function readEntries(report) {
     return a.title.localeCompare(b.title);
   });
 
-  return entries.map(({ order, ...entry }) => entry);
-}
-
-/** Prompts on the TTY without echoing keystrokes. */
-function promptHidden(question) {
-  return new Promise((resolve, reject) => {
-    if (!process.stdin.isTTY) {
-      reject(
-        new Error(
-          "Not a TTY, so the passphrase cannot be prompted for. Set VAULT_PASSWORD instead."
-        )
-      );
-      return;
-    }
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: true,
-    });
-    // Suppress echo by swallowing everything readline writes after the prompt.
-    let muted = false;
-    const write = rl._writeToOutput.bind(rl);
-    rl._writeToOutput = (chunk) => {
-      if (!muted) write(chunk);
-    };
-    rl.question(question, (answer) => {
-      rl.close();
-      process.stdout.write("\n");
-      resolve(answer);
-    });
-    muted = true;
-  });
-}
-
-async function resolvePassphrase() {
-  const fromEnv = process.env.VAULT_PASSWORD;
-  if (fromEnv) return fromEnv;
-
-  const first = await promptHidden("Vault passphrase: ");
-  if (first.length < 12) {
-    throw new Error(
-      "Passphrase must be at least 12 characters. The ciphertext is public, so short passphrases are brute-forceable offline."
-    );
-  }
-  const second = await promptHidden("Confirm passphrase: ");
-  if (first !== second) throw new Error("Passphrases do not match.");
-  return first;
-}
-
-async function deriveKey(passphrase, salt) {
-  const material = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(passphrase),
-    "PBKDF2",
-    false,
-    ["deriveKey"]
-  );
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
-    material,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt"]
-  );
+  return collections.map(({ order, ...collection }) => collection);
 }
 
 function formatBytes(bytes) {
@@ -594,43 +525,29 @@ function formatBytes(bytes) {
 }
 
 async function main() {
+  // Emptied first, so a photo dropped from the markdown doesn't linger.
+  await rm(IMAGE_DIR, { recursive: true, force: true });
+  await mkdir(IMAGE_DIR, { recursive: true });
+
   const report = { images: [], remote: [] };
-  const entries = await readEntries(report);
-  const passphrase = await resolvePassphrase();
-
-  // Fresh salt and IV on every run. Reusing an IV under the same key would
-  // leak plaintext relationships between builds, so these are never persisted
-  // beyond the blob they belong to.
-  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const key = await deriveKey(passphrase, salt);
-
-  const plaintext = new TextEncoder().encode(JSON.stringify({ entries }));
-  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
-
-  const blob = {
-    v: VAULT_VERSION,
-    kdf: "PBKDF2-SHA256",
-    iterations: PBKDF2_ITERATIONS,
-    salt: Buffer.from(salt).toString("base64"),
-    iv: Buffer.from(iv).toString("base64"),
-    data: Buffer.from(ciphertext).toString("base64"),
-  };
+  const collections = await readCollections(report);
 
   await mkdir(path.dirname(OUT_FILE), { recursive: true });
-  await writeFile(OUT_FILE, `${JSON.stringify(blob, null, 2)}\n`, "utf8");
+  await writeFile(OUT_FILE, `${JSON.stringify({ collections }, null, 2)}\n`, "utf8");
 
-  const blobBytes = Buffer.byteLength(JSON.stringify(blob));
   console.log(
-    `Encrypted ${entries.length} ${entries.length === 1 ? "entry" : "entries"} into ${path.relative(projectRoot, OUT_FILE)} (${formatBytes(blobBytes)})`
+    `Built ${collections.length} ${collections.length === 1 ? "collection" : "collections"} into ${path.relative(projectRoot, OUT_FILE)}`
   );
-  for (const entry of entries) {
-    const count = report.images.filter((i) => i.slug === entry.slug && !i.src.endsWith(THUMB_SUFFIX)).length;
-    console.log(`  - ${entry.title}${count ? ` (${count} image${count === 1 ? "" : "s"})` : ""}`);
+  for (const collection of collections) {
+    const count = report.images.filter((i) => i.slug === collection.slug && !i.src.endsWith(THUMB_SUFFIX)).length;
+    console.log(`  - ${collection.title}${count ? ` (${count} image${count === 1 ? "" : "s"})` : ""}`);
   }
 
   if (report.images.length > 0) {
-    console.log("\nImages inlined into the ciphertext:");
+    const total = report.images.reduce((sum, img) => sum + img.to, 0);
+    console.log(
+      `\nImages written to ${path.relative(projectRoot, IMAGE_DIR)} (${report.images.length} files, ${formatBytes(total)}):`
+    );
     for (const img of report.images) {
       console.log(
         `  ${img.src}  ${formatBytes(img.from)} -> ${formatBytes(img.to)} webp, quality ${img.quality}`
@@ -640,19 +557,13 @@ async function main() {
 
   if (report.remote.length > 0) {
     console.log(
-      "\nWarning: these images are remote URLs, so they are NOT encrypted and\nwill be fetched from a third party every time you open the vault:"
+      "\nWarning: these images are remote URLs, so they are fetched from a third\nparty every time the page opens:"
     );
     for (const src of report.remote) console.log(`  ${src}`);
-  }
-
-  if (blobBytes > BLOB_WARN_BYTES) {
-    console.log(
-      `\nWarning: the blob is ${formatBytes(blobBytes)}. It is embedded in the page and\ndecrypted in one pass, so consider fewer or smaller images.`
-    );
   }
 }
 
 main().catch((err) => {
-  console.error(`\nVault encryption failed: ${err.message}`);
+  console.error(`\nCollections build failed: ${err.message}`);
   process.exit(1);
 });

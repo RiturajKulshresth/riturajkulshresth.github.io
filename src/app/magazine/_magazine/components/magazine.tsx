@@ -3,7 +3,6 @@
  * with responsive sizing, per-page auto-fit scaling, and chapter jumps from the
  * contents page.
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useState, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import { BookOpen, ArrowLeft, ArrowRight, Mail, ExternalLink } from "lucide-react";

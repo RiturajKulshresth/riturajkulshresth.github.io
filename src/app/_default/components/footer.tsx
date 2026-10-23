@@ -3,7 +3,7 @@
  * `iconMap` resolves each link's `icon` string to a react-icons component.
  */
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { Archive } from "lucide-react";
 import { FaGithub, FaLinkedinIn, FaXTwitter } from "react-icons/fa6";
 import { GrInstagram } from "react-icons/gr";
 import { socialLinks } from "@/lib/data";
@@ -46,16 +46,16 @@ export default function Footer() {
               </a>
             );
           })}
-          {/* The vault lives in the footer rather than the navbar so the
-              private area isn't advertised on every route. Its contents are
-              encrypted regardless, so this link gives nothing away. */}
+          {/* The only link to the collections. They live in the footer rather
+              than the navbar so the unlisted pages aren't advertised on every
+              route. */}
           <Link
-            href="/vault"
-            aria-label="Private vault"
-            title="Private vault"
+            href="/collections"
+            aria-label="Collections"
+            title="Collections"
             className="rounded-md p-2.5 text-[color:var(--color-fg-subtle)] transition hover:bg-[color:var(--color-surface-hover)] hover:text-[color:var(--color-fg)]"
           >
-            <Lock size={16} />
+            <Archive size={16} />
           </Link>
         </div>
       </div>

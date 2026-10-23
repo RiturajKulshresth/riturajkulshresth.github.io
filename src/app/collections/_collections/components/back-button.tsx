@@ -1,5 +1,5 @@
 /**
- * Navigation control for the vault. Returns to the main site home page.
+ * Navigation control for the collections. Returns to the main site home page.
  * Mirrors the back-button pattern the other standalone routes use instead of
  * mounting the full site navbar.
  */

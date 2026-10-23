@@ -7,11 +7,11 @@
     "node": ">=20.10.0"
   },
   "scripts": {
+    "predev": "npm run collections",
     "dev": "next dev",
+    "prebuild": "npm run collections",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "vault": "node scripts/encrypt-vault.mjs",
+    "collections": "node scripts/build-collections.mjs",
     "clean": "rm -rf node_modules package-lock.json .next out"
   },
   "dependencies": {
@@ -30,17 +30,9 @@
     "@types/node": "22.15.21",
     "@types/react": "19.1.4",
     "@types/react-dom": "19.1.5",
-    "eslint": "9.22.0",
-    "eslint-config-next": "16.2.6",
     "marked": "18.0.11",
     "sharp": "0.35.4",
     "tailwindcss": "4.1.8",
     "typescript": "5.8.3"
-  },
-  "eslintConfig": {
-    "extends": [
-      "next/core-web-vitals",
-      "next/typescript"
-    ]
   }
 }

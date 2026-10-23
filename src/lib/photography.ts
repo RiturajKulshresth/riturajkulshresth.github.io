@@ -70,8 +70,3 @@ export const photos: Photo[] = [
     ...u("1711058962891-978794507db0", "M3w1Nzg3NDR8MHwxfGFsbHx8fHx8fHx8fDE3MTEwNTk3ODB8"),
   },
 ];
-
-export const photographyLinks = {
-  unsplash: "https://unsplash.com/@riturajworkemail",
-  instagram: "https://www.instagram.com/riturajkulshresth/",
-} as const;

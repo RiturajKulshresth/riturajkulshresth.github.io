@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /vault/
+Disallow: /collections/
 
 Sitemap: https://riturajkulshresth.github.io/sitemap.xml

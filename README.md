@@ -40,15 +40,15 @@ src/
 │   ├── badui/                  # Render mode: cursed dark-pattern homage (r/badUIbattles)
 │   ├── photography/            # Standalone: fullscreen drag-to-pan gallery + lightbox
 │   ├── terminal/               # Standalone: cyberpunk "AEGIS" terminal + arcade
-│   └── vault/                  # Standalone: passphrase-protected encrypted notes
+│   └── collections/            # Standalone: unlisted collection lists, one page per collection
 │
 ├── lib/
 │   ├── data.ts                 # All portfolio content + nav/route/render-mode tables
 │   ├── hooks.ts                # Shared hooks (useLockBodyScroll)
 │   └── photography.ts          # Photo data + Unsplash URL builders
 │
-content/vault/                  # Gitignored plaintext source for /vault
-scripts/encrypt-vault.mjs       # Encrypts content/vault/ into the /vault blob
+content/collections/            # Markdown and photos for /collections
+scripts/build-collections.mjs   # Builds content/collections/ into the /collections pages' HTML and images
 ```
 
 ### Route folder convention
@@ -111,8 +111,6 @@ Key pieces:
 - `types.ts`: shared terminal types (e.g. `SystemLog`).
 - Visualizers: `ShaderCanvas` (WebGL warp field with Bayer dithering), `CoreVisualizer`, `SpectralAnalyzer` (FFT + Lorenz attractor), `TelemetrySparkGrid`, `EntropyMeter`, `BackgroundLogStream`, `BootSequence`, `AiCore`, `ProjectGrid`, `SkillMatrix`, `ResumeTimeline`.
 
-> Note: `App.tsx` opts out of type-checking/linting (`@ts-nocheck`, `eslint-disable`) because it is a dense, ported HUD. Do not remove those headers unless you are prepared to fix the resulting reports.
-
 ### Arcade games
 
 `components/ArcadeTerminal.tsx` is the host for a 10-game arcade. Each game is an isolated engine implementing a shared interface, so the host owns the runtime and input while each game owns only its own logic.
@@ -139,44 +137,36 @@ The game states separate a **win** (`VICTORY`, green overlay) from a **loss** (`
 | HIGHWAY    | Speedway     | 3 lives + invuln; Space/Up/W nitro boost. |
 | DINO       | Dino Runner  | Single-life. |
 
-## Private vault
+## Collections
 
-`/vault` is a passphrase-protected area for personal notes and buy/todo lists, reachable from the lock icon in the footer. It is deliberately absent from `src/app/sitemap.ts`, marked noindex, and disallowed in `public/robots.txt`.
+`/collections` holds collection lists (watches, diecast), reachable only from the archive icon in the footer. It is public but unlisted: deliberately absent from `src/app/sitemap.ts`, marked noindex, and disallowed in `public/robots.txt`.
 
-Because the site is a static export on public GitHub Pages there is no server to check a password against, so privacy comes from the content itself being ciphertext:
+1. Each collection is a markdown file in `content/collections/`, with its photos in `content/collections/images/`. Both are committed.
+2. `npm run collections` (`scripts/build-collections.mjs`) renders each file to HTML with `marked` into `src/app/collections/_collections/collections.json`, and encodes each photo as a 320px WebP square under 5 KB in `public/collections/images/`. Both outputs are gitignored.
+3. The script runs automatically before `npm run dev` and `npm run build`, so both deploys (the GitHub Pages workflow and Vercel, whose `vercel.json` build command is `npm run build` for this reason) build the collections straight from the committed markdown.
 
-1. Entries are authored as markdown in `content/vault/`, which is **gitignored** and never leaves your machine.
-2. `npm run vault` renders each file to HTML with `marked`, bundles them, derives a key from your passphrase with PBKDF2-SHA256 (600,000 iterations, fresh 16-byte salt), encrypts with AES-256-GCM under a fresh 12-byte IV, and writes `src/app/vault/_vault/vault.json`.
-3. That JSON blob is the only thing committed and deployed. The browser decrypts it via Web Crypto after you enter the passphrase; nothing is sent anywhere.
-
-The deploy workflow needs no secret, because it only ever builds the already-encrypted blob.
+Each collection is a static page at `/collections/<file name>/`, and `/collections/` opens on the first.
 
 ### Authoring loop
 
 ```bash
-# write or edit files in content/vault/
-npm run vault    # prompts for the passphrase (or set VAULT_PASSWORD)
-git add src/app/vault/_vault/vault.json && git commit && git push
+# write or edit files in content/collections/
+npm run collections    # only needed to refresh a dev server that is already running
+git add content/collections && git commit && git push
 ```
 
-Frontmatter takes three fields. `tags` become the sidebar filter chips, so `blog`, `buy`, and `todo` give you three views over one vault:
+Frontmatter:
 
 ```markdown
 ---
-title: Things to buy
-date: 2026-09-04
-tags: [buy]
+title: Watches
+date: 2026-09-05
+order: 1        # optional; lowest first, then the rest newest first
+layout: story   # optional; numbered chapters under an overview
 ---
-
-- [ ] Standing desk
-- [x] Mechanical keyboard
 ```
 
-### Passphrase
-
-The ciphertext is publicly downloadable, so passphrase strength is the only thing protecting the vault against an offline attack. Use five or more random words, and do not reuse a password from elsewhere. The 600,000 PBKDF2 iterations cost a legitimate unlock about half a second and make bulk guessing expensive, but they are not a substitute for a strong passphrase. To harden further, `scripts/encrypt-vault.mjs` and `src/app/vault/_vault/crypto.ts` are the only two files that would need to change to swap PBKDF2 for Argon2id.
-
-The browser caches the passphrase in `sessionStorage` so a refresh does not re-prompt; it dies with the tab, and the Lock button clears it immediately.
+A list item with a nested `Label: value` list renders as a card. Card pages can also set `ticked`, `unticked`, `ranked`, and `details: inline` in their frontmatter; see `CARD_SETTINGS` in `scripts/build-collections.mjs`.
 
 ## Editing content
 
@@ -223,11 +213,9 @@ Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds the stat
 
 ## Scripts
 
-| Script           | Purpose                                |
-| ---------------- | -------------------------------------- |
-| `npm run dev`    | Local dev server on port 3000          |
-| `npm run build`  | Static export to `out/`                |
-| `npm run start`  | Serve a production build               |
-| `npm run lint`   | Next.js ESLint                         |
-| `npm run vault`  | Encrypt `content/vault/` into the `/vault` blob |
-| `npm run clean`  | Wipe `node_modules`, lockfile, `.next`, `out` |
+| Script                | Purpose                                |
+| --------------------- | -------------------------------------- |
+| `npm run dev`         | Local dev server on port 3000          |
+| `npm run build`       | Static export to `out/`                |
+| `npm run collections` | Build `content/collections/` into the `/collections` pages |
+| `npm run clean`       | Wipe `node_modules`, lockfile, `.next`, `out` |

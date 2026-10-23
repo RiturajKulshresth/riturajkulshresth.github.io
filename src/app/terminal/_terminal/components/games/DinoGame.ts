@@ -348,4 +348,3 @@ export class DinoGame implements GameEngine {
     c2d.fillText(`MODE_PHASE: ${this.dayTime ? "DAY_CYCLE" : "NIGHT_REVERSED"}`, 160, ctx.canvas.height - 8);
   }
 }
-export default DinoGame;

@@ -458,7 +458,6 @@ export default function PhotoGallery({ photos }: { photos: Photo[] }) {
                 )}
                 style={{ cursor: isDragging ? "grabbing" : "zoom-in" }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   ref={(el) => {
                     imageRefs.current[index] = el;

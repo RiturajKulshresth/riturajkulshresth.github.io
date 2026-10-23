@@ -34,10 +34,10 @@ yarn-error.log*
 .env
 .env*.local
 
-# vault plaintext - the unencrypted source for /vault. Only the encrypted
-# src/app/vault/_vault/vault.json is ever committed. Committing this would
-# publish the vault to the world, since this repo is public.
-/content/vault/
+# collections build output, generated from content/collections/ by
+# `npm run collections`, which runs before every dev server and build
+/public/collections/
+/src/app/collections/_collections/collections.json
 
 # misc
 *.pem

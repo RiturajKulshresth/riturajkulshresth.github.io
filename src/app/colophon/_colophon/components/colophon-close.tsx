@@ -2,9 +2,7 @@
  * §06 - COLOPHON.
  *
  * The closer, and a literal colophon - which is why this direction is called
- * what it is. A colophon is the closing statement of who set the work, and it
- * is exactly where a restricted appendix belongs, so /vault is hidden here by
- * being *contextually correct* rather than by being visually suppressed.
+ * what it is. A colophon is the closing statement of who set the work.
  *
  * Contact is a ruled table of leader rows: the single most un-card-like object
  * in typography. There is no "Let's build something", no headline question, no
@@ -14,7 +12,6 @@
  * END carries the third and last register ghost, and the word END is the serif
  * italic's second and final use in the document.
  */
-import Link from "next/link";
 import { profile, socialLinks, RESUME_PATH } from "@/lib/data";
 import { COORDINATES } from "../data";
 
@@ -111,18 +108,6 @@ export default function ColophonClose() {
                 </a>
               ))}
             </span>
-          </dd>
-        </div>
-
-        <div className="clp-crow">
-          <dt className="clp-ckey">
-            <span className="clp-clabel">Appendix A</span>
-            <span className="clp-leader" aria-hidden="true" />
-          </dt>
-          <dd className="clp-cval">
-            <Link className="clp-link" href="/vault">
-              Restricted ↗
-            </Link>
           </dd>
         </div>
       </dl>

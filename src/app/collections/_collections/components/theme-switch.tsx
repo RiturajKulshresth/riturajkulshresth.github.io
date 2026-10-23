@@ -1,7 +1,7 @@
 /**
- * Day/night switch for the vault, pinned top-right opposite the back button so
- * it is reachable from the lock screen as well as the reader. Wraps the site's
- * own toggle, so the choice carries over to every other page.
+ * Day/night switch for the collections, pinned top-right opposite the back
+ * button. Wraps the site's own toggle, so the choice carries over to every
+ * other page.
  */
 import ThemeToggle from "@/app/_default/components/theme-toggle";
 

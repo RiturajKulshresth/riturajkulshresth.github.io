@@ -103,7 +103,6 @@ export default function PhotoLightbox({
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
           </div>
         )}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={photo.id}
           src={photo.full}

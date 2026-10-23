@@ -164,7 +164,6 @@ export default function IndexOfPlates() {
                 active === i ? " clp-plate-media-on" : ""
               }`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={summoned.includes(i) ? plate.project.preview : undefined}
                 alt=""

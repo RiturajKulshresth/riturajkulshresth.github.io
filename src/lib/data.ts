@@ -179,7 +179,7 @@ export const projects: Project[] = [
   },
 ];
 
-export type Experience = {
+type Experience = {
   company: string;
   role: string;
   period: string;
@@ -252,7 +252,7 @@ export const experience: Experience[] = [
   },
 ];
 
-export type SkillGroup = {
+type SkillGroup = {
   title: string;
   description: string;
   items: string[];
@@ -324,7 +324,7 @@ export const skillGroups: SkillGroup[] = [
   },
 ];
 
-export type Accolade = {
+type Accolade = {
   title: string;
   organisation: string;
   period: string;

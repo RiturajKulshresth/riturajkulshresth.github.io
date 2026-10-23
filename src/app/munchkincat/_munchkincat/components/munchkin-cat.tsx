@@ -1214,7 +1214,6 @@ function Game({
         masterGainRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const padPress = (action: string, down: boolean) => padRef.current(action, down);

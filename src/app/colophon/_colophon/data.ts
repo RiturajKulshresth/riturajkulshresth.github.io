@@ -43,7 +43,7 @@ export const COORDINATES = "17.3850 N, 78.4867 E";
  */
 const LOGO_ASSETS = new Set(["/images/wbd.png", "/images/deloitte.png"]);
 
-export type Plate = {
+type Plate = {
   project: Project;
   /** 1-based plate number, printed as `[ 07 ]`. */
   number: number;
