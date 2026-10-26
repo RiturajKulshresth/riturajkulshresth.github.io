@@ -150,6 +150,43 @@ details: inline
 
   - Brand: Tarmac Works
   - Scale: 1:64
+- [x] **Toyota Supra Mk4 A80** (silver)
+
+  ![LCD Models Toyota Supra Mk4 A80](images/lcd-models-toyota-supra-a80-silver.webp)
+
+  - Brand: LCD Models
+  - Scale: 1:64
+- [x] **Porsche 918 Spyder** (red)
+
+  ![TimeMicro Porsche 918 Spyder](images/timemicro-porsche-918-spyder-red.jpg)
+
+  - Brand: TimeMicro
+  - Scale: 1:64
+- [x] **Koenigsegg Agera RS** (Chilli Red)
+
+  ![Guo Ji Koenigsegg Agera RS](images/guo-ji-koenigsegg-agera-rs-chilli-red.webp)
+
+  - Brand: Guo Ji
+  - Scale: 1:64
+- [x] **Nissan Skyline GT-R V8 Drift Hakosuka** (Dark Chrome)
+
+  ![Pop Race Nissan Skyline GT-R V8 Drift Hakosuka](images/pop-race-skyline-gtr-v8-drift-hakosuka-dark-chrome.png)
+
+  - Brand: Pop Race
+  - Scale: 1:64
+- [x] **Pagani Zonda R** (Rosso Dubai)
+
+  ![Tarmac Works Pagani Zonda R](images/tarmac-works-pagani-zonda-r-rosso-dubai.jpg)
+
+  - Brand: Tarmac Works
+  - Scale: 1:64
+- [x] **EVA RT Type-01 Audi R8 LMS GT4** (Super Taikyu ST-Z 2021)
+
+  ![Tarmac Works EVA RT Type-01 Audi R8 LMS GT4, Super Taikyu 2021](images/tarmac-works-eva-rt-type-01-audi-r8-lms-gt4.webp)
+
+  - Brand: Tarmac Works
+  - Scale: 1:64
+
 ## On preorder
 
 - [ ] **McLaren F1 GTR 1995 Presentation**
