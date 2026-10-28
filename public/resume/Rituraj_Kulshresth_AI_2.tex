@@ -1,0 +1,227 @@
+\documentclass[letterpaper,9pt]{extarticle}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[pdftex]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{fontawesome5}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\hypersetup{hidelinks}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.50in}
+\addtolength{\evensidemargin}{-0.40in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.1in}
+
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-7pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+%-------------------------
+% Custom commands
+
+
+% \resumeItem: bold header followed by a nested bulleted list (used inside Experience clusters)
+\newcommand{\resumeItem}[2]{
+  \item\small{
+    \textbf{#1}{:} 
+  \begin{itemize}[label=\textbullet, leftmargin=8pt, itemsep=2pt]
+      #2
+    \end{itemize}
+    }
+}
+
+% \resumeSubItem: single-line "Title: description" entry (used in Projects, Skills, Accolades)
+\newcommand{\resumeSubItem}[2]{
+  \item\small{
+    \textbf{#1}{: #2}
+  }\vspace{-2pt}
+}
+
+% \resumeSubheading: job/education header, Company/Location on top row, Role/Dates on bottom row
+\newcommand{\resumeSubheading}[4]{
+  \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & {\small #2} \\
+      {\small#3} & {\small #4} \\
+    \end{tabular*}
+}
+
+\renewcommand{\labelitemii}{$\circ$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=6pt, itemindent=0pt, labelsep=4pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}}
+
+%-------------------------------------------
+%%%%%%  CV STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%----------HEADING-----------------
+
+\begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+
+    \textbf{{\large Rituraj Kulshresth}} & Email:\href{mailto:kulshresth.1@alumni.iitj.ac.in}{ kulshresth.1@alumni.iitj.ac.in}\\
+    
+     \href{https://github.com/RiturajKulshresth}{GitHub} \textbar{} \href{https://riturajkulshresth.vercel.app}{Portfolio} & Location: Hyderabad, India \\
+    
+     \href{https://www.linkedin.com/in/rituraj-kulshresth/}{LinkedIn}& Mobile: +91 7004742004 \\
+  
+\end{tabular*}
+
+%-----------SUMMARY-----------------
+\section{Summary}
+\small{Software engineer with 4+ years of experience building production LLM systems: AI agents, retrieval-augmented generation (RAG), and LLM evaluation. At Warner Bros. Discovery, owns the company's AI agent platform, guides every client team from agent design to production, and has built three internal AI platforms and multiple production agents, including an executive reporting agent. Author or co-author of 9 architecture design documents covering agent authentication, SDKs, retrieval, evaluation, and scheduled runs.}
+
+%-----------EDUCATION-----------------
+
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Indian Institute of Technology, Jodhpur}{Jodhpur, Rajasthan}
+      {Bachelor of Technology in Computer Science and Engineering;}{July 2018 -- June 2022}
+  \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+\section{Experience}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+          {Warner Bros. Discovery}{Hyderabad, India}
+          {Software Development Engineer 2 (AI Platforms)}{Nov 2024 - Present}
+          \resumeItemListStart
+            \resumeItem{AI Agent Platform (Forge and ACME)}
+            {
+                \item Own the company's multi-tenant \textbf{AI agent platform} (ACME), the agent layer of \textbf{Forge}, the company-wide AI platform standard, where teams configure, test, and publish \textbf{LangGraph} agents with tool calling, streaming responses, and tracing instead of running their own infrastructure.
+
+                \item Lead \textbf{agent development for client teams}: guide every team that onboards from use case and tool design through testing to a published production agent, build \textbf{multiple production agents} directly, and unblock each integration end to end (application deployment, data-source connectivity such as Snowflake, local development setup); rebuilt the developer documentation site in Docusaurus.
+
+                \item Designed the platform's \textbf{authentication and authorization}: role-based access control (\textbf{RBAC}) across teams, apps, agents, and sub-agents with separate build and invoke permissions; machine-to-machine auth (API keys, AWS Secrets Manager) and on-behalf-of-user auth (Okta \textbf{OAuth 2.0 / OIDC}); and caller identity propagated through every sub-agent and tool call to prevent privilege escalation.
+
+                \item Designed and built \textbf{scheduled agent runs} and a user mode so non-technical users can get recurring agent output by email: a distributed cron scheduler that starts each due run at most once across replicas, re-checks the owner's access before every run and skips the run if access is gone, and delivers through an Amazon SES outbox that retries failed sends without re-running the agent.
+
+                \item Moved agent configuration out of YAML files in the codebase into a versioned \textbf{agent registry} (PostgreSQL JSONB) with draft, published, and archived states, and built the no-code agent builder and catalog on top of it, so new teams onboard with \textbf{no code changes}.
+
+                \item Built the agent \textbf{playground}, a sandbox where developers test prompts, inspect tool calls and streaming events, and validate sub-agent orchestration before publishing an agent for reuse across the company.
+
+                \item Shipped the platform's \textbf{RAG tool}, letting any agent search shared vector indexes and cite its sources, with incremental Confluence and DataHub ingestion that re-embeds only changed documents and citations expanded to the surrounding passage and section heading.
+
+                \item Migrated all \textbf{11 production agents} to Amazon Bedrock inference profiles and enforced \textbf{model governance} through load-time checks and a CI lint that block unapproved model providers, clearing the production launch and making a model swap a configuration change instead of a code change.
+
+                \item Eliminated all \textbf{critical SAST findings} in one sprint ahead of the broader rollout, and fixed a credential leak in which AWS SDK debug logs wrote temporary AWS credentials and SSO bearer tokens to stdout and the OpenSearch log store.
+
+                \item Serve as \textbf{release manager} for the platform, taking each release of its runtime, console, and tracing services from dev through integration and staging to production.
+
+                \item Provisioned the platform's infrastructure on Kubernetes (Amazon EKS) with Terraform, Terragrunt, and Helm, and set up its Python/TypeScript monorepo (FastAPI runtime, Next.js console) with CI/CD across all four environments.
+            }
+            \vspace{2pt}
+
+            \resumeItem{Executive Reporting AI Agent: Weekly Business Review (WBR)}
+            {
+                \item Owned end-to-end development of an AI agent that drafts the \textbf{WBR report} read by Streaming's \textbf{senior leadership}, replacing \textbf{4 to 6 hours} of senior-analyst work each week; the analyst now reviews the draft instead of writing it.
+
+                \item Built the agent with \textbf{Claude Opus on Amazon Bedrock} (extended thinking) to combine inputs from \textbf{four teams} (the BI team's subscriber forecast, Strategy's key-events email, regional managers' commentary, and the review slide deck) into headline findings, each grounded in forecast numbers, tied to the business event that explains it, and linked to its supporting slide; added a reusable S3 tool so any agent on the platform can read its inputs from S3.
+
+                \item Delivered the production pipeline on \textbf{Databricks} (Asset Bundles, scheduled Jobs) across four environments: input checks that stop the run before the model is called if anything is missing, versioned Markdown and Word drafts archived to S3 for audit, and email delivery through Amazon SES, at about \textbf{\$2 per run}; wrote the runbook for the analytics engineers who operate it.
+
+                \item Traced intermittent failures on long extended-thinking runs, each wasting up to 30 minutes, to the AWS SDK's \textbf{60-second default read timeout} on non-streaming Bedrock calls, and made the timeout configurable in the platform runtime, fixing long-output runs for all agents on the platform.
+            }
+            \vspace{2pt}
+
+            \resumeItem{Enterprise RAG Platform (Knowledge Hub)}
+            {
+                \item Designed and built a self-serve \textbf{RAG platform} on \textbf{Amazon OpenSearch} end to end: teams create vector indexes over their documents and share both the document catalog and the index catalog across the company, so any AI application can reuse an existing index instead of re-ingesting; adopted by multiple internal applications and documented in its architecture design.
+
+                \item Implemented ingestion from Confluence, Jira, GitHub, S3, Airflow logs, and arbitrary text, with bulk upload, team-specific chunking, a \textbf{semantic chunking} mode that splits by meaning instead of token windows, and document replacement on re-ingestion so updated files overwrite their old chunks instead of duplicating them.
+
+                \item Added \textbf{multimodal embeddings} on Amazon Bedrock (Amazon Titan for text and code, a multimodal model for images), opening the platform to teams whose documents are diagrams, screenshots, and scanned PDFs.
+
+                \item Benchmarked Amazon DynamoDB vector search against OpenSearch on live AWS services: equal retrieval accuracy at about \textbf{60$\times$ lower cost}, but recommended OpenSearch because DynamoDB requires every filter field to be declared at index creation (at most 18, exact match only), which would remove the platform's self-serve metadata filtering.
+
+                \item Optimized OpenSearch shard usage after the dev cluster hit its 1,000-shard limit and blocked a team's onboarding, freeing \textbf{nearly half the shard budget} by removing 482 replica shards a single-node cluster could never assign.
+
+                \item Co-authoring the design of a shared \textbf{retrieval service} for AI agents: \textbf{hybrid search} (BM25 + vector kNN), per-index authorization, zero-downtime re-embedding through index aliases, and Python and TypeScript SDKs.
+            }
+            \vspace{2pt}
+
+            \resumeItem{Multi-agent Chatbot Platform (Daisy)}
+            {
+                \item Developed a \textbf{multi-agent chatbot platform} used by \textbf{11+} engineering and business teams to build domain-specific assistants with configurable tools, SQL and document data sources, and models (Vercel AI SDK, FastAPI, LangChain).
+
+                \item Cut cloud spend by about \textbf{70\% per non-production environment} (\$700 to \$200 a month) and \textbf{20\% in production} (\$1,000 to \$800) by analysing traffic and workload patterns, right-sizing compute and storage, and removing unused services; for the corporate initiative to halve non-production cloud spend, also audited all non-production infrastructure, capped replicas at 3, and consolidated to a single region.
+
+                \item Created an \textbf{LLM evaluation} framework with DeepEval and custom metrics for prompt quality and answer correctness, improving evaluation accuracy by \textbf{27\%}.
+
+                \item Reduced chat-session storage by about \textbf{66\%} by removing redundant Vercel AI SDK logging, which also sped up OpenSearch indexing and queries.
+
+                \item Led a \textbf{zero-downtime migration} of the entire platform to new AWS accounts during the company's corporate split: moved codebases and AWS Lambda functions off the legacy account and re-provisioned all infrastructure with Terraform and Terragrunt.
+
+                \item Authored the architecture designs for the LLM evaluation platform and the vector database APIs, and led code reviews for a team of \textbf{7 engineers}.
+            }
+        \resumeItemListEnd
+        \vspace{3pt}
+
+    \resumeSubheading
+        {Deloitte}{Hyderabad, India}
+        {Software Engineer (Analyst)}{July 2022 -- Nov 2024}
+        \resumeItemListStart
+            \resumeItem{Microsoft Outlook Add-ins for Document Archival}
+            {
+                \item Built and deployed an Outlook add-in (Microsoft Graph API, Yeoman) that archives email documents to an enterprise content management system, with role-based access by distribution group, used by \textbf{1,000+ users}.
+
+                \item Built a second Outlook add-in (React) that sends mailbox documents to enterprise document servers, used by \textbf{500+ users}.
+            }
+        \resumeItemListEnd
+    \resumeSubHeadingListEnd
+
+%--------PROGRAMMING SKILLS------------
+\section{Skills}
+    \resumeSubHeadingListStart
+        \resumeSubItem
+            {Languages} {Python, TypeScript/JavaScript, SQL, C/C++, Rust, Java, Assembly}
+        \resumeSubItem
+            {AI \& LLM} {AI agents, multi-agent systems, tool calling, RAG, vector and hybrid search, embeddings, LLM evaluation, guardrails, prompt engineering, LangGraph, LangChain, LangSmith, DeepEval, OpenAI API, Anthropic Claude API, Vercel AI SDK, Amazon Bedrock, TensorFlow}
+        \resumeSubItem
+            {Backend \& Frontend} {FastAPI, REST APIs, SQLAlchemy, Alembic, PostgreSQL, Next.js, React, Node.js (MERN), Electron}
+        \resumeSubItem
+            {Cloud \& DevOps} {AWS (EKS, Lambda, S3, OpenSearch, DynamoDB, SES, API Gateway, Secrets Manager), Databricks, Kubernetes, Docker, Helm, Terraform, Terragrunt, CI/CD (GitHub Actions), Prometheus, Git, Mainframe (z/OS)}
+        \resumeSubItem
+            {Security} {RBAC, OAuth 2.0, OIDC (Okta), SAST}
+ \resumeSubHeadingListEnd
+
+%--------Achievements------------
+ \section{Accolades}
+  \resumeSubHeadingListStart
+      \resumeSubItem{KVPY}
+      {Recognized as a Kishore Vaigyanik Protsahan Yojana Scholar in 2017-2018}
+    \resumeSubItem{Deloitte}
+      {Honored with 3 Excellence Awards for the Outlook archiving add-in and an OpenText server upgrade}
+    \resumeSubItem{Warner Bros. Discovery}
+      {Honored with an Excellence Award for designing and building the enterprise RAG platform (Knowledge Hub)}
+  \resumeSubHeadingListEnd
+%-------------------------------------------
+\end{document}
