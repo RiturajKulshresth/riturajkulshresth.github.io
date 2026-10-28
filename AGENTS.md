@@ -18,7 +18,8 @@ image encoding are all generated from it.
 
 An item is a list item holding a nested `Label: value` list. Its checkbox is its
 status: `- [x]` owned, `- [ ]` wanted or ordered, `- ` with no box a maybe. Each
-`##` section is one list, so keep a list to one status.
+`##` section is one list, so keep a list to one status. Each card is numbered
+by its place in its list, so the markdown order is the numbering.
 
 ```markdown
 - [ ] **Seiko Prospex Alpinist Mechanical GMT** (ref. HBC007J1, cal. 6R54)
@@ -49,8 +50,9 @@ Fields, in this order, skipping any that don't apply:
 ### Sections
 
 - **Watches:** On the wrist (`[x]`), Next up (`[ ]`), Someday (no box), Passed
-  on, What it all costs. Next up is in buy order, numbered by `ranked: Buy
-  order`, so insert a watch at its place in that order and ask if it's unclear.
+  on, What it all costs. Next up is in buy order, its numbers labelled by
+  `ranked: Buy order`, so insert a watch at its place in that order and ask if
+  it's unclear.
   When a watch arrives, move it to On the wrist and tick it. A dropped watch
   becomes a `Name (reference)` row in the Passed on table, and its card and
   photo are deleted.
@@ -78,8 +80,9 @@ layout: story     # opens with an overview of the chapters
 ```
 
 Optional frontmatter: `ticked` and `unticked` rename the status chips (Owned and
-To buy by default), `ranked` numbers an unticked list, and `details: inline`
-shows the fields on the card rather than in a dialog. See `CARD_SETTINGS` in
+To buy by default), `ranked` turns an unticked list's numbers into a ranking
+(their tooltip, also shown on the overview), and `details: inline` shows the
+fields on the card rather than in a dialog. See `CARD_SETTINGS` in
 `scripts/build-collections.mjs`.
 
 ### Writing

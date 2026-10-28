@@ -186,6 +186,12 @@ details: inline
 
   - Brand: Tarmac Works
   - Scale: 1:64
+- [x] **Koenigsegg Regera** (matte grey)
+
+  ![Guo Models Koenigsegg Regera](images/guo-models-koenigsegg-regera-matte-grey.jpg)
+
+  - Brand: Guo Models
+  - Scale: 1:64
 
 ## On preorder
 

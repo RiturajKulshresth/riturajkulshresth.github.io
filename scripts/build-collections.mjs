@@ -54,9 +54,10 @@ const IMAGE_BACKGROUND = "#ffffff";
 // checklist has no such list and renders as an ordinary checklist.
 const CARD_FIELD = /^([A-Z][A-Za-z ]{0,19}):\s/;
 const CARD_OPEN_LABEL = "Details";
-// Card settings, which a page can override in its frontmatter. `ticked` and
-// `unticked` are the status chips. `ranked`, when set, numbers the cards of an
-// unticked list in markdown order and is the tooltip on those numbers.
+// Every card is numbered by its place in its list. Card settings, which a page
+// can override in its frontmatter: `ticked` and `unticked` are the status
+// chips. `ranked`, when set, makes the numbers of an unticked list a ranking:
+// it is their tooltip, and the story overview repeats them on its thumbnails.
 // `details: inline` shows a card's fields on the card itself, with no open
 // button or dialog, for pages with only a few short lines per card.
 const CARD_SETTINGS = { ticked: "Owned", unticked: "To buy", ranked: "", details: "dialog" };
@@ -304,7 +305,7 @@ const cardRenderer = {
     const compact = token.items.every((item) => cardStatus(item) === "maybe");
     const sortable = isSortable(token);
     const cards = token.items
-      .map((item, i) => this.listitem(item, sortable ? i + 1 : 0, settings))
+      .map((item, i) => this.listitem(item, i + 1, sortable, settings))
       .join("");
     const inline = settings.details === INLINE_DETAILS ? ` data-details="${INLINE_DETAILS}"` : "";
     const list = `<ul class="cards ${compact ? "compact" : "gallery"}"${inline}>\n${cards}</ul>\n`;
@@ -312,10 +313,11 @@ const cardRenderer = {
   },
 
   /**
-   * `rank` is the card's place in a sortable list, or 0 outside one; it shows
-   * as a badge only when `settings.ranked` is set.
+   * `number` is the card's place in its card list, shown as a badge, or 0 for
+   * a card in a list that isn't one. `sortable` is whether the list has sort
+   * buttons, which need the card's sort keys.
    */
-  listitem(item, rank = 0, settings = CARD_SETTINGS) {
+  listitem(item, number = 0, sortable = false, settings = CARD_SETTINGS) {
     if (!isCard(item)) return false;
 
     const rest = item.tokens.slice(1);
@@ -363,16 +365,17 @@ const cardRenderer = {
       ? `<button type="button" class="card-open" aria-haspopup="dialog" aria-label="${CARD_OPEN_LABEL}, ${cardLabel(item)}">${CARD_OPEN_LABEL}</button>`
       : "";
 
-    const sortKeys = rank ? ` data-order="${rank}" data-price="${price.replace(/,/g, "")}"` : "";
-    const rankBadge = rank && settings.ranked
-      ? `<span class="card-rank" title="${settings.ranked}">${rank}</span>`
+    const sortKeys = sortable ? ` data-order="${number}" data-price="${price.replace(/,/g, "")}"` : "";
+    const ranked = sortable && settings.ranked;
+    const numberBadge = number
+      ? `<span class="card-number"${ranked ? ` title="${settings.ranked}"` : ""}>${number}</span>`
       : "";
     const chip = status === "done" ? settings.ticked : status === "open" ? settings.unticked : "";
     return [
       `<li class="card" id="${item.cardId}" data-status="${status}"${sortKeys}>`,
       media,
       `<header class="card-head">`,
-      `<div class="card-title"><h3 class="card-name">${rankBadge}${name}</h3>`,
+      `<div class="card-title"><h3 class="card-name">${numberBadge}${name}</h3>`,
       ref ? `<p class="card-ref">${ref}</p>` : "",
       `</div><div class="card-meta">`,
       price ? `<p class="card-price">${CARD_PRICE_PREFIX}${price}</p>` : "",
