@@ -192,6 +192,18 @@ details: inline
 
   - Brand: Guo Models
   - Scale: 1:64
+- [x] **Ferrari 5-Pack 2026** (365 GTB4 Competizione, SF90 Stradale, Dino 206 GT, 12Cilindri, F40 Competizione)
+
+  ![Hot Wheels Ferrari 5-Pack 2026](images/hot-wheels-ferrari-5-pack-2026.webp)
+
+  - Brand: Hot Wheels
+  - Scale: 1:64
+- [x] **Cyberpunk 2077 2-Pack** (Porsche 930, Quadra Turbo-R V-Tech)
+
+  ![Hot Wheels Premium Cyberpunk 2077 Porsche 930 and Quadra Turbo-R V-Tech](images/hot-wheels-premium-cyberpunk-2077-2-pack.jpg)
+
+  - Brand: Hot Wheels Premium
+  - Scale: 1:64
 
 ## On preorder
 
